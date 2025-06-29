@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %} - VNTRAI</title>
+    <link rel="icon" href="{{ url_for('static', filename='icons/Platform logo - blue.png') }}" type="image/png">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="vntr-layout-wrapper">
+        <!-- 1. Sidebar (Hauptnavigation) -->
+        <nav id="vntrSidebar" class="vntr-sidebar">
+            <div class="vntr-sidebar-header"
+                 style="display: flex; align-items: center; justify-content: center; height: 64px; position: sticky; top: 0; background: #0CC0DF; z-index: 101; border-bottom: none; border-right: none; box-shadow: none;">
+                <img src="{{ url_for('static', filename='image/VNTRAI-Logo-500x500-transparent.png') }}"
+                     alt="VNTRAI Logo"
+                     class="vntr-sidebar-logo"
+                     style="width: 40px; height: 40px; display: block; filter: brightness(0) invert(1);" />
+            </div>
+            <ul class="vntr-nav-items">
+                <!-- Section 1: Dashboard -->
+                <li class="vntr-nav-item">
+                    <a href="{{ url_for('main.index') }}" class="vntr-nav-link {% if request.endpoint == 'main.index' %}active{% endif %}" title="Dashboard">
+                        <img src="{{ url_for('static', filename='icons/Dashboard - blue.svg') }}" 
+                             class="vntr-nav-icon" alt="Dashboard">
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                
+                <!-- Section Separator -->
+                <li class="vntr-nav-separator"></li>
+                
+                <!-- Section 2: My Content -->
+                <li class="vntr-nav-item">
+                    <a href="{{ url_for('main.insights') }}" class="vntr-nav-link {% if request.endpoint == 'main.insights' %}active{% endif %}" title="My Insights">
+                        <img src="{{ url_for('static', filename='icons/Insights - black.png') }}" 
+                             class="vntr-nav-icon" alt="My Insights">
+                        <span>My Insights</span>
+                    </a>
+                </li>
+                <li class="vntr-nav-item">
+                    <a href="{{ url_for('main.flows') }}" class="vntr-nav-link {% if request.endpoint == 'main.flows' %}active{% endif %}" title="My Workflows">
+                        <img src="{{ url_for('static', filename='icons/Workflow - black.png') }}" 
+                             class="vntr-nav-icon" alt="My Workflows">
+                        <span>My Workflows</span>
+                    </a>
+                </li>
+                
+                <!-- Section Separator -->
+                <li class="vntr-nav-separator"></li>
+                
+                <!-- Section 3: Platform -->
+                <li class="vntr-nav-item">
+                    <a href="{{ url_for('main.tools') }}" class="vntr-nav-link {% if request.endpoint == 'main.tools' %}active{% endif %}" title="Tools">
+                        <img src="{{ url_for('static', filename='icons/Tools - black.png') }}" 
+                             class="vntr-nav-icon" alt="Tools">
+                        <span>Tools</span>
+                    </a>
+                </li>
+                <li class="vntr-nav-item">
+                    <a href="{{ url_for('main.integrations') }}" class="vntr-nav-link {% if request.endpoint == 'main.integrations' %}active{% endif %}" title="Integrations">
+                        <img src="{{ url_for('static', filename='icons/Integrations - white.svg') }}" 
+                             class="vntr-nav-icon" alt="Integrations">
+                        <span>Integrations</span>
+                    </a>
+                </li>
+                
+                <!-- Section Separator -->
+                <li class="vntr-nav-separator"></li>
+                
+                <!-- Bottom Section: User and Company -->
+                <li class="vntr-nav-item vntr-user-container mt-auto">
+                    <a href="{{ url_for('main.profile') }}" class="vntr-nav-link {% if request.endpoint == 'main.profile' %}active{% endif %}" title="Profile">
+                        <img src="{{ url_for('static', filename='icons/User - black.png') }}" class="vntr-nav-icon" alt="Profile">
+                        <span>Profile</span>
+                    </a>
+                </li>
+                <li class="vntr-nav-item">
+                    <a href="{{ url_for('main.company') }}" class="vntr-nav-link {% if request.endpoint == 'main.company' %}active{% endif %}" title="Company">
+                        <img src="{{ url_for('static', filename='icons/Company - black.png') }}" class="vntr-nav-icon" alt="Company">
+                        <span>Company</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- 2. Main Content Area -->
+        <div class="vntr-main-container">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="vntr-flash-messages" style="max-width: 100%; width: 100%; margin: 0 auto; padding: 0 15px;">
+                        {% for category, message in messages %}
+                            <div class="vntr-flash-message alert alert-{{ category }} mb-3">{{ message }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            
+            <!-- Main Content -->
+            <div class="vntr-content-container no-context" id="content-container">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,367 @@
+/* VNTRAI Main Stylesheet */
+
+/* ===== SIDEBAR ICON COLORS OVERRIDE - PRIORITÄT #1 ===== */
+.vntr-sidebar img.vntr-nav-icon,
+.vntr-nav-icon,
+.vntr-sidebar img,
+.vntr-sidebar a img,
+#vntrSidebar img,
+img[src*="-black"] {
+    filter: brightness(0) invert(1) !important;
+    -webkit-filter: brightness(0) invert(1) !important;
+}
+
+.vntr-sidebar a,
+.vntr-sidebar span,
+.vntr-nav-link,
+.vntr-nav-link span,
+#vntrSidebar a,
+#vntrSidebar span {
+    color: white !important;
+}
+
+/* ===== SIDEBAR: Text und Icons weiß, aber bei Hover schwarz ===== */
+.vntr-sidebar .vntr-nav-link,
+.vntr-sidebar .vntr-nav-link span,
+.vntr-sidebar a,
+.vntr-sidebar a span {
+    color: white !important;
+    transition: color 0.15s;
+}
+
+.vntr-sidebar .vntr-nav-link:hover,
+.vntr-sidebar .vntr-nav-link:hover span,
+.vntr-sidebar a:hover,
+.vntr-sidebar a:hover span {
+    color: #111 !important;
+}
+
+.vntr-sidebar .vntr-nav-link .vntr-nav-icon,
+.vntr-sidebar a .vntr-nav-icon,
+.vntr-sidebar img.vntr-nav-icon {
+    filter: brightness(0) invert(1) !important;
+    -webkit-filter: brightness(0) invert(1) !important;
+    transition: filter 0.15s;
+}
+
+.vntr-sidebar .vntr-nav-link:hover .vntr-nav-icon,
+.vntr-sidebar a:hover .vntr-nav-icon,
+.vntr-sidebar .vntr-nav-link:hover img.vntr-nav-icon,
+.vntr-sidebar a:hover img.vntr-nav-icon {
+    filter: none !important;
+    -webkit-filter: none !important;
+}
+
+/* Force also SVG and icon fonts to black on hover */
+.vntr-sidebar .vntr-nav-link:hover i,
+.vntr-sidebar a:hover i,
+.vntr-sidebar .vntr-nav-link:hover svg,
+.vntr-sidebar a:hover svg {
+    color: #111 !important;
+    fill: #111 !important;
+    filter: none !important;
+}
+
+/* ===== ACTIVE SIDEBAR NAVIGATION ===== */
+.vntr-sidebar .vntr-nav-link.active {
+    background-color: #FA7100 !important; /* Orange background for active state */
+    border-left: 3px solid #FA7100 !important;
+    color: white !important;
+}
+
+.vntr-sidebar .vntr-nav-link.active span {
+    color: white !important;
+    font-weight: 600 !important;
+}
+
+.vntr-sidebar .vntr-nav-link.active .vntr-nav-icon,
+.vntr-sidebar .vntr-nav-link.active img.vntr-nav-icon {
+    filter: brightness(0) invert(1) !important;
+    -webkit-filter: brightness(0) invert(1) !important;
+}
+
+/* Active item should not change on hover */
+.vntr-sidebar .vntr-nav-link.active:hover,
+.vntr-sidebar .vntr-nav-link.active:hover span {
+    color: white !important;
+    background-color: #FA7100 !important; /* Keep orange on hover */
+}
+
+.vntr-sidebar .vntr-nav-link.active:hover .vntr-nav-icon,
+.vntr-sidebar .vntr-nav-link.active:hover img.vntr-nav-icon {
+    filter: brightness(0) invert(1) !important;
+    -webkit-filter: brightness(0) invert(1) !important;
+}
+
+/* ===== LAYOUT STRUCTURE ===== */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.vntr-layout-wrapper {
+    display: flex;
+    min-height: 100vh;
+    background-color: #f8f9fa;
+    position: relative;
+}
+
+/* ===== SIDEBAR STYLING ===== */
+.vntr-sidebar {
+    width: 80px;
+    background: #0CC0DF !important;
+    color: white;
+    position: fixed;
+    height: 100vh;
+    left: 0;
+    top: 0;
+    z-index: 1000;
+    overflow: hidden;
+    transition: width 0.3s ease;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+}
+
+.vntr-sidebar:hover {
+    width: 250px;
+}
+
+.vntr-sidebar-header {
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0CC0DF;
+    position: sticky;
+    top: 0;
+    z-index: 101;
+}
+
+.vntr-sidebar-logo {
+    width: 40px;
+    height: 40px;
+    /* Entfernt: transition und hover-scaling */
+}
+
+.vntr-nav-items {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    height: calc(100vh - 64px);
+    display: flex;
+    flex-direction: column;
+}
+
+.vntr-nav-item {
+    margin: 0;
+}
+
+.vntr-nav-link {
+    display: flex;
+    align-items: center;
+    padding: 15px 20px;
+    color: white;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: none;
+    background: none;
+    width: 100%;
+}
+
+.vntr-nav-icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 15px;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+}
+
+.vntr-nav-link span {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    white-space: nowrap;
+}
+
+.vntr-sidebar:hover .vntr-nav-link span {
+    opacity: 1;
+}
+
+.vntr-nav-separator {
+    height: 1px;
+    background-color: rgba(255, 255, 255, 0.2);
+    margin: 10px 15px;
+}
+
+.vntr-user-container {
+    margin-top: auto;
+}
+
+/* ===== MAIN CONTAINER ===== */
+.vntr-main-container {
+    flex: 1;
+    margin-left: 80px;
+    display: flex;
+    flex-direction: column;
+    transition: margin-left 0.3s ease;
+    min-height: 100vh;
+    padding: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+/* ===== CONTENT CONTAINER ===== */
+.vntr-content-container {
+    padding: 0;
+    margin: 0;
+    flex: 1;
+    background: white;
+    height: 100vh;
+}
+
+/* Layout für Seiten mit und ohne Context Area */
+.vntr-content-area.no-context {
+    margin-left: 20px; /* Abstand zur Sidebar wenn keine Context Area vorhanden */
+    padding: 20px;
+}
+
+.vntr-content-area.with-context {
+    margin-left: 0; /* Kein extra Abstand wenn Context Area vorhanden */
+    padding: 0;
+}
+
+/* Standard Content Container Styling */
+.vntr-content-container {
+    padding: 20px;
+    min-height: calc(100vh - 100px);
+}
+
+.vntr-content-container.no-context {
+    padding: 20px; /* Standard Padding für Seiten ohne Context Area */
+}
+
+.vntr-content-container.with-context {
+    padding: 0; /* Kein Padding für Seiten mit Context Area */
+}
+
+/* ===== FLASH MESSAGES ===== */
+.vntr-flash-messages {
+    padding: 15px 20px 0;
+}
+
+.vntr-flash-message {
+    border-radius: 4px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+.alert-error, .alert-danger {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+    color: #856404;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+    color: #0c5460;
+}
+
+/* ===== BOOTSTRAP OVERRIDES ===== */
+.btn-primary {
+    background-color: #0CC0DF;
+    border-color: #0CC0DF;
+}
+
+.btn-primary:hover {
+    background-color: #0aa8c4;
+    border-color: #0aa8c4;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+@media (max-width: 768px) {
+    .vntr-sidebar {
+        width: 60px;
+    }
+    
+    .vntr-sidebar:hover {
+        width: 200px;
+    }
+    
+    .vntr-main-container {
+        margin-left: 60px;
+    }
+    
+    .vntr-nav-link {
+        padding: 12px 15px;
+    }
+    
+    .vntr-nav-icon {
+        width: 20px;
+        height: 20px;
+        margin-right: 12px;
+    }
+}
+
+/* ===== UTILITY CLASSES ===== */
+.text-vntr-primary {
+    color: #0CC0DF !important;
+}
+
+.bg-vntr-primary {
+    background-color: #0CC0DF !important;
+}
+
+.border-vntr-primary {
+    border-color: #0CC0DF !important;
+}
+
+/* ===== CONTEXT AREA FULL HEIGHT ===== */
+.vntr-content-area {
+    margin-left: 80px; /* Sidebar width */
+    min-height: 100vh;
+    position: relative;
+}
+
+.vntr-context-area {
+    background: #E7E7E7;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    margin: 0;
+    overflow-y: auto;
+    position: fixed;
+    top: 0;
+    height: 100vh;
+    z-index: 500;
+}
+
+.vntr-main-content {
+    flex: 1;
+    background: white;
+    border-radius: 0;
+    padding: 30px;
+    margin: 0;
+    min-height: 100vh;
+}

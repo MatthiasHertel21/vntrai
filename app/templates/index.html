@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="vntr-content-area with-context" style="display: flex; gap: 0; margin: 0; padding: 0;">
+    <!-- Context Area (individuell pro Seite) -->
+    <div class="vntr-context-area" style="width: 300px;">
+        <div style="background: #E7E7E7; padding: 15px; border-bottom: 1px solid rgba(0,0,0,.1);">
+            <h5 style="margin: 0; color: #333; font-weight: 500;">Dashboard Context</h5>
+        </div>
+        <div style="background: #F5F5F5; padding: 15px;">
+            <h6 style="color: #333; margin-bottom: 15px; font-weight: 500;">Quick Stats</h6>
+            <ul style="list-style: none; padding: 0; margin: 0;">
+                <li style="padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,.1);">
+                    <strong>Active Projects:</strong> 12
+                </li>
+                <li style="padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,.1);">
+                    <strong>Pending Tasks:</strong> 28
+                </li>
+                <li style="padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,.1);">
+                    <strong>Completed Today:</strong> 5
+                </li>
+                <li style="padding: 12px 0;">
+                    <strong>System Status:</strong> <span style="color: #28a745;">Healthy</span>
+                </li>
+            </ul>
+        </div>
+        
+        <div style="background: #E7E7E7; padding: 15px; border-bottom: 1px solid rgba(0,0,0,.1);">
+            <h6 style="color: #333; margin: 0; font-weight: 500;">Recent Activity</h6>
+        </div>
+        <div style="background: #F5F5F5; padding: 15px;">
+            <div style="font-size: 0.9em; color: #555;">
+                <p style="margin: 8px 0;">• Project "AI Model" updated</p>
+                <p style="margin: 8px 0;">• New integration added</p>
+                <p style="margin: 8px 0;">• 3 tasks completed</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content Area -->
+    <div class="vntr-main-content" style="margin-left: 300px;">
+        <div style="text-align: center; padding: 40px 0;">
+            <h1 style="color: #0CC0DF; margin-bottom: 20px;">Willkommen bei VNTRAI</h1>
+            <p style="font-size: 1.2em; color: #6c757d; margin-bottom: 30px;">
+                Ihre zentrale Plattform für KI-gestützte Workflows und Automatisierung
+            </p>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 40px;">
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center;">
+                    <div style="width: 48px; height: 48px; background: #0CC0DF; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-graph-up" style="color: white; font-size: 24px;"></i>
+                    </div>
+                    <h5 style="margin-bottom: 10px;">Analytics</h5>
+                    <p style="color: #6c757d; margin: 0;">Überwachen Sie Ihre Leistung und Trends</p>
+                </div>
+                
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center;">
+                    <div style="width: 48px; height: 48px; background: #0CC0DF; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-gear" style="color: white; font-size: 24px;"></i>
+                    </div>
+                    <h5 style="margin-bottom: 10px;">Automation</h5>
+                    <p style="color: #6c757d; margin: 0;">Automatisieren Sie wiederkehrende Aufgaben</p>
+                </div>
+                
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center;">
+                    <div style="width: 48px; height: 48px; background: #0CC0DF; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center;">
+                        <i class="bi bi-people" style="color: white; font-size: 24px;"></i>
+                    </div>
+                    <h5 style="margin-bottom: 10px;">Collaboration</h5>
+                    <p style="color: #6c757d; margin: 0;">Arbeiten Sie effektiv im Team</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
