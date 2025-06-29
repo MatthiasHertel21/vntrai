@@ -1,10 +1,35 @@
 # Backlog
+ich möchte eine webanwendung entwickeln mit flask und docker-compose
+die anwendung soll auf den port 5004 laufen
+verwende tailwind layout 
+ich möchte links eine sidebar mit auto-expand / auto collaps funktion (im collapsed zustand nur icons, im expanded status icons mit beschriftung)
+die anwendung soll vntrai heißen
+übernimm die den aufbau der sidebar, die icons und die farben aus der anwendung /home/ga/fb1/age/v036
 
-ich möchte in der anwendung die funktionalität für tools und für integrations haben wie in der anwendung im verzeichnis v036, aber mit einigenen änderungen:
+## 🆕 Neue Anforderungen: Tools & Integrations (v036 Funktionalität)
+ich möchte in der anwendung die funktionalität für tools und für integrations haben wie in der anwendung im verzeichnis v036, aber mit eigenen änderungen:
+- **Tailwind Layout** (statt Bootstrap aus v036)
+- **Separate JSON-Dateien für Integrations**: Die Datenhaltung für alle integrations soll nicht in einer datei "integrations.json" erfolgen sondern jede integration soll ihre eigene json datei haben. Diese soll so heißen wie die uuid der integration und in einem verzeichnis "integrations" liegen
+- **Separate JSON-Dateien für Tools**: Die Datenhaltung für alle tools soll nicht in einer datei "tools.json" erfolgen sondern jedes tool soll seine eigene json datei haben. Diese soll so heißen wie die uuid des tools und in einem verzeichnis "tools" liegen
 
-tailwind layout
-die datenhaltung für alle integrations soll nicht in einer datei "integrations,json" erfolgen sondern jede integration soll ihre eigene json datei haben. diese soll so heißen wie die uuid der integration und in einem verezeichnis "integrations" liegen
-die datenhaltung für alle tools soll nicht in einer datei "tools,json" erfolgen sondern jedes tools soll seine eigene json datei haben. diese soll so heißen wie die uuid des tools und in einem verezeichnis "tools" liegen
+### 📋 v036 Analyse - Zu übernehmende Features:
+**Integrations:**
+- ✅ CRUD Operations (Create, Read, Update, Delete)
+- ✅ JSON Editor für direkte Bearbeitung
+- ✅ Upload von Vendor Icons
+- ✅ Tool Definition Management
+- ✅ Config/Input/Output Parameter Verwaltung
+- ✅ Validation von Tool Definitionen
+- ⚠️ **Keine Options-Verwaltung** (nicht erforderlich)
+
+**Tools:**
+- ✅ Tool-Instanzen basierend auf Integrations
+- ✅ Konfiguration und Parameter-Management
+- ✅ Test-Funktionalität für Tools
+- ✅ Execution von Tools
+- ✅ Prefilled/Locked Inputs
+- ✅ Status-Tracking (Connected/Not Connected)
+- ✅ Gruppierung nach Integrations
 
 # Sprints
 
@@ -109,9 +134,121 @@ die datenhaltung für alle tools soll nicht in einer datei "tools,json" erfolgen
 
 ## Technische Spezifikationen basierend auf v036
 
+### **🆕 Tools & Integrations Datenstrukturen:**
+
+#### **Integration JSON Schema:**
+```json
+{
+  "id": "uuid4-string",
+  "name": "Integration Name",
+  "description": "Description",
+  "vendor": "Vendor Name",
+  "api_documentation_link": "https://...",
+  "vendor_icon": "filename.png",
+  "config_params": [
+    {
+      "name": "api_key",
+      "type": "text|select|json|file",
+      "required": true,
+      "label": "API Key",
+      "description": "Your API key"
+    }
+  ],
+  "input_params": [...],
+  "output_params": [...]
+}
+```
+
+#### **Tool JSON Schema:**
+```json
+{
+  "uuid": "uuid4-string",
+  "name": "Tool Instance Name",
+  "description": "Tool description",
+  "integration_id": "uuid4-string",
+  "tool_definition": "Integration Name",
+  "config": { "api_key": "..." },
+  "prefilled_inputs": { "model": "gpt-4" },
+  "locked_inputs": ["temperature"],
+  "output_params": {...},
+  "last_test": {
+    "timestamp": "ISO-8601",
+    "result": { "success": true, "message": "..." }
+  },
+  "last_execution": {...},
+  "node_type": "Tool|Agent|Input|Output",
+  "associated_datasets": [],
+  "options": []
+}
+```
+
+#### **Migration aus v036:**
+```
+v036 Struktur:
+├── data/integrations.json      # 13 Integrations
+├── data/tools.json            # 15 Tool-Instanzen
+└── static/icons/vendors/      # 12 Icon-Dateien
+
+Neue Struktur:
+├── data/
+│   ├── integrations/
+│   │   ├── {uuid1}.json       # ChatGPT Integration
+│   │   ├── {uuid2}.json       # ContextOutput Integration
+│   │   └── ...                # 13 Integrations total
+│   ├── tools/
+│   │   ├── {uuid1}.json       # GPT (cool) Tool
+│   │   ├── {uuid2}.json       # Test Tool
+│   │   └── ...                # 15 Tools total
+│   └── vendor_icons/
+│       ├── openai.png
+│       └── ...                # 12 Icons total
+```
+
+#### **Migration-Statistiken:**
+- **13 Integrations** zu migrieren
+- **15 Tool-Instanzen** zu migrieren  
+- **12 Vendor Icons** zu kopieren
+- **UUID-basierte Dateibenennung** (bereits in v036 vorhanden)
+
+#### **Migration-Strategie:**
+1. **Integrations Migration** (13 Dateien):
+   - Parse v036 `integrations.json` (Array von 13 Objekten)
+   - Für jede Integration: `{integration.id}.json` erstellen
+   - Vendor Icons von `/vendors/` nach `/vendor_icons/` kopieren
+   - Schema-Kompatibilität sicherstellen
+   - **Options-Feld entfernen** (nicht mehr benötigt)
+
+2. **Tools Migration** (15 Dateien):
+   - Parse v036 `tools.json` (Array von 15 Tool-Instanzen)
+   - Für jedes Tool: `{tool.uuid}.json` erstellen
+   - Integration-Referenzen via `integration_id` neu verknüpfen
+   - Bestehende Configurations und Test-Results übertragen
+
+3. **Icon Migration** (12 Dateien):
+   - Icons von `/app/static/icons/vendors/` nach `/data/vendor_icons/`
+   - UUID-basierte Dateinamen beibehalten
+   - Integration-Referenzen in JSON-Dateien aktualisieren
+
+#### **Datei-Organisation:**
+```
+/data/
+├── integrations/
+│   ├── {uuid1}.json
+│   ├── {uuid2}.json
+│   └── ...
+├── tools/
+│   ├── {uuid1}.json
+│   ├── {uuid2}.json
+│   └── ...
+└── vendor_icons/
+    ├── icon1.png
+    └── icon2.svg
+```
+
 ### Farbschema:
 - **Hauptfarbe:** #0CC0DF (Türkis)
-- **Sidebar:** Dunkler Hintergrund mit weißen Icons/Text
+- **Active State:** #FA7100 (Orange)
+- **Sidebar:** Türkiser Hintergrund mit weißen Icons/Text
 - **Hover:** Icons weiß → schwarz Transition
 - **Background:** #ffffff für Content-Bereiche
 
@@ -138,12 +275,146 @@ die datenhaltung für alle tools soll nicht in einer datei "tools,json" erfolgen
 - Smooth expand/collapse Animationen
 - Hover-Effekte für Icons
 - Responsive Sidebar-Verhalten
+- **🆕 Dynamic Form Generation** für Tool/Integration Parameters
+- **🆕 AJAX-basierte Tool Testing**
+- **🆕 JSON Editor Integration**
+
+## Sprint 5: Data Migration & Setup (2-3 Tage)
+### Ziel: Migration der v036 Daten und Vorbereitung der neuen Datenstruktur
+
+**User Stories:**
+- Als Entwickler möchte ich alle bestehenden Daten aus v036 analysieren
+- Als System möchte ich die neue Datenstruktur vorbereiten
+- Als Benutzer möchte ich nahtlos mit den bestehenden Daten weiterarbeiten
+
+**Tasks:**
+- [ ] **Datenanalyse v036**: Vollständige Analyse der integrations.json und tools.json
+- [ ] **Migration Strategy**: Detaillierte Migrationsstrategie entwickeln
+- [ ] **Data Directories**: `/data/integrations/` und `/data/tools/` Ordner erstellen
+- [ ] **UUID Mapping**: Bestehende IDs analysieren und UUID-Zuordnung planen
+- [ ] **File Utilities**: Basis-Funktionen für JSON-Datei-Operations
+- [ ] **Migration Scripts**: Automatische Migration-Scripts entwickeln
+- [ ] **Data Validation**: Validierung der migrierten Daten
+- [ ] **Rollback Strategy**: Rückfall-Mechanismus für fehlgeschlagene Migration
+- [ ] **Icon Migration**: Vendor Icons aus v036 kopieren
+
+**Definition of Done:**
+- Vollständige Datenanalyse dokumentiert
+- Migration-Scripts funktionieren fehlerfrei
+- Neue Datenstruktur ist vorbereitet
+- Testmigration erfolgreich durchgeführt
+- Rollback-Mechanismus funktioniert
+
+## Sprint 6: Integrations Management System (5-7 Tage)
+### Ziel: Vollständige Integrations-Verwaltung mit individuellen JSON-Dateien
+
+**User Stories:**
+- Als Entwickler möchte ich Integrations (Tool-Definitionen) verwalten können
+- Als Benutzer möchte ich neue Integrations erstellen, bearbeiten und löschen können
+- Als System möchte ich jede Integration in einer eigenen JSON-Datei speichern
+- Als Entwickler möchte ich alle bestehenden Integrations aus v036 migrieren
+
+**Tasks:**
+- [ ] Datenstruktur von v036 analysieren und adaptieren
+- [ ] Ordnerstruktur erstellen (`/data/integrations/`)
+- [ ] File Operations Utility für einzelne JSON-Dateien entwickeln
+- [ ] **Migration Script**: v036 integrations.json → einzelne {uuid}.json Dateien
+- [ ] **Data Validation**: Konsistenzprüfung der migrierten Daten
+- [ ] **Schema-Anpassung**: Options-Feld aus v036 Integrations entfernen
+- [ ] Integration Model/Schema definieren
+- [ ] CRUD Routes für Integrations implementieren (`/integrations/*`)
+- [ ] List-View mit Tailwind (statt Bootstrap) 
+- [ ] Create/Edit Forms mit Tailwind
+- [ ] JSON Editor Funktionalität
+- [ ] Vendor Icon Upload System
+- [ ] **Icon Migration**: Vendor Icons aus v036 übertragen
+- [ ] Validation System für Integration Schemas
+- [ ] Error Handling und Flash Messages
+
+**Definition of Done:**
+- **Alle 13 v036 Integrations sind migriert**
+- Integrations werden in separaten JSON-Dateien gespeichert (`{uuid}.json`)
+- Vollständige CRUD-Funktionalität verfügbar
+- Tailwind-basiertes UI implementiert
+- **Alle 12 Vendor Icons werden korrekt verwaltet und migriert**
+- JSON-Editor funktioniert
+- Validation verhindert fehlerhafte Integrations
+- **Keine Options-Verwaltung** (Design-Entscheidung)
+
+## Sprint 7: Tools Management System (5-7 Tage)
+### Ziel: Vollständige Tools-Verwaltung basierend auf Integrations
+
+**User Stories:**
+- Als Benutzer möchte ich Tool-Instanzen basierend auf Integrations erstellen
+- Als Benutzer möchte ich Tools konfigurieren, testen und ausführen können
+- Als System möchte ich jedes Tool in einer eigenen JSON-Datei speichern
+- Als Entwickler möchte ich alle bestehenden Tools aus v036 migrieren
+
+**Tasks:**
+- [ ] Tool-Datenstruktur von v036 adaptieren
+- [ ] Ordnerstruktur erstellen (`/data/tools/`)
+- [ ] File Operations für Tool JSON-Dateien
+- [ ] **Migration Script**: v036 tools.json → einzelne {uuid}.json Dateien
+- [ ] **Integration Mapping**: Tool-Integration Verknüpfungen neu aufbauen
+- [ ] **Configuration Migration**: Bestehende Tool-Configs übertragen
+- [ ] Tool Model mit Integration-Referenzen
+- [ ] CRUD Routes für Tools implementieren (`/tools/*`)
+- [ ] Tools List-View mit Filtering/Grouping
+- [ ] Tool Creation basierend auf Integrations
+- [ ] Tool Configuration Interface
+- [ ] Test-Funktionalität für Tools
+- [ ] Tool Execution Engine
+- [ ] Status-Tracking (Connected/Not Connected)
+- [ ] Parameter Management (Prefilled/Locked Inputs)
+- [ ] **Legacy Test Results**: Bestehende Test-Ergebnisse übertragen
+
+**Definition of Done:**
+- **Alle 15 v036 Tools sind migriert**
+- Tools werden in separaten JSON-Dateien gespeichert (`{uuid}.json`)
+- **Integration-Referenzen sind korrekt verknüpft** (alle 15 Tools mit ihren Integrations)
+- Tools können basierend auf Integrations erstellt werden
+- Test- und Execution-Funktionalität verfügbar
+- Parameter-Management funktioniert
+- Status-Tracking implementiert
+- Gruppierung und Filterung möglich
+
+## Sprint 8: Advanced Features & Tool Modules (4-5 Tage)
+### Ziel: Erweiterte Funktionalitäten und Tool-Ausführung
+
+**User Stories:**
+- Als Benutzer möchte ich Tools mit komplexen Parametern ausführen
+- Als System möchte ich verschiedene Tool-Module unterstützen
+- Als Benutzer möchte ich Tool-Outputs formatiert anzeigen lassen
+
+**Tasks:**
+- [ ] Tool Modules System von v036 portieren
+- [ ] Dynamic Tool Loading/Execution
+- [ ] Parameter-Validation vor Execution
+- [ ] Output-Formatting und -Styling
+- [ ] Tool-Testing mit Mocking
+- [ ] Async Tool Execution
+- [ ] Tool Dependencies Management
+- [ ] Advanced Parameter Types (JSON, File Upload, etc.)
+- [ ] Tool Templates und Presets
+- [ ] Integration Health Checks
+
+**Definition of Done:**
+- Tool Modules können dynamisch geladen werden
+- Komplexe Parameter-Types werden unterstützt
+- Tool-Outputs werden formatiert angezeigt
+- Async Execution funktioniert
+- Health Checks für Integrations verfügbar
 
 ## Backlog für zukünftige Sprints
+- **API-Endpunkte** für Tools/Integrations
+- **Tool Workflows** (Verkettung von Tools)
+- **Tool Monitoring** und Logging
+- **Integration Marketplace**
+- **Tool-Performance Analytics**
+- **Backup/Export** von Tools und Integrations
 - Content für Dashboard, Insights, Tools Pages
 - Authentifizierung/Login-System
 - Datenbankintegration
-- API-Endpunkte
 - Search Funktionalität
 - User Settings/Preferences
 - Dark/Light Theme Toggle
@@ -276,8 +547,6 @@ sudo docker-compose up -d
 - **Frontend**: Tailwind CSS, Bootstrap Icons
 - **Backend**: Flask, Python 3.9
 - **Container**: Docker, Docker-Compose
-
-
 
 ### **Erfolge:**
 ✅ Vollständig funktionsfähige vntrai Webanwendung  
