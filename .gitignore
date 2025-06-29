@@ -43,3 +43,6 @@ data/
 # Logs
 logs/
 *.log
+
+#old
+v036/

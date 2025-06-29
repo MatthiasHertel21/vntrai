@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Routen-Übersicht{% endblock %}
+
+{% block content %}
+<div class="vntr-content-area no-context">
+    <h1 class="mb-4">Routen-Übersicht</h1>
+    
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle me-2"></i>
+        Hier finden Sie alle verfügbaren Routen der vntrai Anwendung.
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Verfügbare Routen</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Route</th>
+                            <th>Seite</th>
+                            <th>Beschreibung</th>
+                            <th>Layout</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><a href="/" class="text-vntr-primary">/</a></td>
+                            <td>Dashboard</td>
+                            <td>Hauptseite der Anwendung</td>
+                            <td><span class="badge bg-success">Mit Context Area</span></td>
+                            <td><span class="badge bg-success">✅ Aktiv</span></td>
+                        </tr>
+                        <tr>
+                            <td><a href="/insights" class="text-vntr-primary">/insights</a></td>
+                            <td>My Insights</td>
+                            <td>Persönliche Einsichten und Analysen</td>
+                            <td><span class="badge bg-secondary">Ohne Context Area</span></td>
+                            <td><span class="badge bg-success">✅ Aktiv</span></td>
+                        </tr>
+                        <tr>
+                            <td><a href="/flows" class="text-vntr-primary">/flows</a></td>
+                            <td>My Flows</td>
+                            <td>Persönliche Workflows und Prozesse</td>
+                            <td><span class="badge bg-secondary">Ohne Context Area</span></td>
+                            <td><span class="badge bg-success">✅ Aktiv</span></td>
+                        </tr>
+                        <tr>
+                            <td><a href="/tools" class="text-vntr-primary">/tools</a></td>
+                            <td>Tools</td>
+                            <td>Verfügbare Werkzeuge und Utilities</td>
+                            <td><span class="badge bg-secondary">Ohne Context Area</span></td>
+                            <td><span class="badge bg-success">✅ Aktiv</span></td>
+                        </tr>
+                        <tr>
+                            <td><a href="/integrations" class="text-vntr-primary">/integrations</a></td>
+                            <td>Integrations</td>
+                            <td>Externe Integrationen und APIs</td>
+                            <td><span class="badge bg-secondary">Ohne Context Area</span></td>
+                            <td><span class="badge bg-success">✅ Aktiv</span></td>
+                        </tr>
+                        <tr>
+                            <td><a href="/datasets" class="text-vntr-primary">/datasets</a></td>
+                            <td>Datasets</td>
+                            <td>Datensätze und Datenquellen</td>
+                            <td><span class="badge bg-secondary">Ohne Context Area</span></td>
+                            <td><span class="badge bg-success">✅ Aktiv</span></td>
+                        </tr>
+                        <tr>
+                            <td><a href="/flowboards" class="text-vntr-primary">/flowboards</a></td>
+                            <td>Flowboards</td>
+                            <td>Workflow-Dashboards und Übersichten</td>
+                            <td><span class="badge bg-secondary">Ohne Context Area</span></td>
+                            <td><span class="badge bg-success">✅ Aktiv</span></td>
+                        </tr>
+                        <tr>
+                            <td><a href="/agents" class="text-vntr-primary">/agents</a></td>
+                            <td>Agents</td>
+                            <td>AI-Agenten und Automatisierung</td>
+                            <td><span class="badge bg-secondary">Ohne Context Area</span></td>
+                            <td><span class="badge bg-success">✅ Aktiv</span></td>
+                        </tr>
+                        <tr>
+                            <td><a href="/prompts" class="text-vntr-primary">/prompts</a></td>
+                            <td>Prompts</td>
+                            <td>Prompt-Bibliothek und Templates</td>
+                            <td><span class="badge bg-secondary">Ohne Context Area</span></td>
+                            <td><span class="badge bg-success">✅ Aktiv</span></td>
+                        </tr>
+                        <tr>
+                            <td><a href="/profile" class="text-vntr-primary">/profile</a></td>
+                            <td>Profile</td>
+                            <td>Benutzerprofil und Einstellungen</td>
+                            <td><span class="badge bg-secondary">Ohne Context Area</span></td>
+                            <td><span class="badge bg-success">✅ Aktiv</span></td>
+                        </tr>
+                        <tr>
+                            <td><a href="/company" class="text-vntr-primary">/company</a></td>
+                            <td>Company</td>
+                            <td>Firmeninformationen und Settings</td>
+                            <td><span class="badge bg-secondary">Ohne Context Area</span></td>
+                            <td><span class="badge bg-success">✅ Aktiv</span></td>
+                        </tr>
+                        <tr class="table-warning">
+                            <td><strong>/routes</strong></td>
+                            <td>Routen-Übersicht</td>
+                            <td>Diese Seite - Liste aller Routen</td>
+                            <td><span class="badge bg-secondary">Ohne Context Area</span></td>
+                            <td><span class="badge bg-warning">🆕 Neu</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Routen-Statistik</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Gesamt-Routen:</span>
+                            <strong>12</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Mit Context Area:</span>
+                            <strong>1</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Ohne Context Area:</span>
+                            <strong>11</strong>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Status:</span>
+                            <span class="badge bg-success">Alle aktiv</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Technische Details</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <strong>Blueprint:</strong> main
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Template Engine:</strong> Jinja2
+                        </li>
+                        <li class="list-group-item">
+                            <strong>CSS Framework:</strong> Tailwind CSS + Bootstrap Icons
+                        </li>
+                        <li class="list-group-item">
+                            <strong>Layout System:</strong> vntr-content-area
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="alert alert-light mt-4">
+        <h6>Hinweise:</h6>
+        <ul class="mb-0">
+            <li><strong>Context Area:</strong> Nur das Dashboard hat eine Context Area für zusätzliche Informationen</li>
+            <li><strong>Active State:</strong> Die Sidebar zeigt die aktuelle Seite in Orange (#FA7100)</li>
+            <li><strong>Responsive:</strong> Alle Routen sind für verschiedene Bildschirmgrößen optimiert</li>
+            <li><strong>Navigation:</strong> Alle Routen sind über die Auto-Expand Sidebar erreichbar</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

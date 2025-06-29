@@ -56,3 +56,8 @@ def profile():
 def company():
     """Company Seite."""
     return render_template('company.html')
+
+@bp.route('/routes')
+def routes():
+    """Routen-Übersicht - Liste aller verfügbaren Routen."""
+    return render_template('routes.html')
