@@ -237,36 +237,55 @@ document.getElementById('icon').addEventListener('change', function(e) {
 });
 
 // JSON Editor functionality
+function toCamelCase(str) {
+    return str.replace(/_([a-z])/g, function(g) { return g[1].toUpperCase(); });
+}
+
 function toggleJsonEditor(section) {
-    const display = document.getElementById(`${section}Display`);
-    const editor = document.getElementById(`${section}Editor`);
+    const camelSection = toCamelCase(section);
+    const display = document.getElementById(`${camelSection}Display`);
+    const editor = document.getElementById(`${camelSection}Editor`);
     
-    display.classList.add('hidden');
-    editor.classList.remove('hidden');
+    if (display && editor) {
+        display.classList.add('hidden');
+        editor.classList.remove('hidden');
+    }
 }
 
 function cancelJsonEdit(section) {
-    const display = document.getElementById(`${section}Display`);
-    const editor = document.getElementById(`${section}Editor`);
+    const camelSection = toCamelCase(section);
+    const display = document.getElementById(`${camelSection}Display`);
+    const editor = document.getElementById(`${camelSection}Editor`);
     
-    editor.classList.add('hidden');
-    display.classList.remove('hidden');
+    if (display && editor) {
+        editor.classList.add('hidden');
+        display.classList.remove('hidden');
+    }
 }
 
 function saveJsonEdit(section) {
-    const textarea = document.getElementById(`${section}Json`);
-    const display = document.getElementById(`${section}Display`);
-    const editor = document.getElementById(`${section}Editor`);
+    const camelSection = toCamelCase(section);
+    const textarea = document.getElementById(`${camelSection}Json`);
+    const display = document.getElementById(`${camelSection}Display`);
+    const editor = document.getElementById(`${camelSection}Editor`);
+    
+    if (!textarea || !display || !editor) {
+        console.error('Required elements not found for section:', section);
+        return;
+    }
     
     try {
         const data = JSON.parse(textarea.value);
-        display.querySelector('pre').textContent = JSON.stringify(data, null, 2);
+        const preElement = display.querySelector('pre');
+        if (preElement) {
+            preElement.textContent = JSON.stringify(data, null, 2);
+        }
         
         editor.classList.add('hidden');
         display.classList.remove('hidden');
         
-        // Store the data for form submission
-        document.getElementById(`${section}Data`).value = textarea.value;
+        // The textarea already has the correct name attribute for form submission
+        // No need to update hidden inputs since we're using the textarea directly
     } catch (e) {
         alert('Invalid JSON: ' + e.message);
     }

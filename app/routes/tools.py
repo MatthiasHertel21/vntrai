@@ -66,6 +66,9 @@ def list_tools():
                              status_filter=status_filter)
         
     except Exception as e:
+        print(f"ERROR in list_tools: {str(e)}")
+        import traceback
+        traceback.print_exc()
         flash(f'Fehler beim Laden der Tools: {str(e)}', 'error')
         return render_template('tools/list.html', tools=[], tools_by_integration={})
 

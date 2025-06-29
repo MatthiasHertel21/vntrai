@@ -15,7 +15,15 @@ class DataManager:
     
     def __init__(self, data_type: str):
         self.data_type = data_type  # 'integrations' or 'tools'
-        self.data_dir = Path(__file__).parent.parent.parent / "data" / data_type
+        
+        # Try to use Flask app config if available, otherwise use relative path
+        try:
+            from flask import current_app
+            self.data_dir = Path(current_app.config.get('DATA_DIR', '/app/data')) / data_type
+        except (ImportError, RuntimeError):
+            # Fallback for when not in Flask app context
+            self.data_dir = Path(__file__).parent.parent.parent / "data" / data_type
+            
         self.data_dir.mkdir(parents=True, exist_ok=True)
     
     def get_all_ids(self) -> List[str]:

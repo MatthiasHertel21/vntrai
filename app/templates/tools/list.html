@@ -22,61 +22,62 @@
 
 {% block context_area %}
 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-
-        <!-- Filter und Suche -->
-            <form method="GET" class="flex flex-wrap gap-4">
-                <div class="flex-1 min-w-64">
-                    <input type="text" name="search" value="{{ search_query or '' }}" 
-                           placeholder="Tools durchsuchen..." 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md">
-                </div>
-                <div class="min-w-48">
-                    <select name="integration" class="w-full px-3 py-2 border border-gray-300 rounded-md">
-                        <option value="">Alle Integrations</option>
-                        {% for integration in integrations %}
-                        <option value="{{ integration.name }}" 
-                                {% if integration_filter == integration.name %}selected{% endif %}>
-                            {{ integration.name }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="min-w-36">
-                    <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-md">
-                        <option value="">Alle Status</option>
-                        <option value="connected" {% if status_filter == 'connected' %}selected{% endif %}>Connected</option>
-                        <option value="not_connected" {% if status_filter == 'not_connected' %}selected{% endif %}>Not Connected</option>
-                        <option value="error" {% if status_filter == 'error' %}selected{% endif %}>Error</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn btn-outline">
-                    <i class="bi bi-search"></i>
-                </button>
-                <a href="{{ url_for('tools.list_tools') }}" 
-                   class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-md">
-                    <i class="bi bi-x-lg"></i>
-                </a>
-            </form>
+    <!-- Filter und Suche -->
+    <form method="GET" class="flex flex-wrap gap-4">
+        <div class="flex-1 min-w-64">
+            <input type="text" name="search" value="{{ search_query or '' }}" 
+                   placeholder="Tools durchsuchen..." 
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md">
         </div>
+        <div class="min-w-48">
+            <select name="integration" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                <option value="">Alle Integrations</option>
+                {% for integration in integrations %}
+                <option value="{{ integration.name }}" 
+                        {% if integration_filter == integration.name %}selected{% endif %}>
+                    {{ integration.name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="min-w-36">
+            <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                <option value="">Alle Status</option>
+                <option value="connected" {% if status_filter == 'connected' %}selected{% endif %}>Connected</option>
+                <option value="not_connected" {% if status_filter == 'not_connected' %}selected{% endif %}>Not Connected</option>
+                <option value="error" {% if status_filter == 'error' %}selected{% endif %}>Error</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-outline">
+            <i class="bi bi-search"></i>
+        </button>
+        <a href="{{ url_for('tools.list_tools') }}" 
+           class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-md">
+            <i class="bi bi-x-lg"></i>
+        </a>
+    </form>
+</div>
+{% endblock %}
 
-        <!-- Tools-Liste -->
-        {% if tools_by_integration %}
-            {% for integration_name, integration_tools in tools_by_integration.items() %}
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-                <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <h2 class="text-lg font-semibold text-gray-900">{{ integration_name }}</h2>
-                            <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
-                                {{ integration_tools|length }} Tool{{ 's' if integration_tools|length != 1 else '' }}
-                            </span>
-                        </div>
-                        <a href="{{ url_for('tools.create_tool', integration=integration_name) }}" 
-                           class="text-blue-600 hover:text-blue-800 text-sm">
-                            <i class="bi bi-plus"></i> Tool hinzufügen
-                        </a>
+{% block content %}
+<!-- Tools-Liste -->
+{% if tools_by_integration %}
+    {% for integration_name, integration_tools in tools_by_integration.items() %}
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+            <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <h2 class="text-lg font-semibold text-gray-900">{{ integration_name }}</h2>
+                        <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+                            {{ integration_tools|length }} Tool{{ 's' if integration_tools|length != 1 else '' }}
+                        </span>
                     </div>
+                    <a href="{{ url_for('tools.create_tool', integration=integration_name) }}" 
+                       class="text-blue-600 hover:text-blue-800 text-sm">
+                        <i class="bi bi-plus"></i> Tool hinzufügen
+                    </a>
                 </div>
+            </div>
                 
                 <div class="divide-y divide-gray-200">
                     {% for tool in integration_tools %}
@@ -171,8 +172,12 @@
                     {% endfor %}
                 </div>
             </div>
-            {% endfor %}
+        {% endfor %}
         {% else %}
+            <div class="bg-red-100 p-4 rounded mb-4">
+                <p>❌ tools_by_integration is falsy - showing empty message</p>
+                <p>Value: {{ tools_by_integration }}</p>
+            </div>
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
                 <i class="bi bi-tools text-4xl text-gray-400 mb-4"></i>
                 <h3 class="text-lg font-semibold text-gray-900 mb-2">Keine Tools gefunden</h3>
