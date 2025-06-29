@@ -1,0 +1,346 @@
+{% extends "base.html" %}
+
+{% block title %}Test Overview{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">
+                <i class="bi bi-bug"></i>
+                Test System
+            </h1>
+            <p class="text-gray-600">Backend route testing and system health monitoring</p>
+        </div>
+        <div class="page-toolbar">
+            <button onclick="runHealthCheck()" class="btn btn-outline">
+                <i class="bi bi-heart-pulse"></i>
+                Health Check
+            </button>
+            <button onclick="runAllTests()" class="btn btn-primary">
+                <i class="bi bi-play-fill"></i>
+                Run All Tests
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block context_area %}
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+    <!-- Test Statistics -->
+    <div class="grid grid-cols-3 gap-4 mb-6">
+        <div class="text-center">
+            <div class="text-2xl font-bold text-blue-600">{{ stats.total_modules or 0 }}</div>
+            <div class="text-sm text-gray-500">Test Modules</div>
+        </div>
+        <div class="text-center">
+            <div class="text-2xl font-bold text-green-600">{{ stats.total_routes or 0 }}</div>
+            <div class="text-sm text-gray-500">Test Routes</div>
+        </div>
+        <div class="text-center">
+            <div class="text-2xl font-bold text-gray-600">{{ stats.last_run or 'Never' }}</div>
+            <div class="text-sm text-gray-500">Last Run</div>
+        </div>
+    </div>
+    
+    <!-- Health Status -->
+    <div id="health-status" class="bg-gray-50 p-4 rounded-lg">
+        <h3 class="font-semibold text-gray-900 mb-2">System Health</h3>
+        <div class="text-gray-600">Click "Health Check" to run system diagnostics</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Test Modules -->
+    {% for module_name, module_info in test_modules.items() %}
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-lg font-semibold text-gray-900">{{ module_info.name }}</h2>
+                    <p class="text-sm text-gray-600 mt-1">{{ module_info.description }}</p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        <i class="bi bi-file-code"></i>
+                        {{ module_info.file }}
+                    </p>
+                </div>
+                <div class="flex gap-2">
+                    <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+                        {{ module_info.routes|length }} routes
+                    </span>
+                    <a href="{{ url_for('test.test_module', module_name=module_name) }}" 
+                       class="btn btn-outline btn-sm">
+                        <i class="bi bi-arrow-right"></i>
+                        Test Module
+                    </a>
+                    {% if module_name == 'implementation_modules' %}
+                    <a href="{{ url_for('test.implementation_modules') }}" 
+                       class="btn btn-primary btn-sm">
+                        <i class="bi bi-gear"></i>
+                        Module Overview
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for route in module_info.routes %}
+                <div class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="badge-method-{{ route.method.lower() }}">{{ route.method }}</span>
+                        <code class="text-sm text-gray-600">{{ route.path }}</code>
+                    </div>
+                    <h4 class="font-medium text-gray-900 mb-1">{{ route.function }}</h4>
+                    <p class="text-sm text-gray-600 mb-3">{{ route.description }}</p>
+                    <button onclick="testRoute('{{ module_name }}', '{{ route.function }}')" 
+                            class="btn btn-outline btn-sm w-full test-route-btn"
+                            data-module="{{ module_name }}" 
+                            data-function="{{ route.function }}">
+                        <i class="bi bi-play"></i>
+                        Test Route
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    
+    {% if not test_modules %}
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+        <i class="bi bi-exclamation-triangle text-4xl text-gray-400 mb-4"></i>
+        <h3 class="text-lg font-semibold text-gray-900 mb-2">No Test Modules Found</h3>
+        <p class="text-gray-600">Test modules configuration is missing or invalid.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Test Results Modal -->
+<div id="testResultModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+            <div class="flex items-center justify-between p-6 border-b border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-900">Test Results</h3>
+                <button onclick="closeTestResultModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div id="testResultContent" class="p-6">
+                <!-- Test results will be inserted here -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.badge-method-get { 
+    background: #10b981; 
+    color: white; 
+    padding: 2px 8px; 
+    border-radius: 4px; 
+    font-size: 0.75rem; 
+    font-weight: 600; 
+    text-transform: uppercase;
+}
+.badge-method-post { 
+    background: #f59e0b; 
+    color: white; 
+    padding: 2px 8px; 
+    border-radius: 4px; 
+    font-size: 0.75rem; 
+    font-weight: 600; 
+    text-transform: uppercase;
+}
+.badge-method-put { 
+    background: #3b82f6; 
+    color: white; 
+    padding: 2px 8px; 
+    border-radius: 4px; 
+    font-size: 0.75rem; 
+    font-weight: 600; 
+    text-transform: uppercase;
+}
+.badge-method-delete { 
+    background: #ef4444; 
+    color: white; 
+    padding: 2px 8px; 
+    border-radius: 4px; 
+    font-size: 0.75rem; 
+    font-weight: 600; 
+    text-transform: uppercase;
+}
+.btn-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Test System JavaScript
+async function testRoute(moduleName, functionName) {
+    const button = document.querySelector(`[data-module="${moduleName}"][data-function="${functionName}"]`);
+    const originalText = button.innerHTML;
+    
+    // Show loading state
+    button.innerHTML = '<i class="bi bi-arrow-repeat spin"></i> Testing...';
+    button.disabled = true;
+    
+    try {
+        const response = await fetch(`/test/run/${moduleName}/${functionName}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': window.csrfToken
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            button.innerHTML = '<i class="bi bi-check"></i> Passed';
+            button.className = button.className.replace('btn-outline', 'btn-success');
+            showTestResult(result.result);
+        } else {
+            button.innerHTML = '<i class="bi bi-x"></i> Failed';
+            button.className = button.className.replace('btn-outline', 'btn-danger');
+            showTestError(result.error);
+        }
+        
+    } catch (error) {
+        button.innerHTML = '<i class="bi bi-x"></i> Error';
+        button.className = button.className.replace('btn-outline', 'btn-danger');
+        showTestError(error.message);
+    }
+    
+    // Reset button after 3 seconds
+    setTimeout(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
+        button.className = button.className.replace('btn-success', 'btn-outline').replace('btn-danger', 'btn-outline');
+    }, 3000);
+}
+
+async function runHealthCheck() {
+    const healthStatus = document.getElementById('health-status');
+    healthStatus.innerHTML = '<div class="text-center"><i class="bi bi-arrow-repeat spin"></i> Running health check...</div>';
+    
+    try {
+        const response = await fetch('/test/health');
+        const health = await response.json();
+        
+        let statusColor = health.status === 'healthy' ? 'green' : 'red';
+        let statusIcon = health.status === 'healthy' ? 'bi-check-circle' : 'bi-x-circle';
+        
+        let html = `
+            <div class="flex items-center gap-2 mb-3">
+                <i class="bi ${statusIcon} text-${statusColor}-600"></i>
+                <h3 class="font-semibold text-gray-900">System Health: ${health.status}</h3>
+                <span class="text-sm text-gray-500">${health.timestamp}</span>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+        `;
+        
+        for (const [checkName, checkResult] of Object.entries(health.checks)) {
+            let checkColor = checkResult.status === 'ok' ? 'green' : 'red';
+            let checkIcon = checkResult.status === 'ok' ? 'bi-check' : 'bi-x';
+            
+            html += `
+                <div class="flex items-center gap-2">
+                    <i class="bi ${checkIcon} text-${checkColor}-600"></i>
+                    <span class="text-sm">${checkName}: ${checkResult.message}</span>
+                </div>
+            `;
+        }
+        
+        html += '</div>';
+        healthStatus.innerHTML = html;
+        
+    } catch (error) {
+        healthStatus.innerHTML = `
+            <div class="flex items-center gap-2">
+                <i class="bi bi-x-circle text-red-600"></i>
+                <span class="text-red-600">Health check failed: ${error.message}</span>
+            </div>
+        `;
+    }
+}
+
+function runAllTests() {
+    // Trigger all test route buttons
+    const testButtons = document.querySelectorAll('.test-route-btn');
+    testButtons.forEach((button, index) => {
+        setTimeout(() => {
+            button.click();
+        }, index * 500); // Stagger tests by 500ms
+    });
+}
+
+function showTestResult(result) {
+    const content = document.getElementById('testResultContent');
+    content.innerHTML = `
+        <div class="space-y-4">
+            <div class="flex items-center gap-2 text-green-600">
+                <i class="bi bi-check-circle"></i>
+                <span class="font-semibold">Test Passed</span>
+            </div>
+            
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h4 class="font-medium mb-2">Route Information</h4>
+                <div class="space-y-2 text-sm">
+                    <div><strong>Method:</strong> ${result.method}</div>
+                    <div><strong>Path:</strong> <code>${result.route}</code></div>
+                    <div><strong>Function:</strong> ${result.function}</div>
+                    <div><strong>Response Time:</strong> ${result.response_time}</div>
+                    <div><strong>Timestamp:</strong> ${result.timestamp}</div>
+                </div>
+            </div>
+            
+            <div class="bg-green-50 p-4 rounded-lg">
+                <div class="text-green-800">${result.message}</div>
+            </div>
+        </div>
+    `;
+    document.getElementById('testResultModal').classList.remove('hidden');
+}
+
+function showTestError(error) {
+    const content = document.getElementById('testResultContent');
+    content.innerHTML = `
+        <div class="space-y-4">
+            <div class="flex items-center gap-2 text-red-600">
+                <i class="bi bi-x-circle"></i>
+                <span class="font-semibold">Test Failed</span>
+            </div>
+            
+            <div class="bg-red-50 p-4 rounded-lg">
+                <div class="text-red-800">${error}</div>
+            </div>
+        </div>
+    `;
+    document.getElementById('testResultModal').classList.remove('hidden');
+}
+
+function closeTestResultModal() {
+    document.getElementById('testResultModal').classList.add('hidden');
+}
+
+// CSS classes for buttons
+const style = document.createElement('style');
+style.textContent = `
+    .btn-success { background-color: #10b981 !important; border-color: #10b981 !important; color: white !important; }
+    .btn-danger { background-color: #ef4444 !important; border-color: #ef4444 !important; color: white !important; }
+    .spin { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

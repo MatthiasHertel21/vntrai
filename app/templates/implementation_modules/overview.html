@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}Implementation Modules{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Implementation Modules</h1>
+            <p class="text-gray-600">Verfügbare Module für Tool-Ausführung</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{{ url_for('test.test_overview') }}" 
+               class="btn btn-outline">
+                <i class="bi bi-arrow-left"></i>
+                Zurück zu Tests
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<!-- Module Status -->
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+    <h2 class="text-lg font-semibold mb-4">System Status</h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="text-center p-4 bg-gray-50 rounded-lg">
+            <div class="text-2xl font-bold text-blue-600" id="modules-available-count">-</div>
+            <div class="text-sm text-gray-600">Module verfügbar</div>
+        </div>
+        <div class="text-center p-4 bg-gray-50 rounded-lg">
+            <div class="text-2xl font-bold text-green-600" id="tools-with-modules-count">-</div>
+            <div class="text-sm text-gray-600">Tools mit Modulen</div>
+        </div>
+        <div class="text-center p-4 bg-gray-50 rounded-lg">
+            <div class="text-2xl font-bold text-yellow-600" id="modules-system-status">-</div>
+            <div class="text-sm text-gray-600">System Status</div>
+        </div>
+    </div>
+</div>
+
+<!-- Module Liste -->
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+    <h2 class="text-lg font-semibold mb-4">Verfügbare Implementation Modules</h2>
+    
+    <div id="modules-container">
+        <div class="text-center py-8">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p class="text-gray-500">Lade Module...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Tools-Module-Mapping -->
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h2 class="text-lg font-semibold mb-4">Tool-Module-Zuordnung</h2>
+    
+    <div id="tool-mapping-container">
+        <div class="text-center py-8">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p class="text-gray-500">Lade Tool-Zuordnungen...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+// Module laden
+function loadImplementationModules() {
+    fetch('/tools/implementation-modules')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('modules-container');
+            const countElement = document.getElementById('modules-available-count');
+            const statusElement = document.getElementById('modules-system-status');
+            
+            if (data.success) {
+                countElement.textContent = data.total_count;
+                statusElement.textContent = 'AKTIV';
+                statusElement.className = 'text-2xl font-bold text-green-600';
+                
+                if (data.modules.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center py-8">
+                            <i class="bi bi-info-circle text-4xl text-gray-400 mb-4"></i>
+                            <p class="text-gray-500">Keine Implementation Modules verfügbar</p>
+                        </div>
+                    `;
+                } else {
+                    let modulesHtml = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">';
+                    
+                    data.modules.forEach(module => {
+                        modulesHtml += `
+                            <div class="border border-gray-200 rounded-lg p-4">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h3 class="font-semibold text-gray-900">${module.display_name || module.name}</h3>
+                                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                                        v${module.version || '1.0.0'}
+                                    </span>
+                                </div>
+                                
+                                <p class="text-sm text-gray-600 mb-3">${module.description || 'Keine Beschreibung verfügbar'}</p>
+                                
+                                <div class="space-y-2 text-xs">
+                                    <div><strong>Vendor:</strong> ${module.vendor || 'Unbekannt'}</div>
+                                    <div><strong>Kategorie:</strong> ${module.category || 'Allgemein'}</div>
+                                    ${module.supported_operations ? `<div><strong>Operationen:</strong> ${module.supported_operations.length}</div>` : ''}
+                                    ${module.required_config ? `<div><strong>Config-Parameter:</strong> ${module.required_config.length}</div>` : ''}
+                                </div>
+                                
+                                ${module.supported_operations ? `
+                                    <div class="mt-3 pt-3 border-t border-gray-200">
+                                        <div class="text-xs text-gray-500">Unterstützte Operationen:</div>
+                                        <div class="flex flex-wrap gap-1 mt-1">
+                                            ${module.supported_operations.map(op => `
+                                                <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">${op}</span>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
+                    });
+                    
+                    modulesHtml += '</div>';
+                    container.innerHTML = modulesHtml;
+                }
+            } else {
+                countElement.textContent = '0';
+                statusElement.textContent = 'FEHLER';
+                statusElement.className = 'text-2xl font-bold text-red-600';
+                
+                container.innerHTML = `
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                        <i class="bi bi-exclamation-circle"></i> ${data.message}
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading modules:', error);
+            document.getElementById('modules-container').innerHTML = `
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                    <i class="bi bi-exclamation-circle"></i> Fehler beim Laden der Module
+                </div>
+            `;
+        });
+}
+
+// Tool-Module-Zuordnungen laden
+function loadToolMappings() {
+    fetch('/tools/')
+        .then(response => response.text())
+        .then(html => {
+            // Parse HTML to extract tool data
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            // Get all tools and check their implementation status
+            const toolElements = doc.querySelectorAll('[data-tool-id]');
+            const toolPromises = [];
+            
+            toolElements.forEach(element => {
+                const toolId = element.getAttribute('data-tool-id');
+                if (toolId) {
+                    toolPromises.push(
+                        fetch(`/tools/implementation-status/${toolId}`)
+                            .then(response => response.json())
+                    );
+                }
+            });
+            
+            Promise.all(toolPromises)
+                .then(results => {
+                    const container = document.getElementById('tool-mapping-container');
+                    const toolsWithModulesCount = document.getElementById('tools-with-modules-count');
+                    
+                    let toolsWithModules = 0;
+                    let mappingHtml = '<div class="space-y-3">';
+                    
+                    results.forEach(result => {
+                        if (result.success) {
+                            const hasImpl = result.implementation_status.has_implementation;
+                            if (hasImpl) toolsWithModules++;
+                            
+                            mappingHtml += `
+                                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                    <div class="flex items-center gap-3">
+                                        <div>
+                                            <div class="font-medium">${result.tool_name}</div>
+                                            <div class="text-sm text-gray-500">${result.tool_definition}</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        ${hasImpl ? `
+                                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                                                <i class="bi bi-check-circle"></i> ${result.implementation_status.module_name}
+                                            </span>
+                                        ` : `
+                                            <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
+                                                <i class="bi bi-exclamation-triangle"></i> Kein Modul
+                                            </span>
+                                        `}
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    });
+                    
+                    mappingHtml += '</div>';
+                    container.innerHTML = mappingHtml;
+                    toolsWithModulesCount.textContent = toolsWithModules;
+                })
+                .catch(error => {
+                    console.error('Error loading tool mappings:', error);
+                    document.getElementById('tool-mapping-container').innerHTML = `
+                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                            <i class="bi bi-exclamation-circle"></i> Fehler beim Laden der Tool-Zuordnungen
+                        </div>
+                    `;
+                });
+        });
+}
+
+// Beim Laden der Seite
+document.addEventListener('DOMContentLoaded', function() {
+    loadImplementationModules();
+    loadToolMappings();
+});
+</script>
+{% endblock %}

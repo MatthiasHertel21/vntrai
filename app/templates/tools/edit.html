@@ -11,12 +11,12 @@
         </div>
         <div class="flex gap-2">
             <a href="{{ url_for('tools.view_tool', tool_id=tool.id) }}" 
-               class="btn btn-outline">
+               class="bg-vntr-primary hover:bg-vntr-primary/90 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
                 <i class="bi bi-eye"></i>
                 View
             </a>
             <a href="{{ url_for('tools.list_tools') }}" 
-               class="btn btn-outline">
+               class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
                 <i class="bi bi-arrow-left"></i>
                 Back
             </a>
@@ -25,10 +25,10 @@
 </div>
 {% endblock %}
 
-{% block context_area %}
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
             <!-- Main Form -->
-            <div class="lg:col-span-2">
+            <div class="lg:col-span-2 space-y-6">
                 <form method="POST" class="space-y-6">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <!-- Basic Information -->
@@ -71,6 +71,94 @@
                     </div>
 
                     <!-- Configuration -->
+                    {% if integration and integration.config_params %}
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <h2 class="text-lg font-semibold mb-4">Konfiguration</h2>
+                        <p class="text-sm text-gray-600 mb-4">
+                            Spezifische Konfiguration für dieses Tool (API-Keys, Endpunkte, etc.)
+                        </p>
+                        
+                        <div class="space-y-4">
+                            {% for param in integration.config_params %}
+                            <div>
+                                <label for="config_{{ param.name }}" class="block text-sm font-medium text-gray-700 mb-1">
+                                    {{ param.label or param.name }}
+                                    {% if param.required %}<span class="text-red-500">*</span>{% endif %}
+                                </label>
+                                {% if param.description %}
+                                <p class="text-xs text-gray-500 mb-2">{{ param.description }}</p>
+                                {% endif %}
+                                
+                                {% set config_value = tool.config.get(param.name) %}
+                                
+                                {% if param.type == 'select' %}
+                                    <select id="config_{{ param.name }}" name="config[{{ param.name }}]" 
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            {% if param.required %}required{% endif %}>
+                                        {% if not param.required %}
+                                        <option value="">Nicht gesetzt</option>
+                                        {% endif %}
+                                        {% if param.options %}
+                                            {% for option in param.options %}
+                                            <option value="{{ option.value }}" 
+                                                    {% if config_value == option.value %}selected{% endif %}>
+                                                {{ option.label or option.value }}
+                                            </option>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </select>
+                                {% elif param.type == 'boolean' %}
+                                    <div class="flex items-center">
+                                        <input type="checkbox" id="config_{{ param.name }}" name="config[{{ param.name }}]" 
+                                               value="true" class="mr-2"
+                                               {% if config_value %}checked{% endif %}>
+                                        <label for="config_{{ param.name }}" class="text-sm text-gray-700">
+                                            {{ param.label or param.name }}
+                                        </label>
+                                    </div>
+                                {% elif param.type == 'json' %}
+                                    <textarea id="config_{{ param.name }}" name="config[{{ param.name }}]" rows="6"
+                                              class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                              placeholder='{{ param.default or "{}"|tojson }}' 
+                                              {% if param.required %}required{% endif %}>{{ config_value|tojson(indent=2) if config_value else (param.default|tojson(indent=2) if param.default else '') }}</textarea>
+                                    <button type="button" onclick="toggleJsonEditor('config_{{ param.name }}')" 
+                                            class="mt-1 text-xs text-blue-600 hover:text-blue-800">
+                                        JSON Editor umschalten
+                                    </button>
+                                {% elif param.type == 'file' %}
+                                    <input type="file" id="config_{{ param.name }}" name="config[{{ param.name }}]" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                           {% if param.required %}required{% endif %}>
+                                    {% if config_value %}
+                                    <p class="text-xs text-gray-500 mt-1">Aktuelle Datei: {{ config_value }}</p>
+                                    {% endif %}
+                                {% else %}
+                                    <!-- Default: text input -->
+                                    <input type="text" id="config_{{ param.name }}" name="config[{{ param.name }}]" 
+                                           value="{{ config_value or param.default or '' }}"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                           {% if param.required %}required{% endif %}>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- JSON Fallback/Debug Section -->
+                        <details class="mt-6">
+                            <summary class="cursor-pointer text-sm text-gray-600 hover:text-gray-800">Erweitert: JSON-Editor</summary>
+                            <div class="mt-2">
+                                <label for="config" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Konfiguration (JSON)
+                                </label>
+                                <textarea id="config" name="config" rows="8"
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                          placeholder='{"api_key": "your_api_key", "endpoint": "https://api.example.com"}'>{{ tool.config | tojson(indent=2) if tool.config else '{}' }}</textarea>
+                                <p class="text-xs text-gray-500 mt-1">Gültiges JSON-Format erforderlich</p>
+                            </div>
+                        </details>
+                    </div>
+                    {% else %}
+                    <!-- Fallback: JSON Configuration -->
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                         <h2 class="text-lg font-semibold mb-4">Konfiguration</h2>
                         <p class="text-sm text-gray-600 mb-4">
@@ -87,8 +175,126 @@
                             <p class="text-xs text-gray-500 mt-1">Gültiges JSON-Format erforderlich</p>
                         </div>
                     </div>
+                    {% endif %}
 
-                    <!-- Prefilled Inputs -->
+                    <!-- Input Parameters -->
+                    {% if integration and integration.input_params %}
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <h2 class="text-lg font-semibold mb-4">Eingabe-Parameter</h2>
+                        <p class="text-sm text-gray-600 mb-4">
+                            Parameter für die Tool-Ausführung (vorbefüllt oder gesperrt)
+                        </p>
+                        
+                        <div class="space-y-4">
+                            {% for param in integration.input_params %}
+                            {% set is_locked = param.name in (tool.locked_inputs or []) %}
+                            {% set is_prefilled = param.name in (tool.prefilled_inputs or {}) %}
+                            {% set input_value = tool.prefilled_inputs.get(param.name) if tool.prefilled_inputs else None %}
+                            
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <label for="input_{{ param.name }}" class="block text-sm font-medium text-gray-700">
+                                        {{ param.label or param.name }}
+                                        {% if param.required %}<span class="text-red-500">*</span>{% endif %}
+                                    </label>
+                                    
+                                    <!-- Lock/Unlock Toggle -->
+                                    <label class="inline-flex items-center">
+                                        <input type="checkbox" name="locked_inputs[]" value="{{ param.name }}" 
+                                               class="form-checkbox h-4 w-4 text-red-600" 
+                                               {% if is_locked %}checked{% endif %}>
+                                        <span class="ml-1 text-xs text-red-600">Sperren</span>
+                                    </label>
+                                </div>
+                                
+                                {% if param.description %}
+                                <p class="text-xs text-gray-500 mb-2">{{ param.description }}</p>
+                                {% endif %}
+                                
+                                {% if param.type == 'select' %}
+                                    <select id="input_{{ param.name }}" name="prefilled_inputs[{{ param.name }}]" 
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            {% if is_locked %}readonly{% endif %}>
+                                        <option value="">Nicht vorbefüllt</option>
+                                        {% if param.options %}
+                                            {% for option in param.options %}
+                                            <option value="{{ option.value }}" 
+                                                    {% if input_value == option.value %}selected{% endif %}>
+                                                {{ option.label or option.value }}
+                                            </option>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </select>
+                                {% elif param.type == 'boolean' %}
+                                    <div class="flex items-center">
+                                        <input type="checkbox" id="input_{{ param.name }}" name="prefilled_inputs[{{ param.name }}]" 
+                                               value="true" class="mr-2"
+                                               {% if input_value %}checked{% endif %}
+                                               {% if is_locked %}disabled{% endif %}>
+                                        <label for="input_{{ param.name }}" class="text-sm text-gray-700">
+                                            Vorbefüllen mit "true"
+                                        </label>
+                                    </div>
+                                {% elif param.type == 'json' %}
+                                    <textarea id="input_{{ param.name }}" name="prefilled_inputs[{{ param.name }}]" rows="4"
+                                              class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                              placeholder='{{ param.default or ""|tojson }}' 
+                                              {% if is_locked %}readonly{% endif %}>{{ input_value|tojson(indent=2) if input_value else (param.default|tojson(indent=2) if param.default else '') }}</textarea>
+                                    <button type="button" onclick="toggleJsonEditor('input_{{ param.name }}')" 
+                                            class="mt-1 text-xs text-blue-600 hover:text-blue-800">
+                                        JSON Editor umschalten
+                                    </button>
+                                {% else %}
+                                    <!-- Default: text input -->
+                                    <input type="text" id="input_{{ param.name }}" name="prefilled_inputs[{{ param.name }}]" 
+                                           value="{{ input_value or param.default or '' }}"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                           placeholder="Vorbefüllen mit Wert..."
+                                           {% if is_locked %}readonly{% endif %}>
+                                {% endif %}
+                                
+                                <!-- Status Indicators -->
+                                <div class="flex gap-2 mt-1">
+                                    {% if is_locked %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                        <i class="bi bi-lock-fill mr-1"></i>Gesperrt
+                                    </span>
+                                    {% endif %}
+                                    {% if is_prefilled %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                        <i class="bi bi-check-circle-fill mr-1"></i>Vorbefüllt
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <!-- JSON Fallback/Debug Section -->
+                        <details class="mt-6">
+                            <summary class="cursor-pointer text-sm text-gray-600 hover:text-gray-800">Erweitert: JSON-Editor</summary>
+                            <div class="mt-2 space-y-4">
+                                <div>
+                                    <label for="prefilled_inputs" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Vorgefüllte Parameter (JSON)
+                                    </label>
+                                    <textarea id="prefilled_inputs" name="prefilled_inputs" rows="6"
+                                              class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                              placeholder='{"model": "gpt-4", "temperature": 0.1}'>{{ tool.prefilled_inputs | tojson(indent=2) if tool.prefilled_inputs else '{}' }}</textarea>
+                                </div>
+                                <div>
+                                    <label for="locked_inputs" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Gesperrte Parameter (JSON Array)
+                                    </label>
+                                    <textarea id="locked_inputs" name="locked_inputs" rows="4"
+                                              class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                              placeholder='["temperature", "model"]'>{{ tool.locked_inputs | tojson(indent=2) if tool.locked_inputs else '[]' }}</textarea>
+                                </div>
+                            </div>
+                        </details>
+                    </div>
+                    {% else %}
+                    <!-- Fallback: JSON Input Parameters -->
                     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                         <h2 class="text-lg font-semibold mb-4">Vorgefüllte Parameter</h2>
                         <p class="text-sm text-gray-600 mb-4">
@@ -121,15 +327,16 @@
                                       placeholder='["temperature", "model"]'>{{ tool.locked_inputs | tojson(indent=2) if tool.locked_inputs else '[]' }}</textarea>
                         </div>
                     </div>
+                    {% endif %}
 
                     <!-- Submit Button -->
                     <div class="flex justify-end gap-2">
                         <a href="{{ url_for('tools.view_tool', tool_id=tool.id) }}" 
-                           class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-md">
+                           class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-medium transition-colors">
                             Abbrechen
                         </a>
                         <button type="submit" 
-                                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
+                                class="bg-vntr-primary hover:bg-vntr-primary/90 text-white px-6 py-2 rounded-lg font-medium transition-colors">
                             Änderungen speichern
                         </button>
                     </div>
@@ -137,9 +344,9 @@
             </div>
 
             <!-- Tool Info & Danger Zone -->
-            <div>
+            <div class="space-y-6">
                 <!-- Current Status -->
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <h2 class="text-lg font-semibold mb-4">Status</h2>
                     <div class="space-y-3">
                         <div>
@@ -173,17 +380,17 @@
                 </div>
 
                 <!-- Quick Actions -->
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <h2 class="text-lg font-semibold mb-4">Aktionen</h2>
                     <div class="space-y-3">
                         <button onclick="testTool('{{ tool.id }}')" 
-                                class="w-full bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-md text-sm">
+                                class="w-full bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                             <i class="bi bi-play"></i> Tool testen
                         </button>
                         <form method="POST" action="{{ url_for('tools.clone_tool', tool_id=tool.id) }}">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             <button type="submit" 
-                                    class="w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm">
+                                    class="w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                                 <i class="bi bi-files"></i> Tool klonen
                             </button>
                         </form>
@@ -202,7 +409,7 @@
                               onsubmit="return confirm('Tool &quot;{{ tool.name }}&quot; wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             <button type="submit" 
-                                    class="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm">
+                                    class="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                                 <i class="bi bi-trash"></i> Tool löschen
                             </button>
                         </form>
@@ -249,18 +456,146 @@ function validateJSON(textareaId) {
     }
 }
 
-// Event Listeners
-document.getElementById('config').addEventListener('input', () => validateJSON('config'));
-document.getElementById('prefilled_inputs').addEventListener('input', () => validateJSON('prefilled_inputs'));
-document.getElementById('locked_inputs').addEventListener('input', () => validateJSON('locked_inputs'));
-
-// Form Validation
-document.querySelector('form').addEventListener('submit', function(e) {
-    const isConfigValid = validateJSON('config');
-    const isPrefilledValid = validateJSON('prefilled_inputs');
-    const isLockedValid = validateJSON('locked_inputs');
+// JSON Editor Toggle
+function toggleJsonEditor(elementId) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
     
-    if (!isConfigValid || !isPrefilledValid || !isLockedValid) {
+    // Toggle between single line and multi-line
+    if (element.rows && element.rows > 1) {
+        element.rows = 1;
+    } else {
+        element.rows = 6;
+    }
+}
+
+// Dynamic Form Validation
+function validateDynamicForm() {
+    let isValid = true;
+    
+    // Validate all JSON textareas
+    const jsonTextareas = document.querySelectorAll('textarea[id^="config_"], textarea[id^="input_"]');
+    jsonTextareas.forEach(textarea => {
+        if (textarea.name.includes('json') || textarea.className.includes('font-mono')) {
+            if (!validateJSON(textarea.id)) {
+                isValid = false;
+            }
+        }
+    });
+    
+    // Validate main JSON areas (fallback)
+    const mainJsonAreas = ['config', 'prefilled_inputs', 'locked_inputs'];
+    mainJsonAreas.forEach(id => {
+        const element = document.getElementById(id);
+        if (element && !validateJSON(id)) {
+            isValid = false;
+        }
+    });
+    
+    return isValid;
+}
+
+// Sync individual fields to JSON (for backward compatibility)
+function syncFieldsToJson() {
+    // Sync config fields
+    const configJson = {};
+    document.querySelectorAll('[name^="config["]').forEach(input => {
+        const match = input.name.match(/config\[([^\]]+)\]/);
+        if (match) {
+            const fieldName = match[1];
+            let value = input.value;
+            
+            if (input.type === 'checkbox') {
+                value = input.checked;
+            } else if (input.classList.contains('font-mono')) {
+                try {
+                    value = JSON.parse(value || '{}');
+                } catch (e) {
+                    // Keep as string if not valid JSON
+                }
+            }
+            
+            if (value !== '' && value !== null && value !== undefined) {
+                configJson[fieldName] = value;
+            }
+        }
+    });
+    
+    // Update main config textarea
+    const configTextarea = document.getElementById('config');
+    if (configTextarea) {
+        configTextarea.value = JSON.stringify(configJson, null, 2);
+    }
+    
+    // Sync prefilled inputs
+    const prefilledJson = {};
+    document.querySelectorAll('[name^="prefilled_inputs["]').forEach(input => {
+        const match = input.name.match(/prefilled_inputs\[([^\]]+)\]/);
+        if (match) {
+            const fieldName = match[1];
+            let value = input.value;
+            
+            if (input.type === 'checkbox') {
+                value = input.checked;
+            } else if (input.classList.contains('font-mono')) {
+                try {
+                    value = JSON.parse(value || '{}');
+                } catch (e) {
+                    // Keep as string if not valid JSON
+                }
+            }
+            
+            if (value !== '' && value !== null && value !== undefined) {
+                prefilledJson[fieldName] = value;
+            }
+        }
+    });
+    
+    // Update main prefilled inputs textarea
+    const prefilledTextarea = document.getElementById('prefilled_inputs');
+    if (prefilledTextarea) {
+        prefilledTextarea.value = JSON.stringify(prefilledJson, null, 2);
+    }
+    
+    // Sync locked inputs
+    const lockedInputs = [];
+    document.querySelectorAll('[name="locked_inputs[]"]:checked').forEach(checkbox => {
+        lockedInputs.push(checkbox.value);
+    });
+    
+    // Update main locked inputs textarea
+    const lockedTextarea = document.getElementById('locked_inputs');
+    if (lockedTextarea) {
+        lockedTextarea.value = JSON.stringify(lockedInputs, null, 2);
+    }
+}
+
+// Event Listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Add validation to all JSON fields
+    const jsonFields = document.querySelectorAll('textarea[class*="font-mono"]');
+    jsonFields.forEach(field => {
+        field.addEventListener('input', () => validateJSON(field.id));
+    });
+    
+    // Add change listeners to dynamic form fields
+    const dynamicFields = document.querySelectorAll('[name^="config["], [name^="prefilled_inputs["], [name="locked_inputs[]"]');
+    dynamicFields.forEach(field => {
+        field.addEventListener('change', syncFieldsToJson);
+        field.addEventListener('input', syncFieldsToJson);
+    });
+    
+    // Initial validation
+    validateDynamicForm();
+    syncFieldsToJson();
+});
+
+// Form Validation on Submit
+document.querySelector('form').addEventListener('submit', function(e) {
+    // Sync fields before validation
+    syncFieldsToJson();
+    
+    if (!validateDynamicForm()) {
         e.preventDefault();
         alert('Bitte korrigiere die JSON-Syntax-Fehler vor dem Speichern.');
     }
@@ -300,13 +635,6 @@ function testTool(toolId) {
 function closeTestModal() {
     document.getElementById('testModal').classList.add('hidden');
 }
-
-// Initialize validation on page load
-document.addEventListener('DOMContentLoaded', function() {
-    validateJSON('config');
-    validateJSON('prefilled_inputs');
-    validateJSON('locked_inputs');
-});
 </script>
 </div>
 {% endblock %}

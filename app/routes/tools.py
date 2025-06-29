@@ -1,6 +1,7 @@
 """
 Tools Management Routes für vntrai
 Vollständige CRUD-Funktionalität für Tool-Instanzen basierend auf Integrations
+Mit Implementation Module Integration für echte Tool-Ausführung
 """
 
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
@@ -8,10 +9,19 @@ from werkzeug.utils import secure_filename
 import os
 import json
 import uuid
+import asyncio
 from datetime import datetime
 
 from app.utils.data_manager import ToolsManager, IntegrationsManager
 from app.utils.validation import ToolValidator
+
+# Implementation Module Integration
+try:
+    from app.implementation_modules import implementation_manager
+    IMPLEMENTATION_MODULES_AVAILABLE = True
+except ImportError:
+    IMPLEMENTATION_MODULES_AVAILABLE = False
+    implementation_manager = None
 
 # Blueprint erstellen
 tools_bp = Blueprint('tools', __name__, url_prefix='/tools')
@@ -100,20 +110,73 @@ def create_tool():
     if request.method == 'GET':
         integrations = integrations_manager.get_all()
         selected_integration = request.args.get('integration')
+        
+        # Integration-Details für ausgewählte Integration laden
+        integration = None
+        if selected_integration:
+            integration = next(
+                (i for i in integrations if i['name'] == selected_integration), 
+                None
+            )
+        
         return render_template('tools/create.html', 
                              integrations=integrations,
-                             selected_integration=selected_integration)
+                             selected_integration=selected_integration,
+                             integration=integration)
     
     try:
         # Form-Daten verarbeiten
+        
+        # Parse config fields (dynamic or JSON)
+        config_data = {}
+        if 'config' in request.form:
+            try:
+                config_data = json.loads(request.form.get('config', '{}'))
+            except json.JSONDecodeError:
+                pass
+        
+        # Parse dynamic config fields
+        for key in request.form.keys():
+            if key.startswith('config[') and key.endswith(']'):
+                field_name = key[7:-1]  # Remove 'config[' and ']'
+                value = request.form.get(key)
+                if value:
+                    config_data[field_name] = value
+        
+        # Parse prefilled inputs (dynamic or JSON)
+        prefilled_data = {}
+        if 'prefilled_inputs' in request.form:
+            try:
+                prefilled_data = json.loads(request.form.get('prefilled_inputs', '{}'))
+            except json.JSONDecodeError:
+                pass
+        
+        # Parse dynamic prefilled input fields
+        for key in request.form.keys():
+            if key.startswith('prefilled_inputs[') and key.endswith(']'):
+                field_name = key[17:-1]  # Remove 'prefilled_inputs[' and ']'
+                value = request.form.get(key)
+                if value:
+                    prefilled_data[field_name] = value
+        
+        # Parse locked inputs (checkboxes or JSON)
+        locked_inputs = []
+        if 'locked_inputs[]' in request.form:
+            locked_inputs = request.form.getlist('locked_inputs[]')
+        elif 'locked_inputs' in request.form:
+            try:
+                locked_inputs = json.loads(request.form.get('locked_inputs', '[]'))
+            except json.JSONDecodeError:
+                locked_inputs = []
+        
         data = {
             'id': str(uuid.uuid4()),
             'name': request.form.get('name', '').strip(),
             'description': request.form.get('description', '').strip(),
             'tool_definition': request.form.get('tool_definition', '').strip(),
-            'config': json.loads(request.form.get('config', '{}')),
-            'prefilled_inputs': json.loads(request.form.get('prefilled_inputs', '{}')),
-            'locked_inputs': json.loads(request.form.get('locked_inputs', '[]')),
+            'config': config_data,
+            'prefilled_inputs': prefilled_data,
+            'locked_inputs': locked_inputs,
             'created_at': datetime.utcnow().isoformat() + 'Z',
             'updated_at': datetime.utcnow().isoformat() + 'Z',
             'status': 'not_connected',
@@ -126,7 +189,14 @@ def create_tool():
         if errors:
             flash(f'Validierungsfehler: {"; ".join(errors)}', 'error')
             integrations = integrations_manager.get_all()
-            return render_template('tools/create.html', tool=data, integrations=integrations)
+            integration = next(
+                (i for i in integrations if i['name'] == data.get('tool_definition')), 
+                None
+            )
+            return render_template('tools/create.html', 
+                                 tool=data, 
+                                 integrations=integrations,
+                                 integration=integration)
         
         # Tool speichern
         success = tools_manager.create(data)
@@ -136,7 +206,14 @@ def create_tool():
         else:
             flash('Fehler beim Speichern des Tools', 'error')
             integrations = integrations_manager.get_all()
-            return render_template('tools/create.html', tool=data, integrations=integrations)
+            integration = next(
+                (i for i in integrations if i['name'] == data.get('tool_definition')), 
+                None
+            )
+            return render_template('tools/create.html', 
+                                 tool=data, 
+                                 integrations=integrations,
+                                 integration=integration)
             
     except json.JSONDecodeError as e:
         flash(f'JSON-Fehler: {str(e)}', 'error')
@@ -158,7 +235,17 @@ def edit_tool(tool_id):
                 return redirect(url_for('tools.list_tools'))
             
             integrations = integrations_manager.get_all()
-            return render_template('tools/edit.html', tool=tool, integrations=integrations)
+            
+            # Integration-Details für aktuelles Tool laden
+            integration = next(
+                (i for i in integrations if i['name'] == tool.get('tool_definition')), 
+                None
+            )
+            
+            return render_template('tools/edit.html', 
+                                 tool=tool, 
+                                 integrations=integrations,
+                                 integration=integration)
         except Exception as e:
             flash(f'Fehler beim Laden des Tools: {str(e)}', 'error')
             return redirect(url_for('tools.list_tools'))
@@ -172,13 +259,56 @@ def edit_tool(tool_id):
         
         # Form-Daten verarbeiten
         data = existing.copy()
+        
+        # Parse config fields (dynamic or JSON)
+        config_data = {}
+        if 'config' in request.form:
+            try:
+                config_data = json.loads(request.form.get('config', '{}'))
+            except json.JSONDecodeError:
+                pass
+        
+        # Parse dynamic config fields
+        for key in request.form.keys():
+            if key.startswith('config[') and key.endswith(']'):
+                field_name = key[7:-1]  # Remove 'config[' and ']'
+                value = request.form.get(key)
+                if value:
+                    config_data[field_name] = value
+        
+        # Parse prefilled inputs (dynamic or JSON)
+        prefilled_data = {}
+        if 'prefilled_inputs' in request.form:
+            try:
+                prefilled_data = json.loads(request.form.get('prefilled_inputs', '{}'))
+            except json.JSONDecodeError:
+                pass
+        
+        # Parse dynamic prefilled input fields
+        for key in request.form.keys():
+            if key.startswith('prefilled_inputs[') and key.endswith(']'):
+                field_name = key[17:-1]  # Remove 'prefilled_inputs[' and ']'
+                value = request.form.get(key)
+                if value:
+                    prefilled_data[field_name] = value
+        
+        # Parse locked inputs (checkboxes or JSON)
+        locked_inputs = []
+        if 'locked_inputs[]' in request.form:
+            locked_inputs = request.form.getlist('locked_inputs[]')
+        elif 'locked_inputs' in request.form:
+            try:
+                locked_inputs = json.loads(request.form.get('locked_inputs', '[]'))
+            except json.JSONDecodeError:
+                locked_inputs = []
+        
         data.update({
             'name': request.form.get('name', '').strip(),
             'description': request.form.get('description', '').strip(),
             'tool_definition': request.form.get('tool_definition', '').strip(),
-            'config': json.loads(request.form.get('config', '{}')),
-            'prefilled_inputs': json.loads(request.form.get('prefilled_inputs', '{}')),
-            'locked_inputs': json.loads(request.form.get('locked_inputs', '[]')),
+            'config': config_data,
+            'prefilled_inputs': prefilled_data,
+            'locked_inputs': locked_inputs,
             'updated_at': datetime.utcnow().isoformat() + 'Z'
         })
         
@@ -187,7 +317,14 @@ def edit_tool(tool_id):
         if errors:
             flash(f'Validierungsfehler: {"; ".join(errors)}', 'error')
             integrations = integrations_manager.get_all()
-            return render_template('tools/edit.html', tool=data, integrations=integrations)
+            integration = next(
+                (i for i in integrations if i['name'] == data.get('tool_definition')), 
+                None
+            )
+            return render_template('tools/edit.html', 
+                                 tool=data, 
+                                 integrations=integrations,
+                                 integration=integration)
         
         # Tool aktualisieren
         success = tools_manager.update(tool_id, data)
@@ -197,16 +334,37 @@ def edit_tool(tool_id):
         else:
             flash('Fehler beim Aktualisieren des Tools', 'error')
             integrations = integrations_manager.get_all()
-            return render_template('tools/edit.html', tool=data, integrations=integrations)
+            integration = next(
+                (i for i in integrations if i['name'] == data.get('tool_definition')), 
+                None
+            )
+            return render_template('tools/edit.html', 
+                                 tool=data, 
+                                 integrations=integrations,
+                                 integration=integration)
             
     except json.JSONDecodeError as e:
         flash(f'JSON-Fehler: {str(e)}', 'error')
         integrations = integrations_manager.get_all()
-        return render_template('tools/edit.html', tool=existing, integrations=integrations)
+        integration = next(
+            (i for i in integrations if i['name'] == existing.get('tool_definition')), 
+            None
+        )
+        return render_template('tools/edit.html', 
+                             tool=existing, 
+                             integrations=integrations,
+                             integration=integration)
     except Exception as e:
         flash(f'Fehler beim Aktualisieren des Tools: {str(e)}', 'error')
         integrations = integrations_manager.get_all()
-        return render_template('tools/edit.html', tool=existing, integrations=integrations)
+        integration = next(
+            (i for i in integrations if i['name'] == existing.get('tool_definition')), 
+            None
+        )
+        return render_template('tools/edit.html', 
+                             tool=existing, 
+                             integrations=integrations,
+                             integration=integration)
 
 @tools_bp.route('/delete/<tool_id>', methods=['POST'])
 def delete_tool(tool_id):
@@ -224,13 +382,60 @@ def delete_tool(tool_id):
 
 @tools_bp.route('/test/<tool_id>', methods=['POST'])
 def test_tool(tool_id):
-    """Tool testen"""
+    """Tool testen - mit Implementation Module Integration"""
     try:
         tool = tools_manager.get_by_id(tool_id)
         if not tool:
             return jsonify({'success': False, 'message': 'Tool nicht gefunden'}), 404
         
-        # Integration für dieses Tool finden
+        # Test-Daten aus Request extrahieren
+        test_data = request.get_json() or {}
+        
+        # Prüfe ob Implementation Module verfügbar ist
+        if IMPLEMENTATION_MODULES_AVAILABLE:
+            # Versuche echten Test über Implementation Module
+            try:
+                # Da Flask-Routes nicht async sind, führen wir das in einem Thread aus
+                import threading
+                import asyncio
+                
+                result_container = {}
+                exception_container = {}
+                
+                def run_async_test():
+                    try:
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        result = loop.run_until_complete(
+                            tools_manager.test_tool_with_implementation(tool_id, test_data)
+                        )
+                        result_container['result'] = result
+                    except Exception as e:
+                        exception_container['error'] = e
+                    finally:
+                        loop.close()
+                
+                thread = threading.Thread(target=run_async_test)
+                thread.start()
+                thread.join(timeout=30)  # 30 Sekunden Timeout
+                
+                if 'result' in result_container:
+                    return jsonify(result_container['result'])
+                elif 'error' in exception_container:
+                    raise exception_container['error']
+                else:
+                    # Timeout
+                    return jsonify({
+                        'success': False, 
+                        'message': 'Test-Timeout (30s überschritten)'
+                    }), 500
+                    
+            except Exception as impl_error:
+                print(f"Implementation Module Test Error: {impl_error}")
+                # Fallback zu Basic-Test
+                pass
+        
+        # Fallback: Basic-Test ohne Implementation Module
         integration = next(
             (i for i in integrations_manager.get_all() 
              if i['name'] == tool.get('tool_definition')), 
@@ -239,9 +444,6 @@ def test_tool(tool_id):
         
         if not integration:
             return jsonify({'success': False, 'message': 'Integration nicht gefunden'}), 404
-        
-        # Test-Daten aus Request extrahieren
-        test_data = request.get_json() or {}
         
         # Basis-Test: Konfiguration validieren
         config = tool.get('config', {})
@@ -256,17 +458,19 @@ def test_tool(tool_id):
             result = {
                 'success': False,
                 'message': f'Fehlende Parameter: {", ".join(missing_params)}',
-                'details': {'missing_params': missing_params}
+                'details': {'missing_params': missing_params},
+                'test_type': 'basic_validation'
             }
         else:
-            # Erfolgreicher Test (vereinfacht)
+            # Erfolgreicher Basic-Test
             result = {
                 'success': True,
-                'message': 'Tool-Konfiguration ist gültig',
+                'message': 'Tool-Konfiguration ist gültig (Basic-Test)',
                 'details': {
                     'config_valid': True,
                     'parameters_complete': True
-                }
+                },
+                'test_type': 'basic_validation'
             }
         
         # Test-Ergebnis im Tool speichern
@@ -284,17 +488,67 @@ def test_tool(tool_id):
         return jsonify(result)
         
     except Exception as e:
+        import traceback
+        print(f"Test Tool Error: {e}")
+        traceback.print_exc()
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @tools_bp.route('/execute/<tool_id>', methods=['POST'])
 def execute_tool(tool_id):
-    """Tool ausführen"""
+    """Tool ausführen - mit Implementation Module Integration"""
     try:
         tool = tools_manager.get_by_id(tool_id)
         if not tool:
             return jsonify({'success': False, 'message': 'Tool nicht gefunden'}), 404
         
-        # Integration für dieses Tool finden
+        # Execution-Parameter aus Request extrahieren
+        execution_data = request.get_json() or {}
+        inputs = execution_data.get('inputs', {})
+        
+        # Prüfe ob Implementation Module verfügbar ist
+        if IMPLEMENTATION_MODULES_AVAILABLE:
+            # Versuche echte Ausführung über Implementation Module
+            try:
+                import threading
+                import asyncio
+                
+                result_container = {}
+                exception_container = {}
+                
+                def run_async_execution():
+                    try:
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        result = loop.run_until_complete(
+                            tools_manager.execute_tool_with_implementation(tool_id, inputs)
+                        )
+                        result_container['result'] = result
+                    except Exception as e:
+                        exception_container['error'] = e
+                    finally:
+                        loop.close()
+                
+                thread = threading.Thread(target=run_async_execution)
+                thread.start()
+                thread.join(timeout=60)  # 60 Sekunden Timeout für Execution
+                
+                if 'result' in result_container:
+                    return jsonify(result_container['result'])
+                elif 'error' in exception_container:
+                    raise exception_container['error']
+                else:
+                    # Timeout
+                    return jsonify({
+                        'success': False, 
+                        'message': 'Execution-Timeout (60s überschritten)'
+                    }), 500
+                    
+            except Exception as impl_error:
+                print(f"Implementation Module Execution Error: {impl_error}")
+                # Fallback zu Simulation
+                pass
+        
+        # Fallback: Simulierte Ausführung
         integration = next(
             (i for i in integrations_manager.get_all() 
              if i['name'] == tool.get('tool_definition')), 
@@ -304,10 +558,6 @@ def execute_tool(tool_id):
         if not integration:
             return jsonify({'success': False, 'message': 'Integration nicht gefunden'}), 404
         
-        # Execution-Parameter aus Request extrahieren
-        execution_data = request.get_json() or {}
-        inputs = execution_data.get('inputs', {})
-        
         # Prefilled und Locked Inputs berücksichtigen
         final_inputs = tool.get('prefilled_inputs', {}).copy()
         locked_inputs = tool.get('locked_inputs', [])
@@ -316,15 +566,16 @@ def execute_tool(tool_id):
             if key not in locked_inputs:
                 final_inputs[key] = value
         
-        # Simulated execution (hier würde die echte Tool-Ausführung stattfinden)
+        # Simulierte Ausführung
         execution_result = {
             'success': True,
             'message': 'Tool erfolgreich ausgeführt (simuliert)',
             'inputs': final_inputs,
             'outputs': {
-                'result': f'Ergebnis von {tool["name"]}',
+                'result': f'Simuliertes Ergebnis von {tool["name"]}',
                 'timestamp': datetime.utcnow().isoformat() + 'Z'
-            }
+            },
+            'execution_type': 'simulated'
         }
         
         # Execution-Ergebnis im Tool speichern
@@ -340,6 +591,9 @@ def execute_tool(tool_id):
         return jsonify(execution_result)
         
     except Exception as e:
+        import traceback
+        print(f"Execute Tool Error: {e}")
+        traceback.print_exc()
         return jsonify({'success': False, 'message': str(e)}), 500
 
 @tools_bp.route('/clone/<tool_id>', methods=['POST'])
@@ -375,24 +629,27 @@ def clone_tool(tool_id):
 
 @tools_bp.route('/api/config/<tool_id>')
 def get_tool_config(tool_id):
-    """API: Tool-Konfiguration abrufen"""
+    """API-Route für Tool-Konfiguration (für Execute-Modal)"""
     try:
         tool = tools_manager.get_by_id(tool_id)
         if not tool:
-            return jsonify({'error': 'Tool nicht gefunden'}), 404
+            return jsonify({'success': False, 'message': 'Tool nicht gefunden'}), 404
+        
+        # Integration-Details laden
+        integration = next(
+            (i for i in integrations_manager.get_all() 
+             if i['name'] == tool.get('tool_definition')), 
+            None
+        )
         
         return jsonify({
-            'id': tool['id'],
-            'name': tool['name'],
-            'tool_definition': tool['tool_definition'],
-            'config': tool.get('config', {}),
-            'prefilled_inputs': tool.get('prefilled_inputs', {}),
-            'locked_inputs': tool.get('locked_inputs', []),
-            'status': tool['status']
+            'success': True,
+            'tool': tool,
+            'integration': integration
         })
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @tools_bp.route('/search')
 def search_tools():
@@ -413,3 +670,54 @@ def search_tools():
     except Exception as e:
         flash(f'Fehler bei der Suche: {str(e)}', 'error')
         return redirect(url_for('tools.list_tools'))
+
+@tools_bp.route('/implementation-status/<tool_id>')
+def get_implementation_status(tool_id):
+    """Implementation Module Status für ein Tool abrufen"""
+    try:
+        tool = tools_manager.get_by_id(tool_id)
+        if not tool:
+            return jsonify({'success': False, 'message': 'Tool nicht gefunden'}), 404
+        
+        # Implementation Status ermitteln
+        impl_status = tools_manager.get_tool_implementation_status(tool)
+        
+        # Zusätzliche Informationen sammeln
+        response = {
+            'success': True,
+            'tool_id': tool_id,
+            'tool_name': tool.get('name'),
+            'tool_definition': tool.get('tool_definition'),
+            'implementation_status': impl_status,
+            'modules_available': IMPLEMENTATION_MODULES_AVAILABLE
+        }
+        
+        # Wenn Module verfügbar sind, zeige verfügbare Module
+        if IMPLEMENTATION_MODULES_AVAILABLE:
+            response['available_modules'] = tools_manager.get_available_implementation_modules()
+        
+        return jsonify(response)
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@tools_bp.route('/implementation-modules')
+def list_implementation_modules():
+    """Liste aller verfügbaren Implementation Modules"""
+    try:
+        if not IMPLEMENTATION_MODULES_AVAILABLE:
+            return jsonify({
+                'success': False,
+                'message': 'Implementation Module System nicht verfügbar'
+            })
+        
+        modules = tools_manager.get_available_implementation_modules()
+        
+        return jsonify({
+            'success': True,
+            'modules': modules,
+            'total_count': len(modules)
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500

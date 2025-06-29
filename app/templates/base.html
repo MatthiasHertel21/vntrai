@@ -103,7 +103,7 @@
             <!-- Flash Messages -->
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
-                    <div class="vntr-flash-messages" style="max-width: 100%; width: 100%; margin: 0 auto; padding: 0 15px;">
+                    <div class="flash-messages">
                         {% for category, message in messages %}
                             <div class="vntr-flash-message alert alert-{{ category }} mb-3">{{ message }}</div>
                         {% endfor %}
@@ -137,6 +137,7 @@
         };
     </script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/list-improvements.js') }}"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

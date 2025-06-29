@@ -11,7 +11,7 @@
         </div>
         <div class="flex gap-2">
             <a href="{{ url_for('tools.list_tools') }}" 
-               class="btn btn-outline">
+               class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
                 <i class="bi bi-arrow-left"></i>
                 Back
             </a>
@@ -20,10 +20,10 @@
 </div>
 {% endblock %}
 
-{% block context_area %}
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
             <!-- Main Form -->
-            <div class="lg:col-span-2">
+            <div class="lg:col-span-2 space-y-6">
                 <form method="POST" class="space-y-6">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <!-- Basic Information -->
@@ -67,65 +67,74 @@
                     </div>
 
                     <!-- Configuration -->
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div id="configSection" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6" style="display: none;">
                         <h2 class="text-lg font-semibold mb-4">Konfiguration</h2>
                         <p class="text-sm text-gray-600 mb-4">
                             Spezifische Konfiguration für dieses Tool (API-Keys, Endpunkte, etc.)
                         </p>
                         
-                        <div>
-                            <label for="config" class="block text-sm font-medium text-gray-700 mb-1">
-                                Konfiguration (JSON)
-                            </label>
-                            <textarea id="config" name="config" rows="8"
-                                      class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                      placeholder='{"api_key": "your_api_key", "endpoint": "https://api.example.com"}'>{{ (tool.config | tojson(indent=2)) if tool and tool.config else '{}' }}</textarea>
-                            <p class="text-xs text-gray-500 mt-1">Gültiges JSON-Format erforderlich</p>
+                        <div id="configFields" class="space-y-4">
+                            <!-- Dynamic config fields will be inserted here -->
                         </div>
+                        
+                        <!-- JSON Fallback/Debug Section -->
+                        <details class="mt-6">
+                            <summary class="cursor-pointer text-sm text-gray-600 hover:text-gray-800">Erweitert: JSON-Editor</summary>
+                            <div class="mt-2">
+                                <label for="config" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Konfiguration (JSON)
+                                </label>
+                                <textarea id="config" name="config" rows="8"
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                          placeholder='{"api_key": "your_api_key", "endpoint": "https://api.example.com"}'>{{ (tool.config | tojson(indent=2)) if tool and tool.config else '{}' }}</textarea>
+                                <p class="text-xs text-gray-500 mt-1">Gültiges JSON-Format erforderlich</p>
+                            </div>
+                        </details>
                     </div>
 
-                    <!-- Prefilled Inputs -->
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                        <h2 class="text-lg font-semibold mb-4">Vorgefüllte Parameter</h2>
+                    <!-- Input Parameters -->
+                    <div id="inputSection" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6" style="display: none;">
+                        <h2 class="text-lg font-semibold mb-4">Eingabe-Parameter</h2>
                         <p class="text-sm text-gray-600 mb-4">
-                            Parameter, die standardmäßig vorausgefüllt sind (können bei Ausführung überschrieben werden)
+                            Parameter für die Tool-Ausführung (vorbefüllt oder gesperrt)
                         </p>
                         
-                        <div>
-                            <label for="prefilled_inputs" class="block text-sm font-medium text-gray-700 mb-1">
-                                Vorgefüllte Parameter (JSON)
-                            </label>
-                            <textarea id="prefilled_inputs" name="prefilled_inputs" rows="6"
-                                      class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                      placeholder='{"model": "gpt-4", "temperature": 0.1}'>{{ (tool.prefilled_inputs | tojson(indent=2)) if tool and tool.prefilled_inputs else '{}' }}</textarea>
+                        <div id="inputFields" class="space-y-4">
+                            <!-- Dynamic input fields will be inserted here -->
                         </div>
-                    </div>
-
-                    <!-- Locked Inputs -->
-                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                        <h2 class="text-lg font-semibold mb-4">Gesperrte Parameter</h2>
-                        <p class="text-sm text-gray-600 mb-4">
-                            Parameter, die nicht überschrieben werden können (Array von Parameter-Namen)
-                        </p>
                         
-                        <div>
-                            <label for="locked_inputs" class="block text-sm font-medium text-gray-700 mb-1">
-                                Gesperrte Parameter (JSON Array)
-                            </label>
-                            <textarea id="locked_inputs" name="locked_inputs" rows="4"
-                                      class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                      placeholder='["temperature", "model"]'>{{ (tool.locked_inputs | tojson(indent=2)) if tool and tool.locked_inputs else '[]' }}</textarea>
-                        </div>
+                        <!-- JSON Fallback/Debug Section -->
+                        <details class="mt-6">
+                            <summary class="cursor-pointer text-sm text-gray-600 hover:text-gray-800">Erweitert: JSON-Editor</summary>
+                            <div class="mt-2 space-y-4">
+                                <div>
+                                    <label for="prefilled_inputs" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Vorgefüllte Parameter (JSON)
+                                    </label>
+                                    <textarea id="prefilled_inputs" name="prefilled_inputs" rows="6"
+                                              class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                              placeholder='{"model": "gpt-4", "temperature": 0.1}'>{{ (tool.prefilled_inputs | tojson(indent=2)) if tool and tool.prefilled_inputs else '{}' }}</textarea>
+                                </div>
+                                <div>
+                                    <label for="locked_inputs" class="block text-sm font-medium text-gray-700 mb-1">
+                                        Gesperrte Parameter (JSON Array)
+                                    </label>
+                                    <textarea id="locked_inputs" name="locked_inputs" rows="4"
+                                              class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                              placeholder='["temperature", "model"]'>{{ (tool.locked_inputs | tojson(indent=2)) if tool and tool.locked_inputs else '[]' }}</textarea>
+                                </div>
+                            </div>
+                        </details>
                     </div>
 
                     <!-- Submit Button -->
                     <div class="flex justify-end gap-2">
                         <a href="{{ url_for('tools.list_tools') }}" 
-                           class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-md">
+                           class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-medium transition-colors">
                             Abbrechen
                         </a>
                         <button type="submit" 
-                                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
+                                class="bg-vntr-primary hover:bg-vntr-primary/90 text-white px-6 py-2 rounded-lg font-medium transition-colors">
                             Tool erstellen
                         </button>
                     </div>
@@ -133,9 +142,9 @@
             </div>
 
             <!-- Help & Preview -->
-            <div>
+            <div class="space-y-6">
                 <!-- Help -->
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <h2 class="text-lg font-semibold mb-4">Hilfe</h2>
                     <div class="space-y-4 text-sm">
                         <div>
@@ -203,9 +212,19 @@ document.getElementById('tool_definition').addEventListener('change', function()
     const integrationName = this.value;
     const infoDiv = document.getElementById('integrationInfo');
     const detailsDiv = document.getElementById('integrationDetails');
+    const configSection = document.getElementById('configSection');
+    const inputSection = document.getElementById('inputSection');
+    const configFields = document.getElementById('configFields');
+    const inputFields = document.getElementById('inputFields');
+    
+    // Clear previous fields
+    configFields.innerHTML = '';
+    inputFields.innerHTML = '';
     
     if (!integrationName) {
         infoDiv.classList.add('hidden');
+        configSection.style.display = 'none';
+        inputSection.style.display = 'none';
         return;
     }
     
@@ -214,6 +233,7 @@ document.getElementById('tool_definition').addEventListener('change', function()
     const selectedIntegration = integrationsData.find(i => i.name === integrationName);
     
     if (selectedIntegration) {
+        // Update integration info
         detailsDiv.innerHTML = `
             <div>
                 <span class="font-medium">Vendor:</span> ${selectedIntegration.vendor}
@@ -221,23 +241,145 @@ document.getElementById('tool_definition').addEventListener('change', function()
             <div>
                 <span class="font-medium">Beschreibung:</span> ${selectedIntegration.description || 'Keine Beschreibung verfügbar'}
             </div>
-            ${selectedIntegration.config_params && selectedIntegration.config_params.length > 0 ? `
-            <div>
-                <span class="font-medium">Verfügbare Config-Parameter:</span>
-                <ul class="mt-1 ml-4">
-                    ${selectedIntegration.config_params.map(p => `
-                        <li class="text-xs">• ${p.name} (${p.type})${p.required ? ' *' : ''}</li>
-                    `).join('')}
-                </ul>
-            </div>
-            ` : ''}
         `;
         infoDiv.classList.remove('hidden');
+        
+        // Generate config fields
+        if (selectedIntegration.config_params && selectedIntegration.config_params.length > 0) {
+            selectedIntegration.config_params.forEach(param => {
+                const fieldHtml = generateFieldHtml(param, 'config');
+                configFields.insertAdjacentHTML('beforeend', fieldHtml);
+            });
+            configSection.style.display = 'block';
+        }
+        
+        // Generate input fields
+        if (selectedIntegration.input_params && selectedIntegration.input_params.length > 0) {
+            selectedIntegration.input_params.forEach(param => {
+                const fieldHtml = generateInputFieldHtml(param);
+                inputFields.insertAdjacentHTML('beforeend', fieldHtml);
+            });
+            inputSection.style.display = 'block';
+        }
     }
 });
 
+// Generate field HTML based on parameter type
+function generateFieldHtml(param, prefix) {
+    const fieldId = `${prefix}_${param.name}`;
+    const fieldName = `${prefix}[${param.name}]`;
+    const requiredStr = param.required ? 'required' : '';
+    const requiredMark = param.required ? '<span class="text-red-500">*</span>' : '';
+    
+    let fieldInput = '';
+    
+    if (param.type === 'select') {
+        fieldInput = `
+            <select id="${fieldId}" name="${fieldName}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${requiredStr}>
+                ${!param.required ? '<option value="">Nicht gesetzt</option>' : ''}
+                ${param.options ? param.options.map(opt => 
+                    `<option value="${opt.value}">${opt.label || opt.value}</option>`
+                ).join('') : ''}
+            </select>
+        `;
+    } else if (param.type === 'boolean') {
+        fieldInput = `
+            <div class="flex items-center">
+                <input type="checkbox" id="${fieldId}" name="${fieldName}" value="true" class="mr-2">
+                <label for="${fieldId}" class="text-sm text-gray-700">${param.label || param.name}</label>
+            </div>
+        `;
+    } else if (param.type === 'json') {
+        fieldInput = `
+            <textarea id="${fieldId}" name="${fieldName}" rows="6" class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder='${param.default || "{}"}'>${param.default || ''}</textarea>
+            <button type="button" onclick="toggleJsonEditor('${fieldId}')" class="mt-1 text-xs text-blue-600 hover:text-blue-800">JSON Editor umschalten</button>
+        `;
+    } else {
+        fieldInput = `
+            <input type="text" id="${fieldId}" name="${fieldName}" value="${param.default || ''}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" ${requiredStr}>
+        `;
+    }
+    
+    return `
+        <div>
+            <label for="${fieldId}" class="block text-sm font-medium text-gray-700 mb-1">
+                ${param.label || param.name} ${requiredMark}
+            </label>
+            ${param.description ? `<p class="text-xs text-gray-500 mb-2">${param.description}</p>` : ''}
+            ${fieldInput}
+        </div>
+    `;
+}
+
+// Generate input field HTML with lock/unlock functionality
+function generateInputFieldHtml(param) {
+    const fieldId = `input_${param.name}`;
+    const fieldName = `prefilled_inputs[${param.name}]`;
+    const lockName = 'locked_inputs[]';
+    const requiredMark = param.required ? '<span class="text-red-500">*</span>' : '';
+    
+    let fieldInput = '';
+    
+    if (param.type === 'select') {
+        fieldInput = `
+            <select id="${fieldId}" name="${fieldName}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">Nicht vorbefüllt</option>
+                ${param.options ? param.options.map(opt => 
+                    `<option value="${opt.value}">${opt.label || opt.value}</option>`
+                ).join('') : ''}
+            </select>
+        `;
+    } else if (param.type === 'boolean') {
+        fieldInput = `
+            <div class="flex items-center">
+                <input type="checkbox" id="${fieldId}" name="${fieldName}" value="true" class="mr-2">
+                <label for="${fieldId}" class="text-sm text-gray-700">Vorbefüllen mit "true"</label>
+            </div>
+        `;
+    } else if (param.type === 'json') {
+        fieldInput = `
+            <textarea id="${fieldId}" name="${fieldName}" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder='${param.default || ""}'></textarea>
+            <button type="button" onclick="toggleJsonEditor('${fieldId}')" class="mt-1 text-xs text-blue-600 hover:text-blue-800">JSON Editor umschalten</button>
+        `;
+    } else {
+        fieldInput = `
+            <input type="text" id="${fieldId}" name="${fieldName}" placeholder="Vorbefüllen mit Wert..." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        `;
+    }
+    
+    return `
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <label for="${fieldId}" class="block text-sm font-medium text-gray-700">
+                    ${param.label || param.name} ${requiredMark}
+                </label>
+                <label class="inline-flex items-center">
+                    <input type="checkbox" name="${lockName}" value="${param.name}" class="form-checkbox h-4 w-4 text-red-600">
+                    <span class="ml-1 text-xs text-red-600">Sperren</span>
+                </label>
+            </div>
+            ${param.description ? `<p class="text-xs text-gray-500 mb-2">${param.description}</p>` : ''}
+            ${fieldInput}
+        </div>
+    `;
+}
+
+// JSON Editor Toggle
+function toggleJsonEditor(elementId) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    
+    if (element.rows && element.rows > 1) {
+        element.rows = 1;
+    } else {
+        element.rows = 6;
+    }
+}
 // Form Validation
 document.querySelector('form').addEventListener('submit', function(e) {
+    // Sync dynamic fields to JSON areas
+    syncDynamicFieldsToJson();
+    
     const isConfigValid = validateJSON('config');
     const isPrefilledValid = validateJSON('prefilled_inputs');
     const isLockedValid = validateJSON('locked_inputs');
@@ -247,6 +389,36 @@ document.querySelector('form').addEventListener('submit', function(e) {
         alert('Bitte korrigiere die JSON-Syntax-Fehler vor dem Speichern.');
     }
 });
+
+// Sync dynamic fields to JSON areas
+function syncDynamicFieldsToJson() {
+    // Sync config fields
+    const configData = {};
+    document.querySelectorAll('[name^="config["]').forEach(input => {
+        const match = input.name.match(/config\[([^\]]+)\]/);
+        if (match && input.value) {
+            configData[match[1]] = input.type === 'checkbox' ? input.checked : input.value;
+        }
+    });
+    document.getElementById('config').value = JSON.stringify(configData, null, 2);
+    
+    // Sync prefilled inputs
+    const prefilledData = {};
+    document.querySelectorAll('[name^="prefilled_inputs["]').forEach(input => {
+        const match = input.name.match(/prefilled_inputs\[([^\]]+)\]/);
+        if (match && input.value) {
+            prefilledData[match[1]] = input.type === 'checkbox' ? input.checked : input.value;
+        }
+    });
+    document.getElementById('prefilled_inputs').value = JSON.stringify(prefilledData, null, 2);
+    
+    // Sync locked inputs
+    const lockedInputs = [];
+    document.querySelectorAll('[name="locked_inputs[]"]:checked').forEach(checkbox => {
+        lockedInputs.push(checkbox.value);
+    });
+    document.getElementById('locked_inputs').value = JSON.stringify(lockedInputs, null, 2);
+}
 
 // Initialize validation on page load
 document.addEventListener('DOMContentLoaded', function() {

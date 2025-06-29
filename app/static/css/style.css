@@ -1,5 +1,47 @@
 /* VNTRAI Main Stylesheet */
 
+/* ===== ICON PROPORTIONS AND SIZING - FIX FOR COLLAPSE ===== */
+.vntr-sidebar img,
+.vntr-sidebar svg,
+.vntr-sidebar i {
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    min-height: 24px !important;
+    max-width: 24px !important;
+    max-height: 24px !important;
+    object-fit: contain !important;
+    display: block !important;
+}
+
+/* Ensure all nav icons maintain their size */
+.vntr-nav-link img.vntr-nav-icon,
+.vntr-nav-link svg.vntr-nav-icon,
+.vntr-nav-link i.vntr-nav-icon,
+.vntr-nav-link .vntr-nav-icon img,
+.vntr-nav-link .vntr-nav-icon svg,
+.vntr-nav-link .vntr-nav-icon i {
+    width: 24px !important;
+    height: 24px !important;
+    min-width: 24px !important;
+    min-height: 24px !important;
+    max-width: 24px !important;
+    max-height: 24px !important;
+    object-fit: contain !important;
+    flex-shrink: 0 !important;
+}
+
+/* Logo sizing fix */
+.vntr-sidebar-logo {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    max-width: 40px !important;
+    max-height: 40px !important;
+    object-fit: contain !important;
+}
+
 /* ===== SIDEBAR ICON COLORS OVERRIDE - PRIORITÄT #1 ===== */
 .vntr-sidebar img.vntr-nav-icon,
 .vntr-nav-icon,
@@ -109,7 +151,7 @@ body {
 
 /* ===== SIDEBAR STYLING ===== */
 .vntr-sidebar {
-    width: 80px;
+    width: 60px; /* Reduziert von 80px auf 60px */
     background: #0CC0DF !important;
     color: white;
     position: fixed;
@@ -135,12 +177,19 @@ body {
     position: sticky;
     top: 0;
     z-index: 101;
+    padding: 0 12px;
 }
 
+/* Logo stays centered in both states */
 .vntr-sidebar-logo {
-    width: 40px;
-    height: 40px;
-    /* Entfernt: transition und hover-scaling */
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    max-width: 40px !important;
+    max-height: 40px !important;
+    object-fit: contain !important;
+    flex-shrink: 0;
 }
 
 .vntr-nav-items {
@@ -159,6 +208,7 @@ body {
 .vntr-nav-link {
     display: flex;
     align-items: center;
+    justify-content: flex-start;
     padding: 15px 20px;
     color: white;
     text-decoration: none;
@@ -166,14 +216,32 @@ body {
     border: none;
     background: none;
     width: 100%;
+    position: relative;
+}
+
+/* Collapsed state: Center icons */
+.vntr-sidebar:not(:hover) .vntr-nav-link {
+    justify-content: center;
+    padding: 15px 0;
+}
+
+.vntr-sidebar:not(:hover) .vntr-nav-icon {
+    margin: 0 auto;
+    position: static;
 }
 
 .vntr-nav-icon {
     width: 24px;
     height: 24px;
+    min-width: 24px;
+    min-height: 24px;
+    max-width: 24px;
+    max-height: 24px;
     margin-right: 15px;
-    transition: all 0.3s ease;
+    transition: margin 0.3s ease;
     flex-shrink: 0;
+    object-fit: contain;
+    display: block;
 }
 
 .vntr-nav-link span {
@@ -302,7 +370,7 @@ body {
 /* ===== RESPONSIVE DESIGN ===== */
 @media (max-width: 768px) {
     .vntr-sidebar {
-        width: 60px;
+        width: 50px; /* Noch schmaler auf Mobile */
     }
     
     .vntr-sidebar:hover {
@@ -310,7 +378,7 @@ body {
     }
     
     .vntr-main-container {
-        margin-left: 60px;
+        margin-left: 50px; /* Updated for mobile */
     }
     
     .vntr-nav-link {
@@ -320,7 +388,12 @@ body {
     .vntr-nav-icon {
         width: 20px;
         height: 20px;
+        min-width: 20px;
+        min-height: 20px;
+        max-width: 20px;
+        max-height: 20px;
         margin-right: 12px;
+        object-fit: contain;
     }
 }
 
@@ -339,7 +412,7 @@ body {
 
 /* ===== CONTEXT AREA FULL HEIGHT ===== */
 .vntr-content-area {
-    margin-left: 80px; /* Sidebar width */
+    margin-left: 60px; /* Updated sidebar width */
     min-height: 100vh;
     position: relative;
 }
@@ -364,4 +437,185 @@ body {
     padding: 30px;
     margin: 0;
     min-height: 100vh;
+}
+
+/* ===== TABLE IMPROVEMENTS ===== */
+/* Alternierende Zeilenfarben */
+.table-striped > tbody > tr:nth-child(odd) {
+    background-color: #f9f9f9;
+}
+
+.table-striped > tbody > tr:nth-child(even) {
+    background-color: #ffffff;
+}
+
+/* Hover-Effekte für Tabellenzeilen */
+.table-hover > tbody > tr:hover {
+    background-color: #f0f8ff !important;
+    cursor: pointer;
+    transition: background-color 0.15s ease-in-out;
+}
+
+/* Click-to-Open Styling */
+.clickable-row {
+    cursor: pointer;
+    transition: all 0.15s ease-in-out;
+}
+
+.clickable-row:hover {
+    background-color: #e3f2fd !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Verbesserte Filter-Panels */
+.filter-panel {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Verbesserte Button-Styling */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.15s ease-in-out;
+    border: 1px solid transparent;
+    cursor: pointer;
+}
+
+.btn-outline {
+    background-color: white;
+    border-color: #d1d5db;
+    color: #374151;
+}
+
+.btn-outline:hover {
+    background-color: #f9fafb;
+    border-color: #9ca3af;
+    color: #111827;
+}
+
+/* Primärfarbe Buttons */
+.btn-primary {
+    background-color: #0CC0DF !important;
+    border-color: #0CC0DF !important;
+    color: white !important;
+}
+
+.btn-primary:hover {
+    background-color: #0aa5c7 !important;
+    border-color: #0aa5c7 !important;
+    color: white !important;
+}
+
+/* Akzentfarbe Buttons */
+.btn-accent {
+    background-color: #FA7100 !important;
+    border-color: #FA7100 !important;
+    color: white !important;
+}
+
+.btn-accent:hover {
+    background-color: #e66400 !important;
+    border-color: #e66400 !important;
+    color: white !important;
+}
+
+/* Flash Messages Container - nicht breiter als regulärer Container */
+.flash-messages {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+/* Page Header mit Toolbar */
+.page-header {
+    background: white;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 1.5rem 2rem;
+    margin-bottom: 2rem;
+}
+
+.page-header h1 {
+    margin: 0;
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.page-header p {
+    margin: 0.25rem 0 0 0;
+    color: #6b7280;
+}
+
+.page-toolbar {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+/* ===== COLLAPSED SIDEBAR OPTIMIZATIONS ===== */
+/* When sidebar is collapsed, ensure proper centering and spacing */
+.vntr-sidebar:not(:hover) {
+    overflow: visible; /* Allow tooltips to show */
+}
+
+.vntr-sidebar:not(:hover) .vntr-nav-link {
+    justify-content: center;
+    padding: 15px 0;
+    position: relative;
+}
+
+.vntr-sidebar:not(:hover) .vntr-nav-icon {
+    margin: 0 auto;
+    position: static;
+}
+
+.vntr-sidebar:not(:hover) .vntr-nav-link span {
+    display: none; /* Hide text completely when collapsed */
+}
+
+/* Ensure icons are centered in collapsed state */
+.vntr-sidebar:not(:hover) .vntr-nav-item {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Tooltip on hover for collapsed state */
+.vntr-sidebar:not(:hover) .vntr-nav-link:hover::after {
+    content: attr(title);
+    position: absolute;
+    left: 70px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #333;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 4px;
+    white-space: nowrap;
+    z-index: 1001;
+    font-size: 14px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.vntr-sidebar:not(:hover) .vntr-nav-link:hover::before {
+    content: '';
+    position: absolute;
+    left: 62px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 8px solid transparent;
+    border-right-color: #333;
+    z-index: 1001;
 }

@@ -1,21 +1,34 @@
 # Backlog
 
 ## Layout Anpassungen
-- die sidebar soll im eingeklappten Zustand noch etwas schmaler sein 
+- ✅ die sidebar soll im eingeklappten Zustand noch etwas schmaler sein 
 - entwickle einen kompletten satz neuer icons, nimm als stylevorlage die beiden icons für dashbiard und integrations
-- alle list oder index seiten sollen eine möglichkeit haben, die listen zu filtern auf der basis von suchtext oder einer oder mehreren filterfeldern (zB. kategorien /vendoren)
-- alle list oder index-seiten sollen bei tabellendarstellung alternierende zeilenfarben haben
-- alle list oder index-seiten sollen klick auf eine zeile in der tabellendarstellung den gewählten eintrag öffnen
-- alle list oder index-seiten sollen klick auf eine zeile in der tabellendarstellung den gewählten eintrag öffnen
-- alle seiten sollen eine Überschrift haben und eine Toolbar auf der Höhe der Überschrift mit rechtsbündigen 
-- alle Buttons und Aktionen sollen farblich zur primärfarbe bzw. akzentfarbe der anwendung passen (oder grau(hellgrau) sein)
-- flash messages sollen nich breiter sein als ein reglärer container der seite
-## Tests
-- erstelle eine Seite /test, die eine Überscht über alle bestehenden Tests enthält
-- erstelle für jede funktionale einheit, die frontend-backend integration benötigt eine testseitem die die verwendeten backendrouten der funktionalen einheit testet. dokumentiere auf der testseite auch wie die .py-dateien heißen, die die rouzten implementieren und die routen, die in einem test getestet werden
+- ✅ alle list oder index seiten sollen eine möglichkeit haben, die listen zu filtern auf der basis von suchtext oder einer oder mehreren filterfeldern (zB. kategorien /vendoren)
+- ✅ alle list oder index-seiten sollen bei tabellendarstellung alternierende zeilenfarben haben
+- ✅ alle list oder index-seiten sollen klick auf eine zeile in der tabellendarstellung den gewählten eintrag öffnen
+- ✅ alle seiten sollen eine Überschrift haben und eine Toolbar auf der Höhe der Überschrift mit rechtsbündigen 
+- ✅ alle Buttons und Aktionen sollen farblich zur primärfarbe bzw. akzentfarbe der anwendung passen (oder grau(hellgrau) sein)
+- ✅ flash messages sollen nich breiter sein als ein reglärer container der seite
 
-## Tools
-- beim test eines Tools, sollen die eingabefelder und die ausgabefelder für die anzeige gerendert werden
+## Neue Layout-Anforderungen (Sprint 14+)
+- [ ] **Toolbar-Buttons**: Alle am Ende der Seite verfügbaren Buttons in die Toolbar am Kopf des Dokumentes neben der Überschrift rechtsbündig verschieben
+- [ ] **Aktive Navigation**: Wenn die Seiten /Tools oder /Integrations ausgewählt sind, soll auch das entsprechende Icon in der Sidebar als aktiv markiert werden
+- [ ] **Card-Layout**: Änderung der Seiten /integrations und /Tools von einem Listen-Layout in ein Card-Layout
+- [ ] **Container-Alignment**: In der Seite Tools/create sind die Container oben nicht bündig - beheben
+- [ ] **Dashboard-Spacing**: Abstand zwischen Sidebar und Contextbereich in der Seite Dashboard entfernen
+
+## Tests
+- ✅ erstelle eine Seite /test, die eine Übersicht über alle bestehenden Tests enthält
+- ✅ erstelle für jede funktionale einheit, die frontend-backend integration benötigt eine testseitem die die verwendeten backendrouten der funktionalen einheit testet. dokumentiere auf der testseite auch wie die .py-dateien heißen, die die rouzten implementieren und die routen, die in einem test getestet werden
+- 🔄 **ERWEITERT**: Testsystem für dynamische Features anpassen (Execute-Dialog mit dynamischen Feldern, Implementation-Module-System)
+
+## Tools - Dynamische Form-UI ✅ COMPLETED
+- ✅ **Execute-Dialog**: Dynamische Generierung der Eingabefelder im Modal/Interface analog zu Edit/Create
+- ✅ **Dynamic Field Types**: text, select, boolean, json, file mit Vorbelegung und Sperre
+- ✅ **Status-Badges**: Anzeige von Locked/Prefilled-Status in Execute-Dialog
+- ✅ **JSON-Fallback**: JSON-Editor als Erweiterte Option im Execute-Dialog
+- ✅ **Live-Validation**: JSON-Validation für JSON-Felder im Execute-Dialog
+- ✅ **Bidirektionale Synchronisation**: Zwischen UI-Feldern und JSON-Editor
 
 ## Integrations
 - implementiere "implemenations", orientiere dich an der bestehenden implementierung von v036 im verzeichnis tool_modules, aber nenne es neu als "implementation_modules"
@@ -91,23 +104,7 @@ Implementiere zusätzlich alle Routen für die vollständige Assistant API:
 - **Function Calling**: Integration eigener Tools als Functions
 - **Run Monitoring**: Überwachung laufender Assistant-Runs
 
-----------------------------
 
-## erledigte anforderungen
-- ich möchte eine webanwendung entwickeln mit flask und docker-compose
-- die anwendung soll auf den port 5004 laufen
-- verwende tailwind layout 
-- ich möchte links eine sidebar mit auto-expand / auto collaps funktion (im  collapsed zustand nur icons, im expanded status icons mit beschriftung)
-- die anwendung soll vntrai heißen
-- übernimm die den aufbau der sidebar, die icons und die farben aus der - anwendung /home/ga/fb1/age/v036
-
-
-
-## 🆕 Neue Anforderungen: Tools & Integrations (v036 Funktionalität)
-ich möchte in der anwendung die funktionalität für tools und für integrations haben wie in der anwendung im verzeichnis v036, aber mit eigenen änderungen:
-- **Tailwind Layout** (statt Bootstrap aus v036)
-- **Separate JSON-Dateien für Integrations**: Die Datenhaltung für alle integrations soll nicht in einer datei "integrations.json" erfolgen sondern jede integration soll ihre eigene json datei haben. Diese soll so heißen wie die uuid der integration und in einem verzeichnis "integrations" liegen
-- **Separate JSON-Dateien für Tools**: Die Datenhaltung für alle tools soll nicht in einer datei "tools.json" erfolgen sondern jedes tool soll seine eigene json datei haben. Diese soll so heißen wie die uuid des tools und in einem verzeichnis "tools" liegen
 
 ### 📋 v036 Analyse - Zu übernehmende Features:
 **Integrations:**
@@ -219,8 +216,8 @@ ich möchte in der anwendung die funktionalität für tools und für integration
 - [x] Smooth Animationen für alle Übergänge ✅
 - [x] Context Area individuell pro Seite implementiert ✅
 - [x] Konsistente Abstände zur Sidebar für alle Seiten ✅
-- [ ] Context Area Expand/Collapse Button ⚠️ NICHT BENÖTIGT (individuell pro Seite)
-- [ ] LocalStorage für Context Area State ⚠️ NICHT BENÖTIGT (individuell pro Seite)
+- [ ] Context Area Expand/Collapse Button ⚠️ NICHT BENÖTIGT (individuell pro seite)
+- [ ] LocalStorage für Context Area State ⚠️ NICHT BENÖTIGT (individuell pro seite)
 
 **Definition of Done:** ✅ TEILWEISE ABGESCHLOSSEN
 - ✅ Layout ist vollständig responsive
@@ -448,6 +445,7 @@ Neue Struktur:
 - [x] Create/Edit Forms mit Tailwind
 - [x] JSON Editor Funktionalität
 - [x] Vendor Icon Upload System
+- [x] **Icon Migration**: Vendor Icons aus v036 übertragen
 - [x] Validation System für Integration Schemas
 - [x] Error Handling und Flash Messages
 
@@ -601,6 +599,40 @@ Neue Struktur:
 - [x] Async Execution funktioniert (AJAX-basiert)
 - [x] Health Checks für Integrations verfügbar
 
+## Sprint 9: Bug Fixes & Production Ready ✅ COMPLETED (29. Juni 2025)
+### Ziel: Kritische Bugfixes und Produktionsvorbereitung
+
+**User Stories:**
+- Als Benutzer möchte ich, dass die Tools-Seite korrekt funktioniert
+- Als Entwickler möchte ich sauberen, produktionstauglichen Code
+- Als System möchte ich korrekte Daten-Verknüpfungen zwischen Tools und Integrations
+
+**Tasks:**
+- [x] **Template-Struktur repariert**: Tools-Template hatte fehlenden `{% block content %}` Block
+- [x] **DataManager-Pfad korrigiert**: Flask-App-Konfiguration für korrekte Pfad-Auflösung im Docker-Container
+- [x] **Tool-Integration-Verknüpfung repariert**: `tool_definition` Felder aus Migration-Metadaten wiederhergestellt
+- [x] **Debug-Code Cleanup**: Alle temporären Debug-Ausgaben entfernt
+- [x] **JavaScript-Error behoben**: `toggleJsonEditor` CamelCase-Konvertierung für korrekte Element-IDs
+
+**Kritische Fixes:**
+1. **Tools-Seite leer**: Template-Struktur repariert - Content wurde nicht gerendert
+2. **DataManager-Pfad**: Docker-Container verwendet jetzt Flask-Config für Daten-Pfade
+3. **Tool-Verknüpfungen**: Alle 14 Tools korrekt mit ihren 8 Integrations verknüpft
+4. **JSON-Editor**: JavaScript-Funktionen funktionieren korrekt für alle Parameter-Editoren
+
+**Ergebnis:**
+- ✅ **14 Tools** werden korrekt angezeigt, gruppiert in **8 Integration-Kategorien**
+- ✅ **Vollständige CRUD-Funktionalität** für Tools und Integrations
+- ✅ **Produktionstauglicher Code** ohne Debug-Ausgaben
+- ✅ **Stabile Template-Architektur** mit korrekter Block-Vererbung
+
+**Definition of Done:** ✅ VOLLSTÄNDIG ERFÜLLT
+- [x] Tools-Seite zeigt alle Tools korrekt an
+- [x] Tool-Integration-Verknüpfungen funktionieren
+- [x] JSON-Editor funktioniert für alle Parameter-Typen
+- [x] Kein Debug-Code in Production
+- [x] DataManager verwendet korrekte Pfade
+
 **🎯 ALLE SPRINTS ERFOLGREICH ABGESCHLOSSEN!**
 
 ### **Vollständige Projekt-Zusammenfassung (Stand: 29. Juni 2025)**
@@ -637,185 +669,501 @@ Neue Struktur:
 - Health-Checks und Status-Updates
 - Advanced UI-Features (Modals, Tooltips, Loading-States)
 
-# 📋 Backlog für Sprint 20+ (Future Roadmap)
+#### ✅ **Sprint 9: Bug Fixes & Production Ready** - ABGESCHLOSSEN (29. Juni 2025)
+- Template-Struktur komplett repariert (Tools-Seite funktioniert)
+- DataManager-Pfad-Probleme im Docker-Container gelöst
+- Tool-Integration-Verknüpfungen wiederhergestellt
+- JavaScript-Errors behoben (JSON-Editor)
+- Komplettes Code-Cleanup durchgeführt
 
-## Sprint 20+: Erweiterte Systeme & Enterprise Features
+#### 📊 **Aktueller Projekt-Status (Stand: Sprint 12 abgeschlossen):**
+- ✅ **14 Tools** vollständig funktionsfähig, gruppiert in **8 Integration-Kategorien**
+- ✅ **13 Integrations** mit vollständigem CRUD-Management
+- ✅ **12 Vendor Icons** korrekt integriert
+- ✅ **Produktionsstabiler Code** ohne Debug-Ausgaben
+- ✅ **Vollständige Docker-Containerisierung** mit korrekten Volume-Mappings
+- ✅ **Moderne UI** mit Tailwind CSS und responsive Design
+- ✅ **CSRF-Security** vollständig implementiert
+- ✅ **Layout-Optimierungen**: Schmalere Sidebar (60px), Click-to-Open, Auto-Submit Filter
+- ✅ **Test-System**: Umfassende Test-Suite mit zentraler Übersicht
+- ✅ **Implementation Modules**: Vollständiges System für dynamische Module-Execution
 
-### REST API & External Integration (Sprint 20-21)
-- **REST API v1**: Vollständige REST-API für alle Tools/Integrations/Agents
-- **API Documentation**: OpenAPI/Swagger-Dokumentation
-- **API Authentication**: Token-basierte API-Authentifizierung
-- **Webhooks**: Event-basierte Notifications für externe Systeme
-- **SDK Development**: Python/JavaScript SDKs für API-Integration
+#### 🎯 **Sprints 10-12 Zusammenfassung:**
+- **Sprint 10**: UI/UX-Verbesserungen (Sidebar, Filter, Click-to-Open, Auto-Submit)
+- **Sprint 11**: Test-System implementiert (zentrale Test-Übersicht, Module-Tests)
+- **Sprint 12**: Implementation Modules System (Base-Klasse, Manager, OpenAI-Modul)
 
-### Multi-Tenancy & Organizations (Sprint 22-23)
-- **Organization Management**: Vollständiges Multi-Tenant-System
-- **Team Collaboration**: Team-basierte Tool/Agent-Verwaltung
-- **Permission Management**: Granulare Berechtigungen pro Organization
-- **Resource Isolation**: Strikte Datentrennung zwischen Tenants
-- **Billing Integration**: Usage-based Billing und Subscription-Management
+#### 🔄 **Nächste Sprint-Prioritäten:
+- **Sprint 13**: Implementation Module Integration (Dynamic Tool-Module-Binding)
+- **Sprint 14**: Icon-Design-System & UI-Polish (Komplettes Icon-Set)
+- **Sprint 15+**: Advanced Features (Agents, Workflows, REST API)
 
-### Integration Marketplace (Sprint 24-25)
-- **Community Integrations**: Marketplace für Community-entwickelte Integrations
-- **Integration Store**: Installation und Management von Third-Party-Integrations
-- **Integration Development Kit**: SDK für Integration-Entwicklung
-- **Review & Rating System**: Community-basierte Integration-Bewertungen
-- **Monetization**: Revenue-Sharing für Integration-Entwickler
+# 📋 Backlog für Sprint 10+ (Abgeschlossen)
 
-### Mobile & PWA (Sprint 26-27)
-- **Progressive Web App**: Vollständige PWA-Implementierung
-- **Mobile-First UI**: Touch-optimierte Benutzeroberfläche
-- **Offline Functionality**: Offline-Modus für kritische Features
-- **Push Notifications**: Mobile Push-Notifications für Agent-Updates
-- **App Store Deployment**: iOS/Android App Store Veröffentlichung
+## Sprint 10: Layout-Optimierungen & UI-Verbesserungen ✅ COMPLETED (1 Tag)
+### Ziel: Umsetzung der Layout-Anforderungen aus dem Backlog
 
-### Enterprise Security & Compliance (Sprint 28-29)
-- **Single Sign-On (SSO)**: SAML/OAuth2-basierte SSO-Integration
-- **LDAP/Active Directory**: Enterprise-Directory-Integration
-- **SOC 2 Compliance**: Security-Audit und Compliance-Zertifizierung
-- **GDPR/Privacy**: Vollständige GDPR-Compliance und Privacy-Controls
-- **Enterprise Audit Logs**: Umfassende Audit-Trail-Funktionalität
+**User Stories:**
+- Als Benutzer möchte ich eine schmalere Sidebar im eingeklappten Zustand
+- Als Benutzer möchte ich Filter- und Suchfunktionen auf allen List-Seiten
+- Als Benutzer möchte ich alternierende Zeilenfarben in Tabellen
+- Als Benutzer möchte ich durch Klick auf Tabellenzeilen navigieren
 
-### Advanced DevOps & Scalability (Sprint 30-31)
-- **Kubernetes Deployment**: Production-ready K8s-Manifests
-- **Auto-Scaling**: Automatische Skalierung basierend auf Load
-- **Monitoring & Observability**: Prometheus/Grafana-Integration
-- **CI/CD Pipeline**: Vollständige Deployment-Automation
-- **High Availability**: Multi-Region Deployment-Unterstützung
+**Tasks:**
+- [x] **Sidebar Optimierung**: Eingeklappte Sidebar von 80px auf 60px reduziert (50px mobile)
+- [x] **Filter-System**: Erweiterte Suchtext und Filterfelder für Tools und Integrations implementiert
+- [x] **Tabellen-Styling**: Alternierende Zeilenfarben und Hover-Effekte hinzugefügt
+- [x] **Click-to-Open**: Klick auf Tabellenzeile öffnet gewählten Eintrag
+- [x] **Auto-Submit Filter**: JavaScript für automatische Filter-Übermittlung
+- [x] **Button-Styling**: Konsistente Primär-/Akzentfarben-Buttons implementiert
+- [x] **CSS-Verbesserungen**: Erweiterte Filter-Panels und verbesserte Interaktivität
 
-### AI & Machine Learning (Sprint 32-33)
-- **Custom Model Integration**: Support für Custom AI/ML-Modelle
-- **Model Training**: Training von Custom-Modellen basierend auf Usage-Daten
-- **Intelligent Recommendations**: AI-basierte Tool/Agent-Empfehlungen
-- **Natural Language Interface**: Chat-basierte Tool/Agent-Steuerung
-- **Predictive Analytics**: Vorhersage von Tool-/Agent-Performance
+**Definition of Done:** ✅ VOLLSTÄNDIG ERFÜLLT
+- [x] Sidebar ist im eingeklappten Zustand schmaler
+- [x] Filter/Suche funktioniert auf Tools und Integrations-Seiten
+- [x] Tabellen haben alternierende Zeilenfarben und Hover-Effekte
+- [x] Click-to-Open funktioniert für alle List-Views
+- [x] Auto-Submit für Filter implementiert
 
-### Internationalization & Localization (Sprint 34-35)
-- **Multi-Language Support**: UI-Lokalisierung für 10+ Sprachen
-- **RTL Support**: Right-to-Left Sprachen (Arabisch, Hebräisch)
-- **Currency & Region**: Regionale Anpassungen für Währungen/Formate
-- **Cultural Adaptation**: Kulturelle Anpassungen der UI/UX
-- **Translation Management**: Community-basierte Übersetzungsverwaltung
+## Sprint 11: Test-System Implementierung ✅ COMPLETED (1 Tag)
+### Ziel: Umfassendes Test-System für alle funktionalen Einheiten
+
+**User Stories:**
+- Als Entwickler möchte ich eine zentrale Test-Übersicht
+- Als Benutzer möchte ich Backend-Routen für jede funktionale Einheit testen können
+- Als Entwickler möchte ich dokumentierte Test-Verfahren
+
+**Tasks:**
+- [x] **Zentrale Test-Seite**: `/test` Route mit Übersicht aller bestehenden Tests
+- [x] **Test-Blueprint**: Separates Blueprint für Test-System mit vollständiger Architektur
+- [x] **Test-Templates**: Overview und Module-Templates für Test-Interface
+- [x] **Navigation-Integration**: Test-Link in Sidebar mit Bug-Icon hinzugefügt
+- [x] **Route-Dokumentation**: Dokumentation der .py-Dateien und getesteten Routen
+- [x] **Test-Module-System**: Modular aufgebautes Test-System für verschiedene Komponenten
+
+**✅ ERFOLGREICH IMPLEMENTIERT:**
+- ✅ **Test-Route**: `/test` mit vollständiger Blueprint-Architektur
+- ✅ **Test-Overview**: Zentrale Übersicht aller verfügbaren Test-Module
+- ✅ **Module-Tests**: Einzelne Test-Module für Integrations, Tools, API
+- ✅ **Navigation**: Test-Link in Sidebar integriert mit Bug-Icon
+- ✅ **Template-System**: Vollständige Template-Hierarchie für Test-Interface
+- ✅ **Simulation-Engine**: Test-Simulation für verschiedene Szenarien
+
+**Definition of Done:** ✅ VOLLSTÄNDIG ERFÜLLT
+- [x] Test-Seite zeigt alle verfügbaren Tests
+- [x] Jede funktionale Einheit hat eine dedizierte Test-Seite
+- [x] Route-Dokumentation ist implementiert
+- [x] Tests können manuell ausgeführt werden
+- [x] Navigation ist integriert
+
+## Sprint 12: Implementation Modules System ✅ COMPLETED (1 Tag)
+### Ziel: v036 Implementation-System portieren und erweitern
+
+**User Stories:**
+- Als System möchte ich Implementation-Module unterstützen
+- Als Entwickler möchte ich das v036 Tool-Modules-System als "Implementation-Modules" portieren
+- Als Integration möchte ich eine "base_implementation" implementieren
+
+**Tasks:**
+- [x] **Implementation Modules**: v036 `tool_modules` zu `implementation_modules` portieren
+- [x] **Base Implementation**: `base_implementation` Klasse (analog zu v036 `base.py`)
+- [x] **Implementation Manager**: Dynamic Loading von Implementation-Modulen
+- [x] **Registry System**: Registrierung und Verwaltung von Implementation-Modulen
+- [x] **Error Handling**: Robuste Fehlerbehandlung für Module-Loading
+- [x] **OpenAI Example**: Vollständige OpenAI ChatCompletion Implementation
+
+**✅ ERFOLGREICH IMPLEMENTIERT:**
+- ✅ **Implementation-System**: Vollständige Portierung der v036-Architektur
+- ✅ **Base-Klasse**: `BaseImplementation` mit Abstract Methods für alle Module
+- ✅ **Manager-System**: `ImplementationManager` für dynamisches Laden
+- ✅ **Registry**: Automatische Registrierung verfügbarer Implementation-Module
+- ✅ **OpenAI-Modul**: Vollständige `OpenAIChatCompletionImplementation`
+- ✅ **Error-System**: Umfassende Exception-Hierarchie für Fehlerbehandlung
+
+**Definition of Done:** ✅ VOLLSTÄNDIG ERFÜLLT
+- [x] Implementation-Modules-System funktioniert
+- [x] Base-Implementation ist implementiert
+- [x] OpenAI ChatCompletion ist portiert
+- [x] Dynamic Loading funktioniert
+- [x] Error Handling ist robust
+
+## Sprint 13: Implementation Module Integration ✅ COMPLETED (1 Tag)
+### Ziel: Dynamische Verknüpfung zwischen Tools/Integrations und Implementation Modules
+
+**User Stories:**
+- Als Tool möchte ich über Implementation Modules ausgeführt werden
+- Als Integration möchte ich automatisch passende Implementation Module finden
+- Als Benutzer möchte ich Tools über ihre Implementation Module ausführen
+
+**Tasks:**
+- [x] **Module-Tool-Binding**: Automatische Verknüpfung zwischen Tools und Implementation Modules
+- [x] **Dynamic Execution**: Tool-Ausführung über Implementation Manager
+- [x] **Configuration Mapping**: Parameter-Mapping zwischen Tool- und Module-Konfiguration
+- [x] **Real Execution**: Echte API-Calls statt Simulation in Tool-Tests
+- [x] **Google Sheets Module**: Implementation des Google Sheets-Moduls
+- [x] **Error Integration**: Integration der Module-Errors in Tool-Interface
+
+**✅ ERFOLGREICH IMPLEMENTIERT:**
+- ✅ **Tool-Module-Binding**: Automatische Zuordnung basierend auf Integration-Namen
+- ✅ **Echte Tool-Ausführung**: Tools werden jetzt über Implementation Modules ausgeführt
+- ✅ **Configuration Mapping**: Nahtlose Übertragung von Tool-Config zu Module-Config
+- ✅ **Google Sheets Module**: Vollständiges Google Sheets Implementation Module erstellt
+- ✅ **Async Execution**: Threading-basierte async Ausführung in Flask-Routes
+- ✅ **Error Handling**: Robuste Fehlerbehandlung mit Fallback zu Simulation
+- ✅ **Status Anzeige**: Implementation Module Status in Tool-UI integriert
+- ✅ **Module Overview**: Dedizierte Übersichtsseite für alle Implementation Modules
+
+**Implementierte Features:**
+1. **ToolsManager Integration**: 
+   - `get_implementation_module_for_tool()` - Automatische Modul-Zuordnung
+   - `test_tool_with_implementation()` - Echte Tool-Tests über Module
+   - `execute_tool_with_implementation()` - Echte Tool-Ausführung über Module
+   - `get_tool_implementation_status()` - Status-Überprüfung
+
+2. **Google Sheets Module**:
+   - Vollständige Google Sheets API Integration
+   - Unterstützt: read_sheet, write_sheet, update_sheet, create_sheet, get_sheet_info
+   - OAuth2 und Service Account Authentifizierung
+   - Robuste Fehlerbehandlung und Validation
+
+3. **UI Integration**:
+   - Implementation Module Status in Tool-Views
+   - Automatisches Status-Loading via AJAX
+   - Module-Übersichtsseite im Test-System
+   - Tool-Module-Zuordnung Visualisierung
+
+4. **Route Erweiterungen**:
+   - `/tools/implementation-status/<id>` - Module Status abrufen
+   - `/tools/implementation-modules` - Alle Module auflisten
+   - `/test/implementation-modules` - Module Übersichtsseite
+   - Erweiterte Test- und Execute-Routes mit Module-Support
+
+**Definition of Done:** ✅ VOLLSTÄNDIG ERFÜLLT
+- [x] Tools können über Implementation Modules ausgeführt werden
+- [x] Automatische Modul-Zuordnung funktioniert
+- [x] Google Sheets Module ist vollständig implementiert
+- [x] UI zeigt Implementation Module Status an
+- [x] Fallback zu Simulation bei fehlenden Modulen
+
+# 📋 Backlog für Sprint 14+ (Überarbeiteter Plan - Stand: 29. Juni 2025)
+
+## Sprint 14: Layout-Verbesserungen & Icon-Design-System (3-4 Tage)
+### Ziel: Komplettes Layout-Redesign und finale UI-Verbesserungen
+
+**User Stories:**
+- Als Benutzer möchte ich einheitliche, moderne Icons in der gesamten Anwendung
+- Als Designer möchte ich ein konsistentes visuelles Design-System
+- Als Benutzer möchte ich eine polierte, professionelle UI-Erfahrung
+- Als Benutzer möchte ich ein modernes Card-basiertes Layout für Listen
+- Als Benutzer möchte ich alle Aktionen konsistent in der Toolbar finden
+
+**Tasks:**
+
+### **Layout-Verbesserungen (Priorität 1):**
+- [ ] **Toolbar-Migration**: Alle Footer-Buttons in Toolbar am Kopf der Seite verschieben
+  - Tools/Integrations: Create/Import/Export-Buttons → Toolbar
+  - Tool/Integration Details: Edit/Delete/Clone-Buttons → Toolbar
+  - Konsistente rechtsbündige Ausrichtung neben Überschrift
+- [ ] **Aktive Navigation**: Sidebar-Icons für /tools und /integrations als aktiv markieren
+  - Route-basierte Active-State-Erkennung implementieren
+  - CSS-Klassen für aktive Tool/Integration-Navigation
+- [ ] **Card-Layout-Migration**: Listen-Layout zu Card-Layout umstellen
+  - `/integrations`: Von Tabelle zu Card-Grid mit Vendor-Icons
+  - `/tools`: Von Tabelle zu Card-Grid gruppiert nach Integration
+  - Responsive Card-Design mit Hover-Effekten
+- [ ] **Container-Fixes**: 
+  - Tools/create: Container-Alignment oben korrigieren
+  - Dashboard: Sidebar-Context-Spacing entfernen
+- [ ] **Layout-Konsistenz**: Einheitliche Abstände und Container-Breiten
+
+### **Icon-Design-System (Priorität 2):**
+- [ ] **Icon-Set Design**: Komplettes Icon-Set basierend auf Dashboard/Integrations-Vorlage
+  - Dashboard, Insights, Workflows, Tools, Integrations, Profile, Company
+  - Test, Implementation Modules, Settings, Help
+  - Status-Icons (Connected, Error, Loading, Success)
+- [ ] **Icon-System**: SVG-basierte Icon-Komponenten und CSS-Klassen
+
+### **UI-Polish (Priorität 3):**
+- [ ] **Design-Konsistenz**: Einheitliche Typografie, Farbschema
+- [ ] **Responsive-Optimierung**: Mobile-Optimierungen für Card-Layout
+- [ ] **Accessibility**: WCAG 2.1 Compliance Verbesserungen
+
+**Definition of Done:**
+- [ ] Alle Footer-Buttons sind in Toolbars verschoben
+- [ ] Tools/Integrations Sidebar-Navigation zeigt aktiven Status korrekt
+- [ ] Card-Layout für Tools und Integrations ist implementiert
+- [ ] Container-Alignment-Probleme sind behoben
+- [ ] Dashboard-Spacing ist korrigiert
+- [ ] Komplettes, konsistentes Icon-Set verfügbar
+- [ ] UI ist vollständig poliert und produktionsreif
+
+## Sprint 15: Clean-up & Documentation (2 Tage)
+### Ziel: Code-Cleanup und vollständige Dokumentation
+
+**User Stories:**
+- Als Entwickler möchte ich sauberen, wartbaren Code
+- Als neuer Entwickler möchte ich umfassende Dokumentation
+- Als System möchte ich alle Debug-Code und temporären Dateien entfernt haben
+
+**Tasks:**
+- [ ] **Code-Cleanup**: Finale Bereinigung aller Debug-Ausgaben und temporären Codes
+- [ ] **Documentation Update**: Vollständige Aktualisierung der README.md
+- [ ] **API Documentation**: Dokumentation aller Routes und Endpunkte
+- [ ] **Setup Guide**: Detaillierte Setup-Anweisungen für Entwickler
+- [ ] **Architecture Documentation**: Vollständige Architektur-Dokumentation
+- [ ] **Testing Documentation**: Test-System und Test-Verfahren dokumentieren
+- [ ] **Deployment Guide**: Production-Deployment-Anweisungen
+
+**Definition of Done:**
+- [ ] Kein Debug-Code oder temporäre Dateien vorhanden
+- [ ] Vollständige Dokumentation verfügbar
+- [ ] Setup-Guide funktioniert für neue Entwickler
+- [ ] Alle APIs sind dokumentiert
+
+## Sprint 16: Advanced Implementation Module Features (3-4 Tage)
+### Ziel: Erweiterte Implementation Module Funktionalitäten
+
+**User Stories:**
+- Als Module möchte ich erweiterte Konfigurationsmöglichkeiten
+- Als Tool möchte ich Module-spezifische Parameter nutzen
+- Als Entwickler möchte ich einfach neue Module erstellen können
+
+**Tasks:**
+- [ ] **Module Templates**: Templates für häufige Module-Typen (API, Database, File)
+- [ ] **Dynamic Configuration UI**: UI-Generierung basierend auf Module-Schema
+- [ ] **Module Testing Framework**: Automatisierte Tests für Implementation Modules
+- [ ] **Module Documentation**: Auto-generierte Dokumentation aus Module-Metadaten
+- [ ] **Module Versioning**: Versionierung und Update-Management für Module
+- [ ] **Module Registry**: Zentrale Registry für alle verfügbaren Module
+- [ ] **Hot-Reload**: Dynamic Loading/Unloading von Modulen ohne Restart
+
+**Priority Modules:**
+1. **Slack Integration**: Slack API Implementation Module
+2. **Email Module**: SMTP/Email-Versand Implementation Module  
+3. **Database Module**: SQL/NoSQL Database Implementation Module
+4. **File Processing**: CSV/JSON/XML File Processing Module
+
+**Definition of Done:**
+- [ ] Module-Templates funktionieren für neue Module-Entwicklung
+- [ ] Dynamic Configuration UI generiert Forms basierend auf Module-Schema
+- [ ] Automatisierte Tests für alle Implementation Modules
+- [ ] Hot-Reload-System funktioniert
+
+## Sprint 17: Security Framework (3-4 Tage)
+### Ziel: Umfassendes Security-System implementieren
+
+**User Stories:**
+- Als Benutzer möchte ich mich sicher authentifizieren können
+- Als System möchte ich vor Sicherheitsbedrohungen geschützt sein
+- Als Administrator möchte ich Benutzer-Berechtigungen verwalten
+
+**Tasks:**
+- [ ] **Authentication System**: Login/Logout, Session-Management
+- [ ] **User Management**: Benutzer-CRUD, Rollen und Berechtigungen
+- [ ] **Password Security**: Bcrypt/Argon2-Hashing, Password-Policy
+- [ ] **Data Encryption**: AES-256 für sensitive Daten (API-Keys, Tokens)
+- [ ] **Security Headers**: CSP, HSTS, X-Frame-Options, X-Content-Type-Options
+- [ ] **Rate Limiting**: API-Rate-Limits für alle Endpunkte
+- [ ] **Audit Logging**: Vollständige Nachverfolgung sicherheitsrelevanter Aktionen
+- [ ] **Input Sanitization**: Erweiterte Input-Validation und Sanitization
+
+**Security Layers:**
+1. **Application Security**: CSRF (✅ bereits implementiert), XSS-Protection, Input-Validation
+2. **Transport Security**: HTTPS, HSTS, Secure Cookies
+3. **Data Security**: Encryption-at-Rest, Encryption-in-Transit
+4. **Access Security**: Authentication, Authorization, RBAC
+
+**Definition of Done:**
+- [ ] Vollständiges Authentication-System funktioniert
+- [ ] Alle API-Keys und sensible Daten sind verschlüsselt
+- [ ] Security-Headers sind implementiert
+- [ ] Rate-Limiting verhindert API-Abuse
+- [ ] Audit-Logging dokumentiert alle kritischen Aktionen
+
+## Sprint 18: Workflow-System (4-5 Tage)
+### Ziel: Tool-Verkettung und Workflow-Automation
+
+**User Stories:**
+- Als Benutzer möchte ich Tools in Workflows verketten können
+- Als System möchte ich Workflows automatisch ausführen können
+- Als Benutzer möchte ich Workflow-Templates erstellen und teilen
+
+**Tasks:**
+- [ ] **Workflow Engine**: Core-Engine für Workflow-Ausführung
+- [ ] **Visual Workflow Builder**: Drag & Drop Workflow-Designer
+- [ ] **Tool Chaining**: Tools können Output an andere Tools weitergeben
+- [ ] **Conditional Logic**: If/Else-Bedingungen in Workflows
+- [ ] **Loop Support**: Schleifen und Iterationen in Workflows
+- [ ] **Workflow Templates**: Vordefinierte Workflow-Templates
+- [ ] **Scheduling**: Zeitbasierte Workflow-Ausführung (Cron-Jobs)
+- [ ] **Workflow Monitoring**: Real-time Monitoring von Workflow-Ausführungen
+
+**Core Features:**
+1. **Workflow Designer**: Visual Editor mit Drag & Drop
+2. **Execution Engine**: Async Workflow-Ausführung mit Error-Handling
+3. **Data Flow**: Seamless Data-Transfer zwischen Tools
+4. **Monitoring**: Real-time Status und Performance-Monitoring
+
+**Definition of Done:**
+- [ ] Workflows können visuell erstellt werden
+- [ ] Tools können in Sequenz und parallel ausgeführt werden
+- [ ] Data-Flow zwischen Tools funktioniert
+- [ ] Workflow-Monitoring zeigt Real-time Status
+
+## Sprint 19: OpenAI Assistant Integration (4-5 Tage) 🤖 PRIORITÄT
+### Ziel: Vollständige OpenAI Assistant API V2 Integration
+
+**User Stories:**
+- Als Benutzer möchte ich OpenAI Assistants erstellen und verwalten
+- Als System möchte ich alle OpenAI Assistant API V2 Features unterstützen
+- Als Benutzer möchte ich mit Assistants in einem Chat-Interface interagieren
+
+**Tasks:**
+- [ ] **Assistant Management**: CRUD für Assistants (POST/GET/PUT/DELETE /v1/assistants)
+- [ ] **Thread Management**: Conversation-Management (/v1/threads)
+- [ ] **Message System**: Nachrichten-Verwaltung (/v1/threads/{id}/messages)
+- [ ] **Run Management**: Assistant-Ausführungen (/v1/threads/{id}/runs)
+- [ ] **File Management**: Upload und Retrieval (/v1/files)
+- [ ] **Chat Interface**: Real-time Chat-UI für Assistant-Interaktion
+- [ ] **Assistant Gallery**: Übersicht aller erstellten Assistenten
+- [ ] **Assistant Builder**: UI zur Erstellung/Bearbeitung von Assistenten
+
+**Integration mit bestehendem System:**
+- Tools als Assistant Functions verfügbar machen
+- Implementation Modules als Assistant-Tools integrieren
+- Workflow-Integration für komplexe Assistant-Tasks
+
+**Definition of Done:**
+- [ ] Vollständige Assistant API V2 implementiert
+- [ ] Chat-Interface funktioniert real-time
+- [ ] File-Upload für Retrieval funktioniert
+- [ ] Assistant-Gallery zeigt alle Assistants
+- [ ] Function-Calling mit eigenen Tools integriert
+
+## Sprint 20: Agents-System (5-6 Tage) 🤖 PRIORITÄT
+### Ziel: Multi-Agent-System basierend auf OpenAI Assistants
+
+**User Stories:**
+- Als Benutzer möchte ich autonome Agents erstellen, die Tools verwenden können
+- Als Agent möchte ich auf Tools zugreifen und diese koordiniert ausführen
+- Als System möchte ich Agent-to-Agent Kommunikation unterstützen
+
+**Tasks:**
+- [ ] **Agent Framework**: Basis-Klassen für verschiedene Agent-Typen
+- [ ] **Tool Integration**: Agents können verfügbare Tools nutzen
+- [ ] **Agent Orchestration**: Multi-Agent-Koordination und Kommunikation
+- [ ] **Memory System**: Persistente Agent-Memories und Kontext-Verwaltung
+- [ ] **Agent Templates**: Vordefinierte Agent-Typen für häufige Use-Cases
+- [ ] **Agent Monitoring**: Dashboard für Agent-Aktivitäten und Performance
+
+**Agent Types:**
+1. **Task Agent**: Ausführung spezifischer Tool-basierten Tasks
+2. **Workflow Agent**: Automatische Workflow-Ausführung
+3. **Monitoring Agent**: System-Überwachung und Alerting
+4. **Research Agent**: Automatische Datensammlung und -analyse
+
+**Definition of Done:**
+- [ ] Agents können Tools autonom ausführen
+- [ ] Multi-Agent-Kommunikation funktioniert
+- [ ] Memory-System ist persistent
+- [ ] Agent-Dashboard zeigt alle Aktivitäten
+
+# 📋 Backlog für Sprint 21+ (Enterprise & Advanced Features)
+
+## Sprint 21-22: REST API & External Integration (4-6 Tage)
+### Ziel: Vollständige REST API für externe Integration
+
+**Tasks:**
+- [ ] **REST API v1**: Vollständige REST-API für alle Tools/Integrations/Agents
+- [ ] **API Documentation**: OpenAPI/Swagger-Dokumentation
+- [ ] **API Authentication**: Token-basierte API-Authentifizierung
+- [ ] **Webhooks**: Event-basierte Notifications für externe Systeme
+- [ ] **SDK Development**: Python/JavaScript SDKs für API-Integration
+
+## Sprint 23-24: Advanced UI & Mobile (4-5 Tage)
+### Ziel: Progressive Web App und Mobile-Optimierung
+
+**Tasks:**
+- [ ] **Progressive Web App**: Vollständige PWA-Implementierung
+- [ ] **Mobile-First UI**: Touch-optimierte Benutzeroberfläche
+- [ ] **Offline Functionality**: Offline-Modus für kritische Features
+- [ ] **Push Notifications**: Mobile Push-Notifications für Agent-Updates
+
+## Sprint 25+: Enterprise Features
+### Ziel: Enterprise-ready Features
+
+**Tasks:**
+- [ ] **Multi-Tenancy**: Organizations und Team-Management
+- [ ] **SSO Integration**: SAML/OAuth2-basierte SSO
+- [ ] **Advanced Analytics**: Performance-Monitoring und Usage-Analytics
+- [ ] **Integration Marketplace**: Community-basierte Integration-Entwicklung
 
 ---
 
-# 🔐 Sicherheitskonzept & Security Framework
+# 🎯 **Aktueller Status & Nächste Schritte (Stand: 14. Januar 2025)**
 
-## Aktuelle Sicherheitsmaßnahmen (Sprints 1-8)
+## ✅ **Erfolgreich Abgeschlossen (Sprints 1-13 + Dynamic UI Features):**
+- **Grundlagen**: Flask + Docker + Tailwind Setup
+- **UI/UX**: Moderne Sidebar, responsive Layout, Filter-Systeme
+- **Data Management**: 13 Integrations, 15 Tools, 12 Icons migriert
+- **CRUD Systems**: Vollständige Verwaltung für Tools und Integrations
+- **Test System**: Umfassende Test-Suite mit zentraler Übersicht inkl. Dynamic Features
+- **Implementation Modules**: Dynamisches Module-System mit OpenAI + Google Sheets
+- **Module Integration**: Echte Tool-Ausführung über Implementation Modules
+- ✅ **Dynamic Form UI**: Vollständig implementierte dynamische Formular-UI für Tools
+  - **Edit/Create/Execute**: Alle Dialoge nutzen dynamische Feld-Generierung
+  - **Field Types**: text, select, boolean, json, file mit vollständiger Unterstützung
+  - **Status System**: Locked, Prefilled, Required Badges in allen UIs
+  - **JSON Integration**: Bidirektionale Sync zwischen UI-Feldern und JSON-Editor
+  - **Live Validation**: Echtzeit-JSON-Validation mit Fehlermeldungen
+  - **Backend Integration**: Flexible Parameter-Verarbeitung in tools.py
 
-### ✅ Implementierte Security Features:
-- **CSRF Protection**: Flask-WTF CSRFProtect aktiv, CSRF-Tokens in allen POST-Formularen und AJAX-Calls
-- **Secret Key Management**: Sichere Flask Secret Key Konfiguration  
-- **Input Validation**: Server-side Validation für alle User-Inputs (Tools, Integrations)
-- **File Upload Security**: Sichere Icon-Upload-Funktionalität mit Format-Validierung
-- **JSON Validation**: Umfassende JSON-Schema-Validierung für alle Datenstrukturen
-- **Error Handling**: Sichere Fehlerbehandlung ohne sensitive Information-Leaks
+## 🔄 **Testsystem Status:**
+- ✅ **Grundlegende Tests**: Alle Module und Routen erfasst
+- ✅ **Dynamic Features**: Spezielle Test-Routen für dynamische UI-Features
+- ✅ **Test-Coverage**: Vollständige Dokumentation aller dynamischen Features
+- ⚠️ **Test-Anpassung**: Testsystem ist bereit, keine weiteren Anpassungen nötig
 
-### ⚠️ Geplante Security Features (Sprints 17-18):
-- **Authentication & Authorization**: Login/Logout, Session-Management, RBAC
-- **Password Security**: Bcrypt/Argon2-Hashing, Password-Policy
-- **Data Encryption**: AES-256 für sensitive Daten (API-Keys, Tokens)
-- **Security Headers**: CSP, HSTS, X-Frame-Options, X-Content-Type-Options
-- **Rate Limiting**: API-Rate-Limits für alle Endpunkte
-- **Audit Logging**: Vollständige Nachverfolgung sicherheitsrelevanter Aktionen
+## 🔄 **Aktuelle Prioritäten (Sprints 14-16):**
+1. **Sprint 14**: Layout-Verbesserungen & Icon-Design-System (Toolbar-Migration, Card-Layout, Navigation-Fixes)
+2. **Sprint 15**: Code-Cleanup & vollständige Dokumentation  
+3. **Sprint 16**: Advanced Implementation Module Features
 
-## Security Architecture
+## 🚀 **Mittelfristige Ziele (Sprints 17-20):**
+1. **Sprint 17**: Security Framework (Authentication, Encryption, Rate-Limiting)
+2. **Sprint 18**: Workflow-System (Tool-Verkettung, Visual Designer)
+3. **Sprint 19**: OpenAI Assistant Integration (vollständige API V2)
+4. **Sprint 20**: Agents-System (Multi-Agent, autonome Tool-Nutzung)
 
-### Threat Model:
-1. **Cross-Site Scripting (XSS)**: Verhindert durch CSP und Input-Sanitization
-2. **Cross-Site Request Forgery (CSRF)**: Verhindert durch Flask-WTF CSRF-Protection
-3. **SQL Injection**: Verhindert durch SQLAlchemy ORM und Parameterized Queries
-4. **Session Hijacking**: Verhindert durch sichere Session-Konfiguration
-5. **Data Breach**: Minimiert durch Data-Encryption und Access-Controls
-6. **API Abuse**: Verhindert durch Rate-Limiting und Authentication
-
-### Security Layers:
-- **Application Security**: CSRF, Input-Validation, Secure Coding
-- **Transport Security**: HTTPS, HSTS, Secure Cookies
-- **Data Security**: Encryption-at-Rest, Encryption-in-Transit
-- **Access Security**: Authentication, Authorization, RBAC
-- **Infrastructure Security**: Docker, Network-Isolation, Secrets-Management
-
-### Compliance Framework:
-- **GDPR**: Privacy-by-Design, Data-Minimization, Right-to-Deletion
-- **SOC 2 Type II**: Access-Controls, System-Monitoring, Data-Protection
-- **ISO 27001**: Information Security Management System (ISMS)
-
-# 🧪 GUI Testing Workflow
-
-## Testing-Methodik
-Ab sofort verwenden wir folgende Testing-Methodik für GUI-Tests:
-- **Entwickler**: Erstellt detaillierte Testpläne 
-- **User**: Führt manuelle Tests aus und dokumentiert Ergebnisse
-- **Feedback-Loop**: Schnelle Iteration basierend auf Test-Ergebnissen
-
-## Testplan-Template:
-```markdown
-## GUI Testplan: [Feature Name]
-**Ziel**: [Beschreibung der zu testenden Funktionalität]
-
-### Vorbedingungen:
-- [Setup-Anweisungen]
-
-### Test-Schritte:
-1. **Schritt 1**: [Detaillierte Anweisungen]
-   - **Erwartetes Ergebnis**: [Was sollte passieren]
-   - **Tatsächliches Ergebnis**: [Vom User auszufüllen]
-2. **Schritt 2**: [Nächste Aktion]
-   - **Erwartetes Ergebnis**: [Was sollte passieren]
-   - **Tatsächliches Ergebnis**: [Vom User auszufüllen]
-
-### Acceptance Criteria:
-- [ ] [Kriterium 1]
-- [ ] [Kriterium 2]
-
-### Error Cases:
-- [ ] [Error-Szenario 1] - Status: [Pass/Fail/Not Tested]
-- [ ] [Error-Szenario 2] - Status: [Pass/Fail/Not Tested]
-
-### Test-Ergebnis:
-- **Status**: [Pass/Fail/Partial]
-- **Gefundene Issues**: [Liste der Probleme]
-- **Feedback**: [User-Feedback für Verbesserungen]
-```
-
-# 🧹 Cleanup-Liste (Temporäre Dateien)
-
-## Dateien zum Aufräumen nach Sprint-Abschluss
-
-### Migration Scripts (Sprint 5-8):
-- [ ] `app/utils/migration.py` - Migration-Script von v036 (nach erfolgreicher Migration)
-- [ ] `migration_fix.py` - Datenstruktur-Korrektur-Script (nach v036-Format-Migration)
-- [ ] Alle `test_*.py` Scripts im Root-Verzeichnis (nach Integration in offizielle Test-Suite)
-
-### Temporäre Test-Scripts:
-- [ ] `create_test_integration.py` - Integration-Erstellungs-Test (nach GUI-Test-Implementierung)
-- [ ] `test_integration_creation.py` - CRUD-Test-Script (nach offiziellem Test-System)
-- [ ] `debug_*.py` Scripts - Debugging-Hilfen (nach Problem-Lösung)
-
-### Entwicklungs-Hilfsdateien:
-- [ ] `temp_*.json` - Temporäre JSON-Test-Dateien
-- [ ] `backup_*.json` - Migration-Backups (nach erfolgreicher Validierung)
-- [ ] `*.log` - Debug-Log-Dateien (nach Problem-Lösung)
-
-### Docker-Entwicklung:
-- [ ] `docker-compose.override.yml` - Development-Overrides (falls erstellt)
-- [ ] `Dockerfile.dev` - Development-spezifische Dockerfile (falls erstellt)
-
-### Dokumentations-Drafts:
-- [ ] `notes_*.md` - Temporäre Notiz-Dateien
-- [ ] `draft_*.md` - Draft-Dokumentationen (nach Finalisierung)
-
-## Cleanup-Workflow:
-1. **Nach Sprint-Ende**: Cleanup-Liste reviewen
-2. **Backup wichtiger Logs**: Wichtige Erkenntnisse in Knowledge Base übertragen
-3. **Dateien löschen**: Temporäre Dateien entfernen
-4. **Git Clean**: Repository aufräumen (`git clean -fd` nach Review)
-
-## Auto-Cleanup Regeln:
-- **Migration Scripts**: Nach 2 erfolgreichen Sprints ohne Rollback
-- **Test Scripts**: Nach Integration in offizielle Test-Suite
-- **Debug Files**: Nach Problem-Lösung und Knowledge Base Update
-- **Backup Files**: Nach 1 Monat (wenn keine Rollback-Notwendigkeit)
+## 🌟 **Langfristige Vision (Sprint 21+):**
+- **Enterprise-Features**: REST API, Multi-Tenancy, SSO
+- **Advanced UI**: PWA, Mobile-Optimierung, Offline-Modus
 
 ---
+
+## 📋 **Dynamische Form-UI - Implementierungsdetails:**
+
+### **Frontend (JavaScript):**
+- `generateFieldHtml()` - Dynamische HTML-Generierung für alle Feld-Typen
+- `toggleJsonEditor()` - JSON-Editor Ein-/Ausblenden mit Sync
+- `validateJSON()` - Live-Validation für JSON-Felder
+- `syncFormWithJson()` - Bidirektionale Synchronisation UI ↔ JSON
+- `addFieldListeners()` - Event-Handler für dynamische Formular-Interaktion
+
+### **Backend (Flask):**
+- `tools.py`: Flexible Parameter-Verarbeitung für dynamische Felder
+- `get_tool_config()` API-Route für AJAX-basierte Tool-Konfiguration
+- Integration-Objekt wird an alle Templates übergeben
+- Unterstützung für prefilled_inputs und locked_inputs
+
+### **Templates:**
+- `edit.html` - Dynamische Edit-Forms mit allen Features
+- `create.html` - Dynamische Create-Forms mit allen Features  
+- `view.html` - Dynamische Execute-Dialog mit allen Features
+- Vollständige Status-Badge-Integration (Locked, Prefilled, Required)
+
+### **Test-System:**
+- `/test/dynamic-features` - Spezielle Test-Seite für dynamische Features
+- Vollständige Dokumentation aller Feature-Tests
+- AJAX-Test-Routen für alle Feld-Typen
+- Beispiel-Konfigurationen für Test-Szenarien

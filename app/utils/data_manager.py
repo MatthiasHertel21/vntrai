@@ -9,6 +9,15 @@ import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any
+from werkzeug.utils import secure_filename
+
+# Implementation Module Integration hinzufügen
+try:
+    from app.implementation_modules import implementation_manager
+    IMPLEMENTATION_MODULES_AVAILABLE = True
+except ImportError:
+    IMPLEMENTATION_MODULES_AVAILABLE = False
+    implementation_manager = None
 
 class DataManager:
     """Base class for data management operations"""
@@ -211,10 +220,11 @@ class IntegrationsManager(DataManager):
 
 
 class ToolsManager(DataManager):
-    """Manager for tools data"""
+    """Manager for tools data with Implementation Module integration"""
     
     def __init__(self):
         super().__init__('tools')
+        self.implementation_manager = implementation_manager if IMPLEMENTATION_MODULES_AVAILABLE else None
     
     def create_tool(self, name: str, category: str = 'utility', tool_type: str = 'script') -> Dict[str, Any]:
         """Create new tool with defaults"""
@@ -239,21 +249,199 @@ class ToolsManager(DataManager):
             return tool
         return None
     
-    def filter_by_category(self, category: str) -> List[Dict[str, Any]]:
-        """Filter tools by category"""
-        all_tools = self.load_all()
-        return [item for item in all_tools if item.get('category') == category]
+    def get_implementation_module_for_tool(self, tool: Dict[str, Any]) -> Optional[str]:
+        """
+        Ermittelt das passende Implementation Module für ein Tool.
+        Basiert auf tool_definition und verfügbaren Modulen.
+        """
+        if not self.implementation_manager:
+            return None
+        
+        # Tool Definition ermitteln - erst direkt, dann in metadata.original_data
+        tool_definition = tool.get('tool_definition', '')
+        if not tool_definition and 'metadata' in tool and 'original_data' in tool['metadata']:
+            tool_definition = tool['metadata']['original_data'].get('tool_definition', '')
+        
+        if not tool_definition:
+            return None
+        
+        # Mapping von Integration-Namen zu Implementation-Modulen
+        integration_to_module_mapping = {
+            'ChatGPT': 'openai_chatcompletion',
+            'OpenAI': 'openai_chatcompletion',
+            'OpenAI Chat Completion': 'openai_chatcompletion',
+            'GoogleSheets': 'google_sheets',  # Hinzugefügt: ohne Leerzeichen
+            'Google Sheets': 'google_sheets',
+            'Google Workspace': 'google_sheets'
+        }
+        
+        # Direkte Zuordnung versuchen
+        module_name = integration_to_module_mapping.get(tool_definition)
+        if module_name:
+            return module_name
+        
+        # Fallback: Nach ähnlichen Namen suchen
+        available_modules = self.implementation_manager.list_available_implementations()
+        for module_info in available_modules:
+            module_name_lower = module_info.get('name', '').lower()
+            tool_definition_lower = tool_definition.lower()
+            
+            if module_name_lower in tool_definition_lower or tool_definition_lower in module_name_lower:
+                return module_info.get('name')
+        
+        return None
     
-    def filter_by_type(self, tool_type: str) -> List[Dict[str, Any]]:
-        """Filter tools by type"""
-        all_tools = self.load_all()
-        return [item for item in all_tools if item.get('type') == tool_type]
+    async def test_tool_with_implementation(self, tool_id: str, test_config: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Testet ein Tool über sein Implementation Module.
+        """
+        try:
+            tool = self.get_by_id(tool_id)
+            if not tool:
+                return {'success': False, 'message': 'Tool nicht gefunden'}
+            
+            if not self.implementation_manager:
+                return {'success': False, 'message': 'Implementation Module System nicht verfügbar'}
+            
+            # Implementation Module ermitteln
+            module_name = self.get_implementation_module_for_tool(tool)
+            if not module_name:
+                return {'success': False, 'message': 'Kein passendes Implementation Module gefunden'}
+            
+            # Konfiguration zusammenstellen
+            config = tool.get('config', {})
+            if test_config:
+                config.update(test_config)
+            
+            # Test über Implementation Manager ausführen
+            test_result = await self.implementation_manager.test_implementation(module_name, config)
+            
+            # Test-Ergebnis im Tool speichern
+            tool['last_test'] = {
+                'timestamp': datetime.utcnow().isoformat() + 'Z',
+                'result': test_result,
+                'module_used': module_name
+            }
+            
+            # Status aktualisieren
+            tool['status'] = 'connected' if test_result.get('success') else 'error'
+            tool['updated_at'] = datetime.utcnow().isoformat() + 'Z'
+            
+            self.update(tool_id, tool)
+            
+            return test_result
+            
+        except Exception as e:
+            error_result = {
+                'success': False,
+                'message': f'Test-Fehler: {str(e)}',
+                'timestamp': datetime.utcnow().isoformat() + 'Z'
+            }
+            
+            # Speichere Fehler-Ergebnis
+            if tool:
+                tool['last_test'] = {
+                    'timestamp': datetime.utcnow().isoformat() + 'Z',
+                    'result': error_result
+                }
+                tool['status'] = 'error'
+                tool['updated_at'] = datetime.utcnow().isoformat() + 'Z'
+                self.update(tool_id, tool)
+            
+            return error_result
     
-    def get_categories(self) -> List[str]:
-        """Get all unique categories"""
-        all_tools = self.load_all()
-        categories = set(tool.get('category', 'utility') for tool in all_tools)
-        return sorted(list(categories))
+    async def execute_tool_with_implementation(self, tool_id: str, inputs: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Führt ein Tool über sein Implementation Module aus.
+        """
+        try:
+            tool = self.get_by_id(tool_id)
+            if not tool:
+                return {'success': False, 'message': 'Tool nicht gefunden'}
+            
+            if not self.implementation_manager:
+                return {'success': False, 'message': 'Implementation Module System nicht verfügbar'}
+            
+            # Implementation Module ermitteln
+            module_name = self.get_implementation_module_for_tool(tool)
+            if not module_name:
+                return {'success': False, 'message': 'Kein passendes Implementation Module gefunden'}
+            
+            # Konfiguration und Parameter zusammenstellen
+            config = tool.get('config', {})
+            
+            # Prefilled und Locked Inputs berücksichtigen
+            final_inputs = tool.get('prefilled_inputs', {}).copy()
+            locked_inputs = tool.get('locked_inputs', [])
+            
+            for key, value in inputs.items():
+                if key not in locked_inputs:
+                    final_inputs[key] = value
+            
+            # Execution über Implementation Manager
+            execution_result = await self.implementation_manager.execute_implementation(
+                module_name, config, final_inputs
+            )
+            
+            # Execution-Ergebnis im Tool speichern
+            tool['last_execution'] = {
+                'timestamp': datetime.utcnow().isoformat() + 'Z',
+                'inputs': final_inputs,
+                'result': execution_result,
+                'module_used': module_name
+            }
+            
+            tool['updated_at'] = datetime.utcnow().isoformat() + 'Z'
+            self.update(tool_id, tool)
+            
+            return execution_result
+            
+        except Exception as e:
+            error_result = {
+                'success': False,
+                'message': f'Execution-Fehler: {str(e)}',
+                'timestamp': datetime.utcnow().isoformat() + 'Z'
+            }
+            
+            # Speichere Fehler-Ergebnis
+            if tool:
+                tool['last_execution'] = {
+                    'timestamp': datetime.utcnow().isoformat() + 'Z',
+                    'inputs': inputs,
+                    'result': error_result
+                }
+                tool['updated_at'] = datetime.utcnow().isoformat() + 'Z'
+                self.update(tool_id, tool)
+            
+            return error_result
+    
+    def get_available_implementation_modules(self) -> List[Dict[str, Any]]:
+        """
+        Gibt alle verfügbaren Implementation Module zurück.
+        """
+        if not self.implementation_manager:
+            return []
+        
+        return self.implementation_manager.list_available_implementations()
+    
+    def get_tool_implementation_status(self, tool: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Ermittelt den Implementation-Status eines Tools.
+        """
+        if not self.implementation_manager:
+            return {
+                'has_implementation': False,
+                'module_name': None,
+                'status': 'unavailable'
+            }
+        
+        module_name = self.get_implementation_module_for_tool(tool)
+        
+        return {
+            'has_implementation': module_name is not None,
+            'module_name': module_name,
+            'status': 'available' if module_name else 'not_found'
+        }
 
 
 class IconManager:
