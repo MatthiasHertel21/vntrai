@@ -1,25 +1,29 @@
 {% extends "base.html" %}
 
-{% block title %}Tools - VNTRAI{% endblock %}
+{% block title %}Tools{% endblock %}
 
-{% block content %}
-<div class="vntr-content-area no-context">
-    <div class="container-fluid px-4 py-6">
-        <!-- Header -->
-        <div class="flex justify-between items-center mb-6">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900">Tools</h1>
-                <p class="text-gray-600 mt-1">Verwalte deine Tool-Instanzen basierend auf Integrations</p>
-            </div>
+{% block page_header %}
+<div class="page-header">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Tools</h1>
+            <p class="text-gray-600">Manage tool instances based on integrations</p>
+        </div>
+        <div class="flex gap-2">
             <a href="{{ url_for('tools.create_tool') }}" 
-               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center gap-2">
+               class="btn btn-primary">
                 <i class="bi bi-plus-lg"></i>
-                Neues Tool
+                New Tool
             </a>
         </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block context_area %}
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
 
         <!-- Filter und Suche -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
             <form method="GET" class="flex flex-wrap gap-4">
                 <div class="flex-1 min-w-64">
                     <input type="text" name="search" value="{{ search_query or '' }}" 
@@ -45,7 +49,7 @@
                         <option value="error" {% if status_filter == 'error' %}selected{% endif %}>Error</option>
                     </select>
                 </div>
-                <button type="submit" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md">
+                <button type="submit" class="btn btn-outline">
                     <i class="bi bi-search"></i>
                 </button>
                 <a href="{{ url_for('tools.list_tools') }}" 
@@ -226,8 +230,6 @@
                 </div>
             </div>
         </div>
-    </div>
-</div>
 
 <script>
 let currentToolId = null;
@@ -361,4 +363,5 @@ function closeExecuteModal() {
     document.getElementById('executeModal').classList.add('hidden');
 }
 </script>
+</div>
 {% endblock %}

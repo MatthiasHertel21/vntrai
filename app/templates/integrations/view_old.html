@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}{{ integration.name }} - Integration Details{% endblock %}
+
+{% block page_header %}
+<div class="flex justify-between items-center">
+    <div class="flex items-center">
+        <a href="{{ url_for('integrations.list_integrations') }}" 
+           class="text-gray-500 hover:text-gray-700 mr-4">
+            <i class="bi bi-arrow-left text-xl"></i>
+        </a>
+        <div class="flex items-center">
+            {% if integration.icon_url %}
+            <img class="h-12 w-12 rounded-lg mr-4" src="{{ integration.icon_url }}" alt="{{ integration.vendor }}">
+            {% else %}
+            <div class="h-12 w-12 bg-gray-200 rounded-lg mr-4 flex items-center justify-center">
+                <i class="bi bi-gear text-gray-500 text-xl"></i>
+            </div>
+            {% endif %}
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">{{ integration.name }}</h1>
+                <p class="text-gray-600">{{ integration.vendor }} {{ integration.type|title }} Integration</p>
+            </div>
+        </div>
+    </div>
+    <div class="flex gap-2">
+        <button onclick="testIntegration()" class="btn btn-outline" id="testBtn">
+            <i class="bi bi-play-circle"></i>
+            Test
+        </button>
+        <a href="{{ url_for('integrations.edit_integration', integration_id=integration.id) }}" 
+           class="btn btn-primary">
+            <i class="bi bi-pencil"></i>
+            Edit
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block context_area %}
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div>
+            <div class="text-sm text-gray-500">Status</div>
+            {% set status_colors = {
+                'active': 'bg-green-100 text-green-800',
+                'inactive': 'bg-gray-100 text-gray-800',
+                'testing': 'bg-yellow-100 text-yellow-800',
+                'error': 'bg-red-100 text-red-800'
+            } %}
+            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full {{ status_colors.get(integration.status, 'bg-gray-100 text-gray-800') }}">
+                {{ integration.status }}
+            </span>
+        </div>
+        <div>
+            <div class="text-sm text-gray-500">Type</div>
+            <div class="font-medium">{{ integration.type|title }}</div>
+        </div>
+        <div>
+            <div class="text-sm text-gray-500">Version</div>
+            <div class="font-medium">{{ integration.version }}</div>
+        </div>
+        <div>
+            <div class="text-sm text-gray-500">Last Updated</div>
+            <div class="font-medium">{{ integration.updated_at[:10] if integration.updated_at else 'Unknown' }}</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Basic Information -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Basic Information</h2>
+        
+        <dl class="space-y-4">
+            <div>
+                <dt class="text-sm font-medium text-gray-500">Name</dt>
+                <dd class="text-sm text-gray-900">{{ integration.name }}</dd>
+            </div>
+            <div>
+                <dt class="text-sm font-medium text-gray-500">Vendor</dt>
+                <dd class="text-sm text-gray-900">{{ integration.vendor }}</dd>
+            </div>
+            <div>
+                <dt class="text-sm font-medium text-gray-500">Description</dt>
+                <dd class="text-sm text-gray-900">{{ integration.description or 'No description provided' }}</dd>
+            </div>
+            <div>
+                <dt class="text-sm font-medium text-gray-500">Integration ID</dt>
+                <dd class="text-sm font-mono text-gray-600">{{ integration.id }}</dd>
+            </div>
+            <div>
+                <dt class="text-sm font-medium text-gray-500">Created</dt>
+                <dd class="text-sm text-gray-900">{{ integration.created_at[:19] if integration.created_at else 'Unknown' }}</dd>
+            </div>
+        </dl>
+    </div>
+
+    <!-- Configuration -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Configuration</h2>
+        
+        {% if integration.config %}
+        <div class="bg-gray-50 rounded-md p-4">
+            <pre class="text-sm text-gray-800 whitespace-pre-wrap" id="configJson">{{ integration.config | tojson(indent=2) }}</pre>
+        </div>
+        {% else %}
+        <p class="text-gray-500 italic">No configuration data available</p>
+        {% endif %}
+    </div>
+
+    <!-- Authentication -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Authentication</h2>
+        
+        {% if integration.auth %}
+        <div class="bg-gray-50 rounded-md p-4">
+            <pre class="text-sm text-gray-800 whitespace-pre-wrap">{{ integration.auth | tojson(indent=2) }}</pre>
+        </div>
+        {% else %}
+        <p class="text-gray-500 italic">No authentication configuration</p>
+        {% endif %}
+    </div>
+
+    <!-- Endpoints -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Endpoints</h2>
+        
+        {% if integration.endpoints %}
+        <div class="space-y-3">
+            {% for endpoint_name, endpoint_data in integration.endpoints.items() %}
+            <div class="border border-gray-200 rounded-md p-3">
+                <div class="font-medium text-sm text-gray-900">{{ endpoint_name }}</div>
+                {% if endpoint_data is string %}
+                <div class="text-sm text-gray-600 font-mono">{{ endpoint_data }}</div>
+                {% else %}
+                <div class="text-sm text-gray-600">
+                    <pre class="whitespace-pre-wrap">{{ endpoint_data | tojson(indent=2) }}</pre>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-500 italic">No endpoints configured</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Test Results Modal -->
+<div id="testModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Integration Test Results</h3>
+                    <button onclick="hideTestModal()" class="text-gray-500 hover:text-gray-700">
+                        <i class="bi bi-x text-xl"></i>
+                    </button>
+                </div>
+                <div id="testResults" class="space-y-4">
+                    <!-- Test results will be inserted here -->
+                </div>
+                <div class="flex justify-end mt-6">
+                    <button onclick="hideTestModal()" class="btn btn-outline">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function testIntegration() {
+    const testBtn = document.getElementById('testBtn');
+    const originalContent = testBtn.innerHTML;
+    
+    // Show loading state
+    testBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Testing...';
+    testBtn.disabled = true;
+    
+    fetch(`/integrations/api/test/{{ integration.id }}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        showTestResults(data);
+    })
+    .catch(error => {
+        console.error('Test failed:', error);
+        showTestResults({
+            error: 'Test failed: ' + error.message,
+            success: false
+        });
+    })
+    .finally(() => {
+        // Restore button
+        testBtn.innerHTML = originalContent;
+        testBtn.disabled = false;
+    });
+}
+
+function showTestResults(results) {
+    const testResultsDiv = document.getElementById('testResults');
+    
+    let html = '';
+    
+    if (results.error) {
+        html = `<div class="bg-red-50 border border-red-200 rounded-md p-4">
+            <div class="flex items-center">
+                <i class="bi bi-exclamation-triangle text-red-500 mr-2"></i>
+                <span class="text-red-800 font-medium">Test Failed</span>
+            </div>
+            <div class="text-red-700 mt-2">${results.error}</div>
+        </div>`;
+    } else {
+        const overallClass = results.success ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200';
+        const overallIcon = results.success ? 'bi-check-circle text-green-500' : 'bi-exclamation-triangle text-yellow-500';
+        const overallText = results.success ? 'text-green-800' : 'text-yellow-800';
+        
+        html = `<div class="${overallClass} border rounded-md p-4">
+            <div class="flex items-center">
+                <i class="bi ${overallIcon} mr-2"></i>
+                <span class="${overallText} font-medium">
+                    ${results.success ? 'Test Passed' : 'Test Warning'}
+                </span>
+            </div>
+        </div>
+        
+        <div class="space-y-2">`;
+        
+        // Individual test results
+        Object.entries(results).forEach(([key, value]) => {
+            if (key !== 'success' && key !== 'error') {
+                const icon = value ? 'bi-check text-green-500' : 'bi-x text-red-500';
+                const statusText = value ? 'Pass' : 'Fail';
+                
+                html += `<div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <span class="text-sm text-gray-700">${key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
+                    <span class="flex items-center">
+                        <i class="bi ${icon} mr-1"></i>
+                        <span class="text-sm">${statusText}</span>
+                    </span>
+                </div>`;
+            }
+        });
+        
+        html += '</div>';
+    }
+    
+    testResultsDiv.innerHTML = html;
+    document.getElementById('testModal').classList.remove('hidden');
+}
+
+function hideTestModal() {
+    document.getElementById('testModal').classList.add('hidden');
+}
+
+// Hide modal when clicking outside
+document.getElementById('testModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        hideTestModal();
+    }
+});
+</script>
+{% endblock %}

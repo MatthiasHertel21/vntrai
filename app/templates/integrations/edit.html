@@ -127,77 +127,77 @@
             </div>
         </div>
 
-        <!-- Configuration -->
+        <!-- Configuration Parameters -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-medium text-gray-900">Configuration</h2>
-                <button type="button" onclick="toggleJsonEditor('config')" 
+                <h2 class="text-lg font-medium text-gray-900">Configuration Parameters</h2>
+                <button type="button" onclick="toggleJsonEditor('config_params')" 
                         class="text-sm text-blue-600 hover:text-blue-800">
                     <i class="bi bi-code-square"></i>
                     Edit JSON
                 </button>
             </div>
             
-            <div id="configDisplay" class="bg-gray-50 rounded-md p-4">
-                <pre class="text-sm text-gray-800 whitespace-pre-wrap">{{ integration.config | tojson(indent=2) if integration.config else '{}' }}</pre>
+            <div id="configParamsDisplay" class="bg-gray-50 rounded-md p-4">
+                <pre class="text-sm text-gray-800 whitespace-pre-wrap">{{ integration.config_params | tojson(indent=2) if integration.config_params else '[]' }}</pre>
             </div>
             
-            <div id="configEditor" class="hidden">
-                <textarea id="configJson" rows="10" 
-                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm">{{ integration.config | tojson(indent=2) if integration.config else '{}' }}</textarea>
+            <div id="configParamsEditor" class="hidden">
+                <textarea id="configParamsJson" name="config_params_data" rows="10" 
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm">{{ integration.config_params | tojson(indent=2) if integration.config_params else '[]' }}</textarea>
                 <div class="flex justify-end gap-2 mt-2">
-                    <button type="button" onclick="cancelJsonEdit('config')" class="text-sm text-gray-600 hover:text-gray-800">Cancel</button>
-                    <button type="button" onclick="saveJsonEdit('config')" class="text-sm text-blue-600 hover:text-blue-800">Save</button>
+                    <button type="button" onclick="cancelJsonEdit('config_params')" class="text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+                    <button type="button" onclick="saveJsonEdit('config_params')" class="text-sm text-blue-600 hover:text-blue-800">Save</button>
                 </div>
             </div>
         </div>
 
-        <!-- Authentication -->
+        <!-- Input Parameters -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-medium text-gray-900">Authentication</h2>
-                <button type="button" onclick="toggleJsonEditor('auth')" 
+                <h2 class="text-lg font-medium text-gray-900">Input Parameters</h2>
+                <button type="button" onclick="toggleJsonEditor('input_params')" 
                         class="text-sm text-blue-600 hover:text-blue-800">
                     <i class="bi bi-code-square"></i>
                     Edit JSON
                 </button>
             </div>
             
-            <div id="authDisplay" class="bg-gray-50 rounded-md p-4">
-                <pre class="text-sm text-gray-800 whitespace-pre-wrap">{{ integration.auth | tojson(indent=2) if integration.auth else '{}' }}</pre>
+            <div id="inputParamsDisplay" class="bg-gray-50 rounded-md p-4">
+                <pre class="text-sm text-gray-800 whitespace-pre-wrap">{{ integration.input_params | tojson(indent=2) if integration.input_params else '[]' }}</pre>
             </div>
             
-            <div id="authEditor" class="hidden">
-                <textarea id="authJson" rows="8" 
-                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm">{{ integration.auth | tojson(indent=2) if integration.auth else '{}' }}</textarea>
+            <div id="inputParamsEditor" class="hidden">
+                <textarea id="inputParamsJson" name="input_params_data" rows="8" 
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm">{{ integration.input_params | tojson(indent=2) if integration.input_params else '[]' }}</textarea>
                 <div class="flex justify-end gap-2 mt-2">
-                    <button type="button" onclick="cancelJsonEdit('auth')" class="text-sm text-gray-600 hover:text-gray-800">Cancel</button>
-                    <button type="button" onclick="saveJsonEdit('auth')" class="text-sm text-blue-600 hover:text-blue-800">Save</button>
+                    <button type="button" onclick="cancelJsonEdit('input_params')" class="text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+                    <button type="button" onclick="saveJsonEdit('input_params')" class="text-sm text-blue-600 hover:text-blue-800">Save</button>
                 </div>
             </div>
         </div>
 
-        <!-- Endpoints -->
+        <!-- Output Parameters -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-medium text-gray-900">Endpoints</h2>
-                <button type="button" onclick="toggleJsonEditor('endpoints')" 
+                <h2 class="text-lg font-medium text-gray-900">Output Parameters</h2>
+                <button type="button" onclick="toggleJsonEditor('output_params')" 
                         class="text-sm text-blue-600 hover:text-blue-800">
                     <i class="bi bi-code-square"></i>
                     Edit JSON
                 </button>
             </div>
             
-            <div id="endpointsDisplay" class="bg-gray-50 rounded-md p-4">
-                <pre class="text-sm text-gray-800 whitespace-pre-wrap">{{ integration.endpoints | tojson(indent=2) if integration.endpoints else '{}' }}</pre>
+            <div id="outputParamsDisplay" class="bg-gray-50 rounded-md p-4">
+                <pre class="text-sm text-gray-800 whitespace-pre-wrap">{{ integration.output_params | tojson(indent=2) if integration.output_params else '[]' }}</pre>
             </div>
             
-            <div id="endpointsEditor" class="hidden">
-                <textarea id="endpointsJson" rows="10" 
-                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm">{{ integration.endpoints | tojson(indent=2) if integration.endpoints else '{}' }}</textarea>
+            <div id="outputParamsEditor" class="hidden">
+                <textarea id="outputParamsJson" name="output_params_data" rows="10" 
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm">{{ integration.output_params | tojson(indent=2) if integration.output_params else '[]' }}</textarea>
                 <div class="flex justify-end gap-2 mt-2">
-                    <button type="button" onclick="cancelJsonEdit('endpoints')" class="text-sm text-gray-600 hover:text-gray-800">Cancel</button>
-                    <button type="button" onclick="saveJsonEdit('endpoints')" class="text-sm text-blue-600 hover:text-blue-800">Save</button>
+                    <button type="button" onclick="cancelJsonEdit('output_params')" class="text-sm text-gray-600 hover:text-gray-800">Cancel</button>
+                    <button type="button" onclick="saveJsonEdit('output_params')" class="text-sm text-blue-600 hover:text-blue-800">Save</button>
                 </div>
             </div>
         </div>

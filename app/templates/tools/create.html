@@ -1,23 +1,27 @@
 {% extends "base.html" %}
 
-{% block title %}Neues Tool - VNTRAI{% endblock %}
+{% block title %}New Tool{% endblock %}
 
-{% block content %}
-<div class="vntr-content-area no-context">
-    <div class="container-fluid px-4 py-6">
-        <!-- Header -->
-        <div class="flex justify-between items-center mb-6">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-900">Neues Tool erstellen</h1>
-                <p class="text-gray-600 mt-1">Erstelle eine neue Tool-Instanz basierend auf einer Integration</p>
-            </div>
+{% block page_header %}
+<div class="page-header">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Create New Tool</h1>
+            <p class="text-gray-600">Create a new tool instance based on an integration</p>
+        </div>
+        <div class="flex gap-2">
             <a href="{{ url_for('tools.list_tools') }}" 
-               class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md">
-                <i class="bi bi-arrow-left"></i> Zurück
+               class="btn btn-outline">
+                <i class="bi bi-arrow-left"></i>
+                Back
             </a>
         </div>
+    </div>
+</div>
+{% endblock %}
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+{% block context_area %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Main Form -->
             <div class="lg:col-span-2">
                 <form method="POST" class="space-y-6">
@@ -168,8 +172,6 @@
                 </div>
             </div>
         </div>
-    </div>
-</div>
 
 <script>
 // JSON Validation
@@ -259,4 +261,5 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+</div>
 {% endblock %}

@@ -1,0 +1,404 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Integration - {{ integration.name }}{% endblock %}
+
+{% block page_header %}
+<div class="flex items-center">
+    <a href="{{ url_for('integrations.view_integration', integration_id=integration.id) }}" 
+       class="text-gray-500 hover:text-gray-700 mr-4">
+        <i class="bi bi-arrow-left text-xl"></i>
+    </a>
+    <div class="flex items-center">
+        {% if integration.icon_url %}
+        <img class="h-12 w-12 rounded-lg mr-4" src="{{ integration.icon_url }}" alt="{{ integration.vendor }}">
+        {% else %}
+        <div class="h-12 w-12 bg-gray-200 rounded-lg mr-4 flex items-center justify-center">
+            <i class="bi bi-gear text-gray-500 text-xl"></i>
+        </div>
+        {% endif %}
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Edit Integration</h1>
+            <p class="text-gray-600">{{ integration.name }}</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block context_area %}
+<div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+    <div class="flex items-center">
+        <i class="bi bi-exclamation-triangle text-yellow-500 mr-2"></i>
+        <div class="text-sm text-yellow-800">
+            <strong>Editing Integration:</strong> Changes will be saved immediately. 
+            Make sure to test the integration after making configuration changes.
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <form method="POST" enctype="multipart/form-data" class="space-y-6">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        
+        <!-- Basic Information -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h2 class="text-lg font-medium text-gray-900 mb-4">Basic Information</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
+                        Name <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="name" name="name" value="{{ integration.name }}" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           maxlength="100">
+                </div>
+                
+                <div>
+                    <label for="vendor" class="block text-sm font-medium text-gray-700 mb-1">
+                        Vendor <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="vendor" name="vendor" value="{{ integration.vendor }}" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           maxlength="50">
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div>
+                    <label for="type" class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                    <select id="type" name="type" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="api" {% if integration.type == 'api' %}selected{% endif %}>API</option>
+                        <option value="webhook" {% if integration.type == 'webhook' %}selected{% endif %}>Webhook</option>
+                        <option value="database" {% if integration.type == 'database' %}selected{% endif %}>Database</option>
+                        <option value="file" {% if integration.type == 'file' %}selected{% endif %}>File</option>
+                        <option value="service" {% if integration.type == 'service' %}selected{% endif %}>Service</option>
+                        <option value="other" {% if integration.type == 'other' %}selected{% endif %}>Other</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select id="status" name="status" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="active" {% if integration.status == 'active' %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if integration.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                        <option value="testing" {% if integration.status == 'testing' %}selected{% endif %}>Testing</option>
+                        <option value="error" {% if integration.status == 'error' %}selected{% endif %}>Error</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="version" class="block text-sm font-medium text-gray-700 mb-1">Version</label>
+                    <input type="text" id="version" name="version" value="{{ integration.version }}" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           pattern="^\d+\.\d+\.\d+$" placeholder="1.0.0">
+                </div>
+            </div>
+            
+            <div class="mt-4">
+                <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea id="description" name="description" rows="3"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Describe what this integration does..."
+                          maxlength="500">{{ integration.description }}</textarea>
+            </div>
+
+            <div class="mt-4">
+                <label for="api_documentation_link" class="block text-sm font-medium text-gray-700 mb-1">API Documentation Link</label>
+                <input type="url" id="api_documentation_link" name="api_documentation_link" 
+                       value="{{ integration.api_documentation_link }}"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       placeholder="https://api.example.com/docs">
+            </div>
+        </div>
+
+        <!-- Configuration Parameters -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-medium text-gray-900">Configuration Parameters</h2>
+                <button type="button" onclick="addConfigParam()" class="btn btn-sm btn-outline">
+                    <i class="bi bi-plus"></i> Add Parameter
+                </button>
+            </div>
+            
+            <div id="configParams" class="space-y-4">
+                {% for param in integration.config_params %}
+                <div class="param-row border border-gray-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-medium text-gray-900">Configuration Parameter {{ loop.index }}</h4>
+                        <button type="button" onclick="removeParam(this)" class="text-red-600 hover:text-red-800">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Name *</label>
+                            <input type="text" name="config_params[{{ loop.index0 }}][name]" value="{{ param.name }}"
+                                   class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Type *</label>
+                            <select name="config_params[{{ loop.index0 }}][type]" 
+                                    class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" required>
+                                <option value="text" {% if param.type == 'text' %}selected{% endif %}>Text</option>
+                                <option value="textarea" {% if param.type == 'textarea' %}selected{% endif %}>Textarea</option>
+                                <option value="select" {% if param.type == 'select' %}selected{% endif %}>Select</option>
+                                <option value="json" {% if param.type == 'json' %}selected{% endif %}>JSON</option>
+                                <option value="file" {% if param.type == 'file' %}selected{% endif %}>File</option>
+                                <option value="number" {% if param.type == 'number' %}selected{% endif %}>Number</option>
+                                <option value="boolean" {% if param.type == 'boolean' %}selected{% endif %}>Boolean</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Required</label>
+                            <input type="checkbox" name="config_params[{{ loop.index0 }}][required]" value="true" 
+                                   {% if param.required %}checked{% endif %}
+                                   class="mt-2">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Default</label>
+                            <input type="text" name="config_params[{{ loop.index0 }}][default]" value="{{ param.default or '' }}"
+                                   class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Label</label>
+                            <input type="text" name="config_params[{{ loop.index0 }}][label]" value="{{ param.label or '' }}"
+                                   class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Description</label>
+                            <input type="text" name="config_params[{{ loop.index0 }}][description]" value="{{ param.description or '' }}"
+                                   class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            {% if not integration.config_params %}
+            <p class="text-gray-500 italic">No configuration parameters defined. Click "Add Parameter" to add some.</p>
+            {% endif %}
+        </div>
+
+        <!-- Input Parameters -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-medium text-gray-900">Input Parameters</h2>
+                <button type="button" onclick="addInputParam()" class="btn btn-sm btn-outline">
+                    <i class="bi bi-plus"></i> Add Parameter
+                </button>
+            </div>
+            
+            <div id="inputParams" class="space-y-4">
+                {% for param in integration.input_params %}
+                <div class="param-row border border-gray-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="font-medium text-gray-900">Input Parameter {{ loop.index }}</h4>
+                        <button type="button" onclick="removeParam(this)" class="text-red-600 hover:text-red-800">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Name *</label>
+                            <input type="text" name="input_params[{{ loop.index0 }}][name]" value="{{ param.name }}"
+                                   class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" required>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Type *</label>
+                            <select name="input_params[{{ loop.index0 }}][type]" 
+                                    class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" required>
+                                <option value="text" {% if param.type == 'text' %}selected{% endif %}>Text</option>
+                                <option value="textarea" {% if param.type == 'textarea' %}selected{% endif %}>Textarea</option>
+                                <option value="select" {% if param.type == 'select' %}selected{% endif %}>Select</option>
+                                <option value="json" {% if param.type == 'json' %}selected{% endif %}>JSON</option>
+                                <option value="file" {% if param.type == 'file' %}selected{% endif %}>File</option>
+                                <option value="number" {% if param.type == 'number' %}selected{% endif %}>Number</option>
+                                <option value="boolean" {% if param.type == 'boolean' %}selected{% endif %}>Boolean</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Required</label>
+                            <input type="checkbox" name="input_params[{{ loop.index0 }}][required]" value="true" 
+                                   {% if param.required %}checked{% endif %}
+                                   class="mt-2">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Default</label>
+                            <input type="text" name="input_params[{{ loop.index0 }}][default]" value="{{ param.default or '' }}"
+                                   class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Label</label>
+                            <input type="text" name="input_params[{{ loop.index0 }}][label]" value="{{ param.label or '' }}"
+                                   class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Description</label>
+                            <input type="text" name="input_params[{{ loop.index0 }}][description]" value="{{ param.description or '' }}"
+                                   class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            {% if not integration.input_params %}
+            <p class="text-gray-500 italic">No input parameters defined. Click "Add Parameter" to add some.</p>
+            {% endif %}
+        </div>
+
+        <!-- Form Actions -->
+        <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+            <a href="{{ url_for('integrations.view_integration', integration_id=integration.id) }}" 
+               class="btn btn-outline">
+                Cancel
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg"></i>
+                Save Changes
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let configParamIndex = {{ integration.config_params|length }};
+let inputParamIndex = {{ integration.input_params|length }};
+
+function addConfigParam() {
+    const container = document.getElementById('configParams');
+    const paramHtml = `
+        <div class="param-row border border-gray-200 rounded-lg p-4">
+            <div class="flex items-center justify-between mb-3">
+                <h4 class="font-medium text-gray-900">Configuration Parameter ${configParamIndex + 1}</h4>
+                <button type="button" onclick="removeParam(this)" class="text-red-600 hover:text-red-800">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Name *</label>
+                    <input type="text" name="config_params[${configParamIndex}][name]" 
+                           class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Type *</label>
+                    <select name="config_params[${configParamIndex}][type]" 
+                            class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" required>
+                        <option value="text">Text</option>
+                        <option value="textarea">Textarea</option>
+                        <option value="select">Select</option>
+                        <option value="json">JSON</option>
+                        <option value="file">File</option>
+                        <option value="number">Number</option>
+                        <option value="boolean">Boolean</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Required</label>
+                    <input type="checkbox" name="config_params[${configParamIndex}][required]" value="true" class="mt-2">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Default</label>
+                    <input type="text" name="config_params[${configParamIndex}][default]"
+                           class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Label</label>
+                    <input type="text" name="config_params[${configParamIndex}][label]"
+                           class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Description</label>
+                    <input type="text" name="config_params[${configParamIndex}][description]"
+                           class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                </div>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', paramHtml);
+    configParamIndex++;
+}
+
+function addInputParam() {
+    const container = document.getElementById('inputParams');
+    const paramHtml = `
+        <div class="param-row border border-gray-200 rounded-lg p-4">
+            <div class="flex items-center justify-between mb-3">
+                <h4 class="font-medium text-gray-900">Input Parameter ${inputParamIndex + 1}</h4>
+                <button type="button" onclick="removeParam(this)" class="text-red-600 hover:text-red-800">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Name *</label>
+                    <input type="text" name="input_params[${inputParamIndex}][name]" 
+                           class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" required>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Type *</label>
+                    <select name="input_params[${inputParamIndex}][type]" 
+                            class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500" required>
+                        <option value="text">Text</option>
+                        <option value="textarea">Textarea</option>
+                        <option value="select">Select</option>
+                        <option value="json">JSON</option>
+                        <option value="file">File</option>
+                        <option value="number">Number</option>
+                        <option value="boolean">Boolean</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Required</label>
+                    <input type="checkbox" name="input_params[${inputParamIndex}][required]" value="true" class="mt-2">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Default</label>
+                    <input type="text" name="input_params[${inputParamIndex}][default]"
+                           class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Label</label>
+                    <input type="text" name="input_params[${inputParamIndex}][label]"
+                           class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Description</label>
+                    <input type="text" name="input_params[${inputParamIndex}][description]"
+                           class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                </div>
+            </div>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', paramHtml);
+    inputParamIndex++;
+}
+
+function removeParam(button) {
+    button.closest('.param-row').remove();
+}
+</script>
+{% endblock %}

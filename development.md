@@ -9,10 +9,13 @@
 - alle list oder index-seiten sollen klick auf eine zeile in der tabellendarstellung den gewählten eintrag öffnen
 - alle seiten sollen eine Überschrift haben und eine Toolbar auf der Höhe der Überschrift mit rechtsbündigen 
 - alle Buttons und Aktionen sollen farblich zur primärfarbe bzw. akzentfarbe der anwendung passen (oder grau(hellgrau) sein)
-
+- flash messages sollen nich breiter sein als ein reglärer container der seite
 ## Tests
 - erstelle eine Seite /test, die eine Überscht über alle bestehenden Tests enthält
 - erstelle für jede funktionale einheit, die frontend-backend integration benötigt eine testseitem die die verwendeten backendrouten der funktionalen einheit testet. dokumentiere auf der testseite auch wie die .py-dateien heißen, die die rouzten implementieren und die routen, die in einem test getestet werden
+
+## Tools
+- beim test eines Tools, sollen die eingabefelder und die ausgabefelder für die anzeige gerendert werden
 
 ## Integrations
 - implementiere "implemenations", orientiere dich an der bestehenden implementierung von v036 im verzeichnis tool_modules, aber nenne es neu als "implementation_modules"
@@ -445,7 +448,6 @@ Neue Struktur:
 - [x] Create/Edit Forms mit Tailwind
 - [x] JSON Editor Funktionalität
 - [x] Vendor Icon Upload System
-- [x] **Icon Migration**: Vendor Icons aus v036 übertragen
 - [x] Validation System für Integration Schemas
 - [x] Error Handling und Flash Messages
 
@@ -738,3 +740,82 @@ Neue Struktur:
 - **GDPR**: Privacy-by-Design, Data-Minimization, Right-to-Deletion
 - **SOC 2 Type II**: Access-Controls, System-Monitoring, Data-Protection
 - **ISO 27001**: Information Security Management System (ISMS)
+
+# 🧪 GUI Testing Workflow
+
+## Testing-Methodik
+Ab sofort verwenden wir folgende Testing-Methodik für GUI-Tests:
+- **Entwickler**: Erstellt detaillierte Testpläne 
+- **User**: Führt manuelle Tests aus und dokumentiert Ergebnisse
+- **Feedback-Loop**: Schnelle Iteration basierend auf Test-Ergebnissen
+
+## Testplan-Template:
+```markdown
+## GUI Testplan: [Feature Name]
+**Ziel**: [Beschreibung der zu testenden Funktionalität]
+
+### Vorbedingungen:
+- [Setup-Anweisungen]
+
+### Test-Schritte:
+1. **Schritt 1**: [Detaillierte Anweisungen]
+   - **Erwartetes Ergebnis**: [Was sollte passieren]
+   - **Tatsächliches Ergebnis**: [Vom User auszufüllen]
+2. **Schritt 2**: [Nächste Aktion]
+   - **Erwartetes Ergebnis**: [Was sollte passieren]
+   - **Tatsächliches Ergebnis**: [Vom User auszufüllen]
+
+### Acceptance Criteria:
+- [ ] [Kriterium 1]
+- [ ] [Kriterium 2]
+
+### Error Cases:
+- [ ] [Error-Szenario 1] - Status: [Pass/Fail/Not Tested]
+- [ ] [Error-Szenario 2] - Status: [Pass/Fail/Not Tested]
+
+### Test-Ergebnis:
+- **Status**: [Pass/Fail/Partial]
+- **Gefundene Issues**: [Liste der Probleme]
+- **Feedback**: [User-Feedback für Verbesserungen]
+```
+
+# 🧹 Cleanup-Liste (Temporäre Dateien)
+
+## Dateien zum Aufräumen nach Sprint-Abschluss
+
+### Migration Scripts (Sprint 5-8):
+- [ ] `app/utils/migration.py` - Migration-Script von v036 (nach erfolgreicher Migration)
+- [ ] `migration_fix.py` - Datenstruktur-Korrektur-Script (nach v036-Format-Migration)
+- [ ] Alle `test_*.py` Scripts im Root-Verzeichnis (nach Integration in offizielle Test-Suite)
+
+### Temporäre Test-Scripts:
+- [ ] `create_test_integration.py` - Integration-Erstellungs-Test (nach GUI-Test-Implementierung)
+- [ ] `test_integration_creation.py` - CRUD-Test-Script (nach offiziellem Test-System)
+- [ ] `debug_*.py` Scripts - Debugging-Hilfen (nach Problem-Lösung)
+
+### Entwicklungs-Hilfsdateien:
+- [ ] `temp_*.json` - Temporäre JSON-Test-Dateien
+- [ ] `backup_*.json` - Migration-Backups (nach erfolgreicher Validierung)
+- [ ] `*.log` - Debug-Log-Dateien (nach Problem-Lösung)
+
+### Docker-Entwicklung:
+- [ ] `docker-compose.override.yml` - Development-Overrides (falls erstellt)
+- [ ] `Dockerfile.dev` - Development-spezifische Dockerfile (falls erstellt)
+
+### Dokumentations-Drafts:
+- [ ] `notes_*.md` - Temporäre Notiz-Dateien
+- [ ] `draft_*.md` - Draft-Dokumentationen (nach Finalisierung)
+
+## Cleanup-Workflow:
+1. **Nach Sprint-Ende**: Cleanup-Liste reviewen
+2. **Backup wichtiger Logs**: Wichtige Erkenntnisse in Knowledge Base übertragen
+3. **Dateien löschen**: Temporäre Dateien entfernen
+4. **Git Clean**: Repository aufräumen (`git clean -fd` nach Review)
+
+## Auto-Cleanup Regeln:
+- **Migration Scripts**: Nach 2 erfolgreichen Sprints ohne Rollback
+- **Test Scripts**: Nach Integration in offizielle Test-Suite
+- **Debug Files**: Nach Problem-Lösung und Knowledge Base Update
+- **Backup Files**: Nach 1 Monat (wenn keine Rollback-Notwendigkeit)
+
+---

@@ -140,17 +140,17 @@ def edit_integration(integration_id):
         integration['status'] = request.form.get('status', 'inactive')
         integration['version'] = request.form.get('version', '1.0.0')
         
-        # JSON-Felder verarbeiten
-        config_data = request.form.get('config_data', '')
-        auth_data = request.form.get('auth_data', '')
-        endpoints_data = request.form.get('endpoints_data', '')
+        # JSON-Felder verarbeiten (v036 Format)
+        config_params_data = request.form.get('config_params_data', '')
+        input_params_data = request.form.get('input_params_data', '')
+        output_params_data = request.form.get('output_params_data', '')
         
-        if config_data:
-            integration['config'] = json.loads(config_data)
-        if auth_data:
-            integration['auth'] = json.loads(auth_data)
-        if endpoints_data:
-            integration['endpoints'] = json.loads(endpoints_data)
+        if config_params_data:
+            integration['config_params'] = json.loads(config_params_data)
+        if input_params_data:
+            integration['input_params'] = json.loads(input_params_data)
+        if output_params_data:
+            integration['output_params'] = json.loads(output_params_data)
         
         # Validierung
         is_valid, errors = validator.validate_integration(integration)
@@ -216,9 +216,9 @@ def get_integration_config(integration_id):
             'name': integration['name'],
             'vendor': integration['vendor'],
             'type': integration['type'],
-            'config': integration.get('config', {}),
-            'auth': integration.get('auth', {}),
-            'endpoints': integration.get('endpoints', {}),
+            'config_params': integration.get('config_params', []),
+            'input_params': integration.get('input_params', []),
+            'output_params': integration.get('output_params', []),
             'status': integration['status']
         })
         
@@ -237,15 +237,15 @@ def update_integration_config(integration_id):
         if not data:
             return jsonify({'error': 'No data provided'}), 400
         
-        # Config-Felder aktualisieren
-        if 'config' in data:
-            integration['config'] = data['config']
+        # Config-Felder aktualisieren (v036 Format)
+        if 'config_params' in data:
+            integration['config_params'] = data['config_params']
         
-        if 'auth' in data:
-            integration['auth'] = data['auth']
+        if 'input_params' in data:
+            integration['input_params'] = data['input_params']
             
-        if 'endpoints' in data:
-            integration['endpoints'] = data['endpoints']
+        if 'output_params' in data:
+            integration['output_params'] = data['output_params']
         
         if 'status' in data:
             integration['status'] = data['status']

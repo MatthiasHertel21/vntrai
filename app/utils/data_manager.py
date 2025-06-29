@@ -169,7 +169,7 @@ class IntegrationsManager(DataManager):
         super().__init__('integrations')
     
     def create_integration(self, name: str, vendor: str, integration_type: str = 'api') -> Dict[str, Any]:
-        """Create new integration with defaults"""
+        """Create new integration with v036 format"""
         integration = {
             'id': str(uuid.uuid4()),
             'name': name,
@@ -177,9 +177,11 @@ class IntegrationsManager(DataManager):
             'type': integration_type,
             'description': '',
             'status': 'inactive',
-            'config': {},
-            'auth': {},
-            'endpoints': {},
+            'config_params': [],
+            'input_params': [],
+            'output_params': [],
+            'api_documentation_link': '',
+            'vendor_icon': '',
             'version': '1.0.0',
             'created_at': datetime.now().isoformat(),
             'updated_at': datetime.now().isoformat()

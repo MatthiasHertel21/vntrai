@@ -3,22 +3,24 @@
 {% block title %}Integrations{% endblock %}
 
 {% block page_header %}
-<div class="flex justify-between items-center">
-    <div>
-        <h1 class="text-2xl font-bold text-gray-900">Integrations</h1>
-        <p class="text-gray-600">Manage API integrations and connections</p>
-    </div>
-    <div class="flex gap-2">
-        <a href="{{ url_for('integrations.export_integrations') }}" 
-           class="btn btn-outline">
-            <i class="bi bi-download"></i>
-            Export
-        </a>
-        <a href="{{ url_for('integrations.create_integration') }}" 
-           class="btn btn-primary">
-            <i class="bi bi-plus-lg"></i>
-            New Integration
-        </a>
+<div class="page-header">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Integrations</h1>
+            <p class="text-gray-600">Manage API integrations and connections</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{{ url_for('integrations.export_integrations') }}" 
+               class="btn btn-outline">
+                <i class="bi bi-download"></i>
+                Export
+            </a>
+            <a href="{{ url_for('integrations.create_integration') }}" 
+               class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i>
+                New Integration
+            </a>
+        </div>
     </div>
 </div>
 {% endblock %}
