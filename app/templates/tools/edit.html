@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+
+{% block title %}Tool bearbeiten - VNTRAI{% endblock %}
+
+{% block content %}
+<div class="vntr-content-area no-context">
+    <div class="container-fluid px-4 py-6">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Tool bearbeiten</h1>
+                <p class="text-gray-600 mt-1">{{ tool.name }}</p>
+            </div>
+            <div class="flex gap-2">
+                <a href="{{ url_for('tools.view_tool', tool_id=tool.id) }}" 
+                   class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md">
+                    <i class="bi bi-eye"></i> Ansehen
+                </a>
+                <a href="{{ url_for('tools.list_tools') }}" 
+                   class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md">
+                    <i class="bi bi-arrow-left"></i> Zurück
+                </a>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Main Form -->
+            <div class="lg:col-span-2">
+                <form method="POST" class="space-y-6">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <!-- Basic Information -->
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <h2 class="text-lg font-semibold mb-4">Basis-Informationen</h2>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Tool-Name *
+                                </label>
+                                <input type="text" id="name" name="name" required
+                                       value="{{ tool.name }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Beschreibung
+                                </label>
+                                <textarea id="description" name="description" rows="3"
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">{{ tool.description or '' }}</textarea>
+                            </div>
+                            
+                            <div>
+                                <label for="tool_definition" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Integration *
+                                </label>
+                                <select id="tool_definition" name="tool_definition" required
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    {% for integration in integrations %}
+                                    <option value="{{ integration.name }}" 
+                                            {% if tool.tool_definition == integration.name %}selected{% endif %}>
+                                        {{ integration.name }} ({{ integration.vendor }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configuration -->
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <h2 class="text-lg font-semibold mb-4">Konfiguration</h2>
+                        <p class="text-sm text-gray-600 mb-4">
+                            Spezifische Konfiguration für dieses Tool (API-Keys, Endpunkte, etc.)
+                        </p>
+                        
+                        <div>
+                            <label for="config" class="block text-sm font-medium text-gray-700 mb-1">
+                                Konfiguration (JSON)
+                            </label>
+                            <textarea id="config" name="config" rows="8"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      placeholder='{"api_key": "your_api_key", "endpoint": "https://api.example.com"}'>{{ tool.config | tojson(indent=2) if tool.config else '{}' }}</textarea>
+                            <p class="text-xs text-gray-500 mt-1">Gültiges JSON-Format erforderlich</p>
+                        </div>
+                    </div>
+
+                    <!-- Prefilled Inputs -->
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <h2 class="text-lg font-semibold mb-4">Vorgefüllte Parameter</h2>
+                        <p class="text-sm text-gray-600 mb-4">
+                            Parameter, die standardmäßig vorausgefüllt sind (können bei Ausführung überschrieben werden)
+                        </p>
+                        
+                        <div>
+                            <label for="prefilled_inputs" class="block text-sm font-medium text-gray-700 mb-1">
+                                Vorgefüllte Parameter (JSON)
+                            </label>
+                            <textarea id="prefilled_inputs" name="prefilled_inputs" rows="6"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      placeholder='{"model": "gpt-4", "temperature": 0.1}'>{{ tool.prefilled_inputs | tojson(indent=2) if tool.prefilled_inputs else '{}' }}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Locked Inputs -->
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <h2 class="text-lg font-semibold mb-4">Gesperrte Parameter</h2>
+                        <p class="text-sm text-gray-600 mb-4">
+                            Parameter, die nicht überschrieben werden können (Array von Parameter-Namen)
+                        </p>
+                        
+                        <div>
+                            <label for="locked_inputs" class="block text-sm font-medium text-gray-700 mb-1">
+                                Gesperrte Parameter (JSON Array)
+                            </label>
+                            <textarea id="locked_inputs" name="locked_inputs" rows="4"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      placeholder='["temperature", "model"]'>{{ tool.locked_inputs | tojson(indent=2) if tool.locked_inputs else '[]' }}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="flex justify-end gap-2">
+                        <a href="{{ url_for('tools.view_tool', tool_id=tool.id) }}" 
+                           class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-md">
+                            Abbrechen
+                        </a>
+                        <button type="submit" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
+                            Änderungen speichern
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Tool Info & Danger Zone -->
+            <div>
+                <!-- Current Status -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                    <h2 class="text-lg font-semibold mb-4">Status</h2>
+                    <div class="space-y-3">
+                        <div>
+                            <span class="text-sm font-medium text-gray-700">Aktueller Status:</span>
+                            {% if tool.status == 'connected' %}
+                                <span class="bg-green-100 text-green-800 text-sm font-medium px-3 py-1 rounded-full ml-2">
+                                    <i class="bi bi-check-circle"></i> Connected
+                                </span>
+                            {% elif tool.status == 'error' %}
+                                <span class="bg-red-100 text-red-800 text-sm font-medium px-3 py-1 rounded-full ml-2">
+                                    <i class="bi bi-exclamation-circle"></i> Error
+                                </span>
+                            {% else %}
+                                <span class="bg-gray-100 text-gray-800 text-sm font-medium px-3 py-1 rounded-full ml-2">
+                                    <i class="bi bi-circle"></i> Not Connected
+                                </span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="text-sm text-gray-600">
+                            <div><strong>Erstellt:</strong> {{ tool.created_at | format_datetime }}</div>
+                            <div><strong>Aktualisiert:</strong> {{ tool.updated_at | format_datetime }}</div>
+                        </div>
+                        
+                        {% if tool.last_test %}
+                        <div class="text-sm text-gray-600">
+                            <strong>Letzter Test:</strong> {{ tool.last_test.timestamp | format_datetime }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                    <h2 class="text-lg font-semibold mb-4">Aktionen</h2>
+                    <div class="space-y-3">
+                        <button onclick="testTool('{{ tool.id }}')" 
+                                class="w-full bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-md text-sm">
+                            <i class="bi bi-play"></i> Tool testen
+                        </button>
+                        <form method="POST" action="{{ url_for('tools.clone_tool', tool_id=tool.id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <button type="submit" 
+                                    class="w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm">
+                                <i class="bi bi-files"></i> Tool klonen
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Danger Zone -->
+                <div class="bg-white rounded-lg shadow-sm border border-red-200 p-6">
+                    <h2 class="text-lg font-semibold text-red-700 mb-4">Gefährliche Aktionen</h2>
+                    <div class="space-y-3">
+                        <p class="text-sm text-gray-600 mb-4">
+                            Diese Aktionen können nicht rückgängig gemacht werden.
+                        </p>
+                        
+                        <form method="POST" action="{{ url_for('tools.delete_tool', tool_id=tool.id) }}" 
+                              onsubmit="return confirm('Tool &quot;{{ tool.name }}&quot; wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <button type="submit" 
+                                    class="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm">
+                                <i class="bi bi-trash"></i> Tool löschen
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Test Modal -->
+<div id="testModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold mb-4">Tool Test</h3>
+                <div id="testResults" class="mb-4"></div>
+                <div class="flex justify-end gap-2">
+                    <button onclick="closeTestModal()" 
+                            class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+                        Schließen
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// JSON Validation
+function validateJSON(textareaId) {
+    const textarea = document.getElementById(textareaId);
+    const value = textarea.value.trim();
+    
+    if (!value) return true;
+    
+    try {
+        JSON.parse(value);
+        textarea.classList.remove('border-red-500');
+        textarea.classList.add('border-green-500');
+        return true;
+    } catch (e) {
+        textarea.classList.remove('border-green-500');
+        textarea.classList.add('border-red-500');
+        return false;
+    }
+}
+
+// Event Listeners
+document.getElementById('config').addEventListener('input', () => validateJSON('config'));
+document.getElementById('prefilled_inputs').addEventListener('input', () => validateJSON('prefilled_inputs'));
+document.getElementById('locked_inputs').addEventListener('input', () => validateJSON('locked_inputs'));
+
+// Form Validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const isConfigValid = validateJSON('config');
+    const isPrefilledValid = validateJSON('prefilled_inputs');
+    const isLockedValid = validateJSON('locked_inputs');
+    
+    if (!isConfigValid || !isPrefilledValid || !isLockedValid) {
+        e.preventDefault();
+        alert('Bitte korrigiere die JSON-Syntax-Fehler vor dem Speichern.');
+    }
+});
+
+// Test Tool Function
+function testTool(toolId) {
+    fetch(`/tools/test/${toolId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const resultsDiv = document.getElementById('testResults');
+        if (data.success) {
+            resultsDiv.innerHTML = `
+                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+                    <i class="bi bi-check-circle"></i> ${data.message}
+                </div>
+            `;
+        } else {
+            resultsDiv.innerHTML = `
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                    <i class="bi bi-exclamation-circle"></i> ${data.message}
+                </div>
+            `;
+        }
+        document.getElementById('testModal').classList.remove('hidden');
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+function closeTestModal() {
+    document.getElementById('testModal').classList.add('hidden');
+}
+
+// Initialize validation on page load
+document.addEventListener('DOMContentLoaded', function() {
+    validateJSON('config');
+    validateJSON('prefilled_inputs');
+    validateJSON('locked_inputs');
+});
+</script>
+{% endblock %}

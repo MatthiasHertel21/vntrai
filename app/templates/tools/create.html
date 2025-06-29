@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}Neues Tool - VNTRAI{% endblock %}
+
+{% block content %}
+<div class="vntr-content-area no-context">
+    <div class="container-fluid px-4 py-6">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Neues Tool erstellen</h1>
+                <p class="text-gray-600 mt-1">Erstelle eine neue Tool-Instanz basierend auf einer Integration</p>
+            </div>
+            <a href="{{ url_for('tools.list_tools') }}" 
+               class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md">
+                <i class="bi bi-arrow-left"></i> Zurück
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Main Form -->
+            <div class="lg:col-span-2">
+                <form method="POST" class="space-y-6">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <!-- Basic Information -->
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <h2 class="text-lg font-semibold mb-4">Basis-Informationen</h2>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Tool-Name *
+                                </label>
+                                <input type="text" id="name" name="name" required
+                                       value="{{ tool.name if tool else '' }}"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            
+                            <div>
+                                <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Beschreibung
+                                </label>
+                                <textarea id="description" name="description" rows="3"
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">{{ tool.description if tool else '' }}</textarea>
+                            </div>
+                            
+                            <div>
+                                <label for="tool_definition" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Integration *
+                                </label>
+                                <select id="tool_definition" name="tool_definition" required
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="">Wähle eine Integration...</option>
+                                    {% for integration in integrations %}
+                                    <option value="{{ integration.name }}" 
+                                            {% if (tool and tool.tool_definition == integration.name) or (selected_integration == integration.name) %}selected{% endif %}>
+                                        {{ integration.name }} ({{ integration.vendor }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configuration -->
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <h2 class="text-lg font-semibold mb-4">Konfiguration</h2>
+                        <p class="text-sm text-gray-600 mb-4">
+                            Spezifische Konfiguration für dieses Tool (API-Keys, Endpunkte, etc.)
+                        </p>
+                        
+                        <div>
+                            <label for="config" class="block text-sm font-medium text-gray-700 mb-1">
+                                Konfiguration (JSON)
+                            </label>
+                            <textarea id="config" name="config" rows="8"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      placeholder='{"api_key": "your_api_key", "endpoint": "https://api.example.com"}'>{{ (tool.config | tojson(indent=2)) if tool and tool.config else '{}' }}</textarea>
+                            <p class="text-xs text-gray-500 mt-1">Gültiges JSON-Format erforderlich</p>
+                        </div>
+                    </div>
+
+                    <!-- Prefilled Inputs -->
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <h2 class="text-lg font-semibold mb-4">Vorgefüllte Parameter</h2>
+                        <p class="text-sm text-gray-600 mb-4">
+                            Parameter, die standardmäßig vorausgefüllt sind (können bei Ausführung überschrieben werden)
+                        </p>
+                        
+                        <div>
+                            <label for="prefilled_inputs" class="block text-sm font-medium text-gray-700 mb-1">
+                                Vorgefüllte Parameter (JSON)
+                            </label>
+                            <textarea id="prefilled_inputs" name="prefilled_inputs" rows="6"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      placeholder='{"model": "gpt-4", "temperature": 0.1}'>{{ (tool.prefilled_inputs | tojson(indent=2)) if tool and tool.prefilled_inputs else '{}' }}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Locked Inputs -->
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                        <h2 class="text-lg font-semibold mb-4">Gesperrte Parameter</h2>
+                        <p class="text-sm text-gray-600 mb-4">
+                            Parameter, die nicht überschrieben werden können (Array von Parameter-Namen)
+                        </p>
+                        
+                        <div>
+                            <label for="locked_inputs" class="block text-sm font-medium text-gray-700 mb-1">
+                                Gesperrte Parameter (JSON Array)
+                            </label>
+                            <textarea id="locked_inputs" name="locked_inputs" rows="4"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      placeholder='["temperature", "model"]'>{{ (tool.locked_inputs | tojson(indent=2)) if tool and tool.locked_inputs else '[]' }}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="flex justify-end gap-2">
+                        <a href="{{ url_for('tools.list_tools') }}" 
+                           class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-md">
+                            Abbrechen
+                        </a>
+                        <button type="submit" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
+                            Tool erstellen
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Help & Preview -->
+            <div>
+                <!-- Help -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                    <h2 class="text-lg font-semibold mb-4">Hilfe</h2>
+                    <div class="space-y-4 text-sm">
+                        <div>
+                            <h3 class="font-medium text-gray-900 mb-2">Tool-Name</h3>
+                            <p class="text-gray-600">Ein eindeutiger Name für diese Tool-Instanz.</p>
+                        </div>
+                        
+                        <div>
+                            <h3 class="font-medium text-gray-900 mb-2">Integration</h3>
+                            <p class="text-gray-600">Die Integration, auf der dieses Tool basiert. Definiert verfügbare Parameter und Funktionalität.</p>
+                        </div>
+                        
+                        <div>
+                            <h3 class="font-medium text-gray-900 mb-2">Konfiguration</h3>
+                            <p class="text-gray-600">Spezifische Einstellungen wie API-Keys, Endpunkte oder andere tool-spezifische Parameter.</p>
+                        </div>
+                        
+                        <div>
+                            <h3 class="font-medium text-gray-900 mb-2">Vorgefüllte Parameter</h3>
+                            <p class="text-gray-600">Standardwerte, die bei jeder Ausführung vorausgefüllt werden, aber überschrieben werden können.</p>
+                        </div>
+                        
+                        <div>
+                            <h3 class="font-medium text-gray-900 mb-2">Gesperrte Parameter</h3>
+                            <p class="text-gray-600">Parameter, die nicht von der Ausführung überschrieben werden können. Nützlich für kritische Einstellungen.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Integration Info -->
+                <div id="integrationInfo" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hidden">
+                    <h2 class="text-lg font-semibold mb-4">Integration Details</h2>
+                    <div id="integrationDetails" class="space-y-3 text-sm"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// JSON Validation
+function validateJSON(textareaId) {
+    const textarea = document.getElementById(textareaId);
+    const value = textarea.value.trim();
+    
+    if (!value) return true;
+    
+    try {
+        JSON.parse(value);
+        textarea.classList.remove('border-red-500');
+        textarea.classList.add('border-green-500');
+        return true;
+    } catch (e) {
+        textarea.classList.remove('border-green-500');
+        textarea.classList.add('border-red-500');
+        return false;
+    }
+}
+
+// Event Listeners
+document.getElementById('config').addEventListener('input', () => validateJSON('config'));
+document.getElementById('prefilled_inputs').addEventListener('input', () => validateJSON('prefilled_inputs'));
+document.getElementById('locked_inputs').addEventListener('input', () => validateJSON('locked_inputs'));
+
+// Integration Selection Handler
+document.getElementById('tool_definition').addEventListener('change', function() {
+    const integrationName = this.value;
+    const infoDiv = document.getElementById('integrationInfo');
+    const detailsDiv = document.getElementById('integrationDetails');
+    
+    if (!integrationName) {
+        infoDiv.classList.add('hidden');
+        return;
+    }
+    
+    // Find integration details
+    const integrationsData = {{ integrations | tojson | safe }};
+    const selectedIntegration = integrationsData.find(i => i.name === integrationName);
+    
+    if (selectedIntegration) {
+        detailsDiv.innerHTML = `
+            <div>
+                <span class="font-medium">Vendor:</span> ${selectedIntegration.vendor}
+            </div>
+            <div>
+                <span class="font-medium">Beschreibung:</span> ${selectedIntegration.description || 'Keine Beschreibung verfügbar'}
+            </div>
+            ${selectedIntegration.config_params && selectedIntegration.config_params.length > 0 ? `
+            <div>
+                <span class="font-medium">Verfügbare Config-Parameter:</span>
+                <ul class="mt-1 ml-4">
+                    ${selectedIntegration.config_params.map(p => `
+                        <li class="text-xs">• ${p.name} (${p.type})${p.required ? ' *' : ''}</li>
+                    `).join('')}
+                </ul>
+            </div>
+            ` : ''}
+        `;
+        infoDiv.classList.remove('hidden');
+    }
+});
+
+// Form Validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const isConfigValid = validateJSON('config');
+    const isPrefilledValid = validateJSON('prefilled_inputs');
+    const isLockedValid = validateJSON('locked_inputs');
+    
+    if (!isConfigValid || !isPrefilledValid || !isLockedValid) {
+        e.preventDefault();
+        alert('Bitte korrigiere die JSON-Syntax-Fehler vor dem Speichern.');
+    }
+});
+
+// Initialize validation on page load
+document.addEventListener('DOMContentLoaded', function() {
+    validateJSON('config');
+    validateJSON('prefilled_inputs');
+    validateJSON('locked_inputs');
+    
+    // Trigger integration info if preselected
+    const integrationSelect = document.getElementById('tool_definition');
+    if (integrationSelect.value) {
+        integrationSelect.dispatchEvent(new Event('change'));
+    }
+});
+</script>
+{% endblock %}

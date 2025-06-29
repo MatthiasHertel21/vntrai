@@ -1,0 +1,364 @@
+{% extends "base.html" %}
+
+{% block title %}Tools - VNTRAI{% endblock %}
+
+{% block content %}
+<div class="vntr-content-area no-context">
+    <div class="container-fluid px-4 py-6">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Tools</h1>
+                <p class="text-gray-600 mt-1">Verwalte deine Tool-Instanzen basierend auf Integrations</p>
+            </div>
+            <a href="{{ url_for('tools.create_tool') }}" 
+               class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center gap-2">
+                <i class="bi bi-plus-lg"></i>
+                Neues Tool
+            </a>
+        </div>
+
+        <!-- Filter und Suche -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+            <form method="GET" class="flex flex-wrap gap-4">
+                <div class="flex-1 min-w-64">
+                    <input type="text" name="search" value="{{ search_query or '' }}" 
+                           placeholder="Tools durchsuchen..." 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+                <div class="min-w-48">
+                    <select name="integration" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        <option value="">Alle Integrations</option>
+                        {% for integration in integrations %}
+                        <option value="{{ integration.name }}" 
+                                {% if integration_filter == integration.name %}selected{% endif %}>
+                            {{ integration.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="min-w-36">
+                    <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        <option value="">Alle Status</option>
+                        <option value="connected" {% if status_filter == 'connected' %}selected{% endif %}>Connected</option>
+                        <option value="not_connected" {% if status_filter == 'not_connected' %}selected{% endif %}>Not Connected</option>
+                        <option value="error" {% if status_filter == 'error' %}selected{% endif %}>Error</option>
+                    </select>
+                </div>
+                <button type="submit" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md">
+                    <i class="bi bi-search"></i>
+                </button>
+                <a href="{{ url_for('tools.list_tools') }}" 
+                   class="bg-gray-400 hover:bg-gray-500 text-white px-4 py-2 rounded-md">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </form>
+        </div>
+
+        <!-- Tools-Liste -->
+        {% if tools_by_integration %}
+            {% for integration_name, integration_tools in tools_by_integration.items() %}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+                <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <h2 class="text-lg font-semibold text-gray-900">{{ integration_name }}</h2>
+                            <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+                                {{ integration_tools|length }} Tool{{ 's' if integration_tools|length != 1 else '' }}
+                            </span>
+                        </div>
+                        <a href="{{ url_for('tools.create_tool', integration=integration_name) }}" 
+                           class="text-blue-600 hover:text-blue-800 text-sm">
+                            <i class="bi bi-plus"></i> Tool hinzufügen
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="divide-y divide-gray-200">
+                    {% for tool in integration_tools %}
+                    <div class="p-6">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <h3 class="font-semibold text-gray-900">
+                                        <a href="{{ url_for('tools.view_tool', tool_id=tool.id) }}" 
+                                           class="hover:text-blue-600">
+                                            {{ tool.name }}
+                                        </a>
+                                    </h3>
+                                    
+                                    <!-- Status Badge -->
+                                    {% if tool.status == 'connected' %}
+                                        <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">
+                                            <i class="bi bi-check-circle"></i> Connected
+                                        </span>
+                                    {% elif tool.status == 'error' %}
+                                        <span class="bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded-full">
+                                            <i class="bi bi-exclamation-circle"></i> Error
+                                        </span>
+                                    {% else %}
+                                        <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2 py-1 rounded-full">
+                                            <i class="bi bi-circle"></i> Not Connected
+                                        </span>
+                                    {% endif %}
+                                </div>
+                                
+                                {% if tool.description %}
+                                <p class="text-gray-600 text-sm mb-3">{{ tool.description }}</p>
+                                {% endif %}
+                                
+                                <div class="flex flex-wrap gap-4 text-xs text-gray-500">
+                                    {% if tool.created_at %}
+                                    <span>Erstellt: {{ tool.created_at | format_datetime }}</span>
+                                    {% endif %}
+                                    {% if tool.last_test %}
+                                    <span>Letzter Test: {{ tool.last_test.timestamp | format_datetime }}</span>
+                                    {% endif %}
+                                    {% if tool.prefilled_inputs %}
+                                    <span>{{ tool.prefilled_inputs|length }} Prefilled Parameter</span>
+                                    {% endif %}
+                                    {% if tool.locked_inputs %}
+                                    <span>{{ tool.locked_inputs|length }} Locked Parameter</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Actions -->
+                            <div class="flex items-center gap-2 ml-4">
+                                <!-- Test Button -->
+                                <button onclick="testTool('{{ tool.id }}')" 
+                                        class="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm">
+                                    <i class="bi bi-play"></i> Test
+                                </button>
+                                
+                                <!-- Execute Button -->
+                                <button onclick="executeTool('{{ tool.id }}')" 
+                                        class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">
+                                    <i class="bi bi-gear"></i> Execute
+                                </button>
+                                
+                                <!-- Edit Button -->
+                                <a href="{{ url_for('tools.edit_tool', tool_id=tool.id) }}" 
+                                   class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                
+                                <!-- Clone Button -->
+                                <form method="POST" action="{{ url_for('tools.clone_tool', tool_id=tool.id) }}" class="inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <button type="submit" 
+                                            class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm">
+                                        <i class="bi bi-files"></i>
+                                    </button>
+                                </form>
+                                
+                                <!-- Delete Button -->
+                                <form method="POST" action="{{ url_for('tools.delete_tool', tool_id=tool.id) }}" 
+                                      onsubmit="return confirm('Tool wirklich löschen?')" class="inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <button type="submit" 
+                                            class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+                <i class="bi bi-tools text-4xl text-gray-400 mb-4"></i>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Keine Tools gefunden</h3>
+                <p class="text-gray-600 mb-4">
+                    {% if search_query or integration_filter or status_filter %}
+                        Keine Tools entsprechen den Filterkriterien.
+                    {% else %}
+                        Erstelle dein erstes Tool basierend auf einer Integration.
+                    {% endif %}
+                </p>
+                <a href="{{ url_for('tools.create_tool') }}" 
+                   class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md">
+                    Erstes Tool erstellen
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Test Modal -->
+<div id="testModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold mb-4">Tool Test</h3>
+                <div id="testResults" class="mb-4"></div>
+                <div class="flex justify-end gap-2">
+                    <button onclick="closeTestModal()" 
+                            class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+                        Schließen
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Execute Modal -->
+<div id="executeModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold mb-4">Tool Ausführen</h3>
+                <div id="executeForm" class="mb-4"></div>
+                <div id="executeResults" class="mb-4"></div>
+                <div class="flex justify-end gap-2">
+                    <button onclick="closeExecuteModal()" 
+                            class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+                        Schließen
+                    </button>
+                    <button onclick="runExecution()" 
+                            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                        Ausführen
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentToolId = null;
+
+function testTool(toolId) {
+    currentToolId = toolId;
+    
+    fetch(`/tools/test/${toolId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const resultsDiv = document.getElementById('testResults');
+        if (data.success) {
+            resultsDiv.innerHTML = `
+                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+                    <i class="bi bi-check-circle"></i> ${data.message}
+                </div>
+            `;
+        } else {
+            resultsDiv.innerHTML = `
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                    <i class="bi bi-exclamation-circle"></i> ${data.message}
+                </div>
+            `;
+        }
+        document.getElementById('testModal').classList.remove('hidden');
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        const resultsDiv = document.getElementById('testResults');
+        resultsDiv.innerHTML = `
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                <i class="bi bi-exclamation-circle"></i> Fehler beim Testen des Tools
+            </div>
+        `;
+        document.getElementById('testModal').classList.remove('hidden');
+    });
+}
+
+function executeTool(toolId) {
+    currentToolId = toolId;
+    
+    // Lade Tool-Konfiguration
+    fetch(`/tools/api/config/${toolId}`)
+    .then(response => response.json())
+    .then(tool => {
+        const formDiv = document.getElementById('executeForm');
+        formDiv.innerHTML = `
+            <div class="mb-4">
+                <h4 class="font-semibold mb-2">Tool: ${tool.name}</h4>
+                <p class="text-sm text-gray-600 mb-4">Parameter für die Ausführung:</p>
+                <textarea id="executionInputs" rows="6" 
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm"
+                          placeholder='{"parameter": "wert"}'>${JSON.stringify(tool.prefilled_inputs || {}, null, 2)}</textarea>
+            </div>
+        `;
+        
+        document.getElementById('executeResults').innerHTML = '';
+        document.getElementById('executeModal').classList.remove('hidden');
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+function runExecution() {
+    if (!currentToolId) return;
+    
+    const inputs = document.getElementById('executionInputs').value;
+    let inputsData = {};
+    
+    try {
+        inputsData = JSON.parse(inputs);
+    } catch (e) {
+        document.getElementById('executeResults').innerHTML = `
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                <i class="bi bi-exclamation-circle"></i> Ungültiges JSON-Format
+            </div>
+        `;
+        return;
+    }
+    
+    fetch(`/tools/execute/${currentToolId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ inputs: inputsData })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const resultsDiv = document.getElementById('executeResults');
+        if (data.success) {
+            resultsDiv.innerHTML = `
+                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+                    <i class="bi bi-check-circle"></i> ${data.message}
+                </div>
+                <div class="bg-gray-100 p-4 rounded">
+                    <h5 class="font-semibold mb-2">Ergebnis:</h5>
+                    <pre class="text-xs overflow-auto">${JSON.stringify(data.outputs, null, 2)}</pre>
+                </div>
+            `;
+        } else {
+            resultsDiv.innerHTML = `
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                    <i class="bi bi-exclamation-circle"></i> ${data.message}
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        const resultsDiv = document.getElementById('executeResults');
+        resultsDiv.innerHTML = `
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                <i class="bi bi-exclamation-circle"></i> Fehler beim Ausführen des Tools
+            </div>
+        `;
+    });
+}
+
+function closeTestModal() {
+    document.getElementById('testModal').classList.add('hidden');
+}
+
+function closeExecuteModal() {
+    document.getElementById('executeModal').classList.add('hidden');
+}
+</script>
+{% endblock %}

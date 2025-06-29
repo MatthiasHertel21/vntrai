@@ -1,0 +1,17 @@
+{
+  "timestamp": "2025-06-29T09:40:32.415568",
+  "integrations": {
+    "source_count": 13,
+    "migrated_count": 13,
+    "failed": []
+  },
+  "tools": {
+    "source_count": 15,
+    "migrated_count": 15,
+    "failed": []
+  },
+  "icons": {
+    "copied_count": 12,
+    "failed": []
+  }
+}

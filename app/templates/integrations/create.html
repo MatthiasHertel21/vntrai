@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Create Integration{% endblock %}
+
+{% block page_header %}
+<div class="flex items-center">
+    <a href="{{ url_for('integrations.list_integrations') }}" 
+       class="text-gray-500 hover:text-gray-700 mr-4">
+        <i class="bi bi-arrow-left text-xl"></i>
+    </a>
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">Create Integration</h1>
+        <p class="text-gray-600">Add a new API integration or connection</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block context_area %}
+<div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+    <div class="flex items-center">
+        <i class="bi bi-info-circle text-blue-500 mr-2"></i>
+        <div class="text-sm text-blue-800">
+            <strong>Creating Integration:</strong> Fill in the basic information to create a new integration. 
+            You can configure authentication, endpoints, and other settings after creation.
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <form method="POST" enctype="multipart/form-data" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <div class="space-y-6">
+            <!-- Basic Information -->
+            <div>
+                <h2 class="text-lg font-medium text-gray-900 mb-4">Basic Information</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
+                            Name <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="name" name="name" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="e.g., OpenAI Assistant API"
+                               maxlength="100">
+                        <p class="text-xs text-gray-500 mt-1">Descriptive name for the integration</p>
+                    </div>
+                    
+                    <div>
+                        <label for="vendor" class="block text-sm font-medium text-gray-700 mb-1">
+                            Vendor <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="vendor" name="vendor" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="e.g., OpenAI, Google, AWS"
+                               maxlength="50">
+                        <p class="text-xs text-gray-500 mt-1">Service provider or vendor name</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Integration Type -->
+            <div>
+                <label for="type" class="block text-sm font-medium text-gray-700 mb-1">
+                    Type
+                </label>
+                <select id="type" name="type" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="api">API</option>
+                    <option value="webhook">Webhook</option>
+                    <option value="database">Database</option>
+                    <option value="file">File</option>
+                    <option value="service">Service</option>
+                    <option value="other">Other</option>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">Type of integration</p>
+            </div>
+
+            <!-- Description -->
+            <div>
+                <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
+                    Description
+                </label>
+                <textarea id="description" name="description" rows="3"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Describe what this integration does and how it's used..."
+                          maxlength="500"></textarea>
+                <p class="text-xs text-gray-500 mt-1">Optional description of the integration (max 500 characters)</p>
+            </div>
+
+            <!-- Icon Upload -->
+            <div>
+                <label for="icon" class="block text-sm font-medium text-gray-700 mb-1">
+                    Icon
+                </label>
+                <div class="flex items-center space-x-4">
+                    <div class="flex-shrink-0">
+                        <div id="iconPreview" class="h-16 w-16 bg-gray-200 rounded-lg flex items-center justify-center">
+                            <i class="bi bi-image text-gray-400 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <input type="file" id="icon" name="icon" accept="image/*"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <p class="text-xs text-gray-500 mt-1">Optional icon for the integration (PNG, JPG, SVG)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                <a href="{{ url_for('integrations.list_integrations') }}" 
+                   class="btn btn-outline">
+                    Cancel
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-plus-lg"></i>
+                    Create Integration
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+// Icon preview
+document.getElementById('icon').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const preview = document.getElementById('iconPreview');
+    
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.innerHTML = `<img src="${e.target.result}" class="h-16 w-16 object-cover rounded-lg">`;
+        };
+        reader.readAsDataURL(file);
+    } else {
+        preview.innerHTML = '<i class="bi bi-image text-gray-400 text-xl"></i>';
+    }
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+    const name = document.getElementById('name').value.trim();
+    const vendor = document.getElementById('vendor').value.trim();
+    
+    if (!name || !vendor) {
+        e.preventDefault();
+        alert('Name and vendor are required fields.');
+        return false;
+    }
+    
+    if (name.length > 100) {
+        e.preventDefault();
+        alert('Name must not exceed 100 characters.');
+        return false;
+    }
+    
+    if (vendor.length > 50) {
+        e.preventDefault();
+        alert('Vendor must not exceed 50 characters.');
+        return false;
+    }
+    
+    return true;
+});
+</script>
+{% endblock %}

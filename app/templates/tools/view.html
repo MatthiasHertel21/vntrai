@@ -1,0 +1,377 @@
+{% extends "base.html" %}
+
+{% block title %}Tool Details - VNTRAI{% endblock %}
+
+{% block content %}
+<div class="vntr-content-area no-context">
+    <div class="container-fluid px-4 py-6">
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">{{ tool.name }}</h1>
+                <p class="text-gray-600 mt-1">Tool basierend auf {{ tool.tool_definition }}</p>
+            </div>
+            <div class="flex gap-2">
+                <a href="{{ url_for('tools.edit_tool', tool_id=tool.id) }}" 
+                   class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                    <i class="bi bi-pencil"></i> Bearbeiten
+                </a>
+                <a href="{{ url_for('tools.list_tools') }}" 
+                   class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md">
+                    <i class="bi bi-arrow-left"></i> Zurück
+                </a>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Tool Information -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                    <h2 class="text-lg font-semibold mb-4">Tool-Informationen</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                            <p class="text-gray-900">{{ tool.name }}</p>
+                        </div>
+                        
+                        {% if tool.description %}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Beschreibung</label>
+                            <p class="text-gray-900">{{ tool.description }}</p>
+                        </div>
+                        {% endif %}
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Integration</label>
+                            <p class="text-gray-900">{{ tool.tool_definition }}</p>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                            {% if tool.status == 'connected' %}
+                                <span class="bg-green-100 text-green-800 text-sm font-medium px-3 py-1 rounded-full">
+                                    <i class="bi bi-check-circle"></i> Connected
+                                </span>
+                            {% elif tool.status == 'error' %}
+                                <span class="bg-red-100 text-red-800 text-sm font-medium px-3 py-1 rounded-full">
+                                    <i class="bi bi-exclamation-circle"></i> Error
+                                </span>
+                            {% else %}
+                                <span class="bg-gray-100 text-gray-800 text-sm font-medium px-3 py-1 rounded-full">
+                                    <i class="bi bi-circle"></i> Not Connected
+                                </span>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                            <div>
+                                <span class="font-medium">Erstellt:</span><br>
+                                {{ tool.created_at | format_datetime }}
+                            </div>
+                            <div>
+                                <span class="font-medium">Aktualisiert:</span><br>
+                                {{ tool.updated_at | format_datetime }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Configuration -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                    <h2 class="text-lg font-semibold mb-4">Konfiguration</h2>
+                    <pre class="bg-gray-50 p-4 rounded-md text-sm overflow-auto">{{ tool.config | tojson(indent=2) }}</pre>
+                </div>
+
+                <!-- Prefilled Inputs -->
+                {% if tool.prefilled_inputs %}
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                    <h2 class="text-lg font-semibold mb-4">Vorgefüllte Parameter</h2>
+                    <pre class="bg-gray-50 p-4 rounded-md text-sm overflow-auto">{{ tool.prefilled_inputs | tojson(indent=2) }}</pre>
+                </div>
+                {% endif %}
+
+                <!-- Locked Inputs -->
+                {% if tool.locked_inputs %}
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                    <h2 class="text-lg font-semibold mb-4">Gesperrte Parameter</h2>
+                    <div class="flex flex-wrap gap-2">
+                        {% for input in tool.locked_inputs %}
+                        <span class="bg-red-100 text-red-800 text-sm px-3 py-1 rounded-full">
+                            <i class="bi bi-lock"></i> {{ input }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Actions & Status -->
+            <div>
+                <!-- Quick Actions -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                    <h2 class="text-lg font-semibold mb-4">Aktionen</h2>
+                    <div class="space-y-3">
+                        <button onclick="testTool('{{ tool.id }}')" 
+                                class="w-full bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-md">
+                            <i class="bi bi-play"></i> Tool testen
+                        </button>
+                        <button onclick="executeTool('{{ tool.id }}')" 
+                                class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md">
+                            <i class="bi bi-gear"></i> Tool ausführen
+                        </button>
+                        <form method="POST" action="{{ url_for('tools.clone_tool', tool_id=tool.id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <button type="submit" 
+                                    class="w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md">
+                                <i class="bi bi-files"></i> Tool klonen
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Last Test -->
+                {% if tool.last_test %}
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                    <h2 class="text-lg font-semibold mb-4">Letzter Test</h2>
+                    <div class="space-y-3">
+                        <div class="text-sm text-gray-600">
+                            {{ tool.last_test.timestamp | format_datetime }}
+                        </div>
+                        {% if tool.last_test.result.success %}
+                        <div class="bg-green-100 border border-green-400 text-green-700 px-3 py-2 rounded text-sm">
+                            <i class="bi bi-check-circle"></i> {{ tool.last_test.result.message }}
+                        </div>
+                        {% else %}
+                        <div class="bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded text-sm">
+                            <i class="bi bi-exclamation-circle"></i> {{ tool.last_test.result.message }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Last Execution -->
+                {% if tool.last_execution %}
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                    <h2 class="text-lg font-semibold mb-4">Letzte Ausführung</h2>
+                    <div class="space-y-3">
+                        <div class="text-sm text-gray-600">
+                            {{ tool.last_execution.timestamp | format_datetime }}
+                        </div>
+                        {% if tool.last_execution.result.success %}
+                        <div class="bg-green-100 border border-green-400 text-green-700 px-3 py-2 rounded text-sm">
+                            <i class="bi bi-check-circle"></i> Erfolgreich ausgeführt
+                        </div>
+                        {% else %}
+                        <div class="bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded text-sm">
+                            <i class="bi bi-exclamation-circle"></i> Fehler bei Ausführung
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Execution Details -->
+                        <details class="text-sm">
+                            <summary class="cursor-pointer text-blue-600 hover:text-blue-800">Details anzeigen</summary>
+                            <div class="mt-2 space-y-2">
+                                <div>
+                                    <strong>Inputs:</strong>
+                                    <pre class="bg-gray-50 p-2 rounded mt-1 text-xs">{{ tool.last_execution.inputs | tojson(indent=2) }}</pre>
+                                </div>
+                                <div>
+                                    <strong>Result:</strong>
+                                    <pre class="bg-gray-50 p-2 rounded mt-1 text-xs">{{ tool.last_execution.result | tojson(indent=2) }}</pre>
+                                </div>
+                            </div>
+                        </details>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Integration Info -->
+                {% if integration %}
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-lg font-semibold mb-4">Integration</h2>
+                    <div class="space-y-3">
+                        <div>
+                            <div class="font-medium">{{ integration.name }}</div>
+                            <div class="text-sm text-gray-600">{{ integration.vendor }}</div>
+                        </div>
+                        {% if integration.description %}
+                        <p class="text-sm text-gray-700">{{ integration.description }}</p>
+                        {% endif %}
+                        <a href="{{ url_for('integrations.view_integration', integration_id=integration.id) }}" 
+                           class="text-blue-600 hover:text-blue-800 text-sm">
+                            Integration anzeigen →
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Test Modal -->
+<div id="testModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold mb-4">Tool Test</h3>
+                <div id="testResults" class="mb-4"></div>
+                <div class="flex justify-end gap-2">
+                    <button onclick="closeTestModal()" 
+                            class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+                        Schließen
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Execute Modal -->
+<div id="executeModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold mb-4">Tool Ausführen</h3>
+                <div id="executeForm" class="mb-4"></div>
+                <div id="executeResults" class="mb-4"></div>
+                <div class="flex justify-end gap-2">
+                    <button onclick="closeExecuteModal()" 
+                            class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+                        Schließen
+                    </button>
+                    <button onclick="runExecution()" 
+                            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                        Ausführen
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentToolId = '{{ tool.id }}';
+
+function testTool(toolId) {
+    fetch(`/tools/test/${toolId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const resultsDiv = document.getElementById('testResults');
+        if (data.success) {
+            resultsDiv.innerHTML = `
+                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+                    <i class="bi bi-check-circle"></i> ${data.message}
+                </div>
+            `;
+        } else {
+            resultsDiv.innerHTML = `
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                    <i class="bi bi-exclamation-circle"></i> ${data.message}
+                </div>
+            `;
+        }
+        document.getElementById('testModal').classList.remove('hidden');
+        
+        // Seite nach Test neu laden für aktuellen Status
+        setTimeout(() => {
+            window.location.reload();
+        }, 2000);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+function executeTool(toolId) {
+    // Lade Tool-Konfiguration
+    fetch(`/tools/api/config/${toolId}`)
+    .then(response => response.json())
+    .then(tool => {
+        const formDiv = document.getElementById('executeForm');
+        formDiv.innerHTML = `
+            <div class="mb-4">
+                <h4 class="font-semibold mb-2">Parameter für die Ausführung:</h4>
+                <textarea id="executionInputs" rows="6" 
+                          class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm"
+                          placeholder='{"parameter": "wert"}'>${JSON.stringify(tool.prefilled_inputs || {}, null, 2)}</textarea>
+            </div>
+        `;
+        
+        document.getElementById('executeResults').innerHTML = '';
+        document.getElementById('executeModal').classList.remove('hidden');
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+function runExecution() {
+    const inputs = document.getElementById('executionInputs').value;
+    let inputsData = {};
+    
+    try {
+        inputsData = JSON.parse(inputs);
+    } catch (e) {
+        document.getElementById('executeResults').innerHTML = `
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                <i class="bi bi-exclamation-circle"></i> Ungültiges JSON-Format
+            </div>
+        `;
+        return;
+    }
+    
+    fetch(`/tools/execute/${currentToolId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ inputs: inputsData })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const resultsDiv = document.getElementById('executeResults');
+        if (data.success) {
+            resultsDiv.innerHTML = `
+                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+                    <i class="bi bi-check-circle"></i> ${data.message}
+                </div>
+                <div class="bg-gray-100 p-4 rounded">
+                    <h5 class="font-semibold mb-2">Ergebnis:</h5>
+                    <pre class="text-xs overflow-auto">${JSON.stringify(data.outputs, null, 2)}</pre>
+                </div>
+            `;
+        } else {
+            resultsDiv.innerHTML = `
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                    <i class="bi bi-exclamation-circle"></i> ${data.message}
+                </div>
+            `;
+        }
+        
+        // Seite nach Ausführung neu laden für aktuellen Status
+        setTimeout(() => {
+            window.location.reload();
+        }, 3000);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+function closeTestModal() {
+    document.getElementById('testModal').classList.add('hidden');
+}
+
+function closeExecuteModal() {
+    document.getElementById('executeModal').classList.add('hidden');
+}
+</script>
+{% endblock %}

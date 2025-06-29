@@ -29,13 +29,15 @@ def prompts():
 
 @bp.route('/tools')
 def tools():
-    """Tools Seite."""
-    return render_template('tools.html')
+    """Leitet zur neuen Tools-Verwaltung weiter"""
+    from flask import redirect, url_for
+    return redirect(url_for('tools.list_tools'))
 
 @bp.route('/integrations')
 def integrations():
-    """Integrations Seite."""
-    return render_template('integrations.html')
+    """Leitet zur neuen Integrations-Verwaltung weiter"""
+    from flask import redirect, url_for
+    return redirect(url_for('integrations.list_integrations'))
 
 @bp.route('/datasets')
 def datasets():
