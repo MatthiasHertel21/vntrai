@@ -175,6 +175,16 @@ def create_tool():
             'last_execution': None
         }
         
+        # Integration ID automatisch setzen
+        if data.get('tool_definition'):
+            integration = next(
+                (i for i in integrations_manager.get_all() 
+                 if i['name'] == data['tool_definition']), 
+                None
+            )
+            if integration and integration.get('id'):
+                data['integration_id'] = integration['id']
+        
         # Validation
         errors = validator.validate(data)
         if errors:
@@ -293,6 +303,26 @@ def edit_tool(tool_id):
             except json.JSONDecodeError:
                 locked_inputs = []
         
+        # Parse assistant options
+        options_data = existing.get('options', {}).copy()
+        
+        # Assistant configuration
+        assistant_options = {}
+        for key in request.form.keys():
+            if key.startswith('options[assistant][') and key.endswith(']'):
+                field_name = key[18:-1]  # Remove 'options[assistant][' and ']'
+                value = request.form.get(key)
+                
+                # Convert checkbox values
+                if field_name in ['enabled', 'auto_create']:
+                    assistant_options[field_name] = value == 'true'
+                else:
+                    assistant_options[field_name] = value
+        
+        # Update options structure
+        if assistant_options:
+            options_data['assistant'] = assistant_options
+        
         data.update({
             'name': request.form.get('name', '').strip(),
             'description': request.form.get('description', '').strip(),
@@ -300,8 +330,19 @@ def edit_tool(tool_id):
             'config': config_data,
             'prefilled_inputs': prefilled_data,
             'locked_inputs': locked_inputs,
+            'options': options_data,
             'updated_at': datetime.utcnow().isoformat() + 'Z'
         })
+        
+        # Integration ID automatisch setzen/aktualisieren
+        if data.get('tool_definition'):
+            integration = next(
+                (i for i in integrations_manager.get_all() 
+                 if i['name'] == data['tool_definition']), 
+                None
+            )
+            if integration and integration.get('id'):
+                data['integration_id'] = integration['id']
         
         # Validation
         errors = validator.validate(data)
@@ -700,23 +741,281 @@ def get_implementation_status(tool_id):
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
 
-@tools_bp.route('/implementation-modules')
-def list_implementation_modules():
-    """Liste aller verfügbaren Implementation Modules"""
+
+@tools_bp.route('/test_assistant/<tool_id>', methods=['POST'])
+def test_assistant_connection(tool_id):
+    """Test assistant connection for a tool"""
+    try:
+        tool = tools_manager.get_by_id(tool_id)
+        if not tool:
+            return jsonify({'success': False, 'message': 'Tool not found'}), 404
+        
+        # Check if assistant is enabled
+        assistant_options = tools_manager.get_assistant_options(tool_id)
+        if not assistant_options.get('enabled', False):
+            return jsonify({'success': False, 'message': 'Assistant not enabled for this tool'}), 400
+        
+        if not IMPLEMENTATION_MODULES_AVAILABLE:
+            return jsonify({'success': False, 'message': 'Implementation module system not available'}), 500
+        
+        # Test OpenAI Assistant API implementation
+        try:
+            # Use tool's config for testing
+            config = tool.get('config', {})
+            
+            # Map tool config fields to implementation expected fields
+            mapped_config = {}
+            if 'openai_api_key' in config:
+                mapped_config['api_key'] = config['openai_api_key']
+            if 'organization_id' in config:
+                mapped_config['organization'] = config['organization_id']
+            if 'base_url' in config:
+                mapped_config['base_url'] = config['base_url']
+            if 'timeout' in config:
+                mapped_config['timeout'] = config['timeout']
+            
+            # Get implementation with tool's configuration
+            impl = implementation_manager.get_implementation('openai_assistant_api', mapped_config)
+            if not impl:
+                return jsonify({'success': False, 'message': 'OpenAI Assistant API implementation not found or configuration invalid'}), 500
+            
+            # Test connection
+            test_result = impl.execute({'action': 'test'})
+            
+            return jsonify({
+                'success': test_result.get('success', False),
+                'message': test_result.get('message', 'Test completed'),
+                'details': test_result
+            })
+            
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'Test failed: {str(e)}'}), 500
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@tools_bp.route('/create_assistant/<tool_id>', methods=['POST'])
+def create_assistant_for_tool(tool_id):
+    """Create an OpenAI assistant for a tool"""
     try:
         if not IMPLEMENTATION_MODULES_AVAILABLE:
-            return jsonify({
-                'success': False,
-                'message': 'Implementation Module System nicht verfügbar'
+            return jsonify({'success': False, 'message': 'Implementation module system not available'}), 500
+        
+        # Run async function in thread
+        import threading
+        import asyncio
+        
+        result_container = {}
+        exception_container = {}
+        
+        def run_async_create():
+            try:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                result = loop.run_until_complete(tools_manager.create_assistant_for_tool(tool_id))
+                result_container['result'] = result
+            except Exception as e:
+                exception_container['error'] = e
+            finally:
+                loop.close()
+        
+        thread = threading.Thread(target=run_async_create)
+        thread.start()
+        thread.join(timeout=30)  # 30 second timeout
+        
+        if thread.is_alive():
+            return jsonify({'success': False, 'message': 'Operation timed out'}), 500
+        
+        if 'error' in exception_container:
+            raise exception_container['error']
+        
+        result = result_container.get('result', {'success': False, 'message': 'No result'})
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@tools_bp.route('/sync_assistant/<tool_id>', methods=['POST'])
+def sync_assistant_config(tool_id):
+    """Sync assistant configuration with OpenAI"""
+    try:
+        tool = tools_manager.get_by_id(tool_id)
+        if not tool:
+            return jsonify({'success': False, 'message': 'Tool not found'}), 404
+        
+        request_data = request.get_json() or {}
+        assistant_id = request_data.get('assistant_id', '')
+        
+        if not assistant_id:
+            return jsonify({'success': False, 'message': 'Assistant ID required'}), 400
+        
+        if not IMPLEMENTATION_MODULES_AVAILABLE:
+            return jsonify({'success': False, 'message': 'Implementation module system not available'}), 500
+        
+        # Get assistant details from OpenAI
+        try:
+            # Use tool's config for getting assistant details
+            config = tool.get('config', {})
+            
+            # Map tool config fields to implementation expected fields
+            mapped_config = {}
+            if 'openai_api_key' in config:
+                mapped_config['api_key'] = config['openai_api_key']
+            if 'organization_id' in config:
+                mapped_config['organization'] = config['organization_id']
+            if 'base_url' in config:
+                mapped_config['base_url'] = config['base_url']
+            if 'timeout' in config:
+                mapped_config['timeout'] = config['timeout']
+            
+            # Get implementation with tool's configuration
+            impl = implementation_manager.get_implementation('openai_assistant_api', mapped_config)
+            if not impl:
+                return jsonify({'success': False, 'message': 'OpenAI Assistant API implementation not found or configuration invalid'}), 500
+            
+            # Get assistant info
+            get_result = impl.execute({
+                'action': 'get_assistant',
+                'assistant_id': assistant_id
             })
+            
+            if not get_result.get('success', False):
+                return jsonify({'success': False, 'message': f'Failed to get assistant: {get_result.get("error", "Unknown error")}'}), 500
+            
+            assistant_data = get_result.get('data', {})
+            
+            # Update tool's assistant options with synced data
+            assistant_options = tools_manager.get_assistant_options(tool_id)
+            assistant_options.update({
+                'assistant_id': assistant_id,
+                'model': assistant_data.get('model', assistant_options.get('model', 'gpt-4-turbo-preview')),
+                'instructions': assistant_data.get('instructions', assistant_options.get('instructions', '')),
+                'enabled': True
+            })
+            
+            # Save updated options
+            success = tools_manager.update_assistant_options(tool_id, assistant_options)
+            
+            if success:
+                return jsonify({
+                    'success': True,
+                    'message': 'Assistant configuration synced successfully',
+                    'assistant_data': assistant_data
+                })
+            else:
+                return jsonify({'success': False, 'message': 'Failed to save assistant configuration'}), 500
+            
+        except Exception as e:
+            return jsonify({'success': False, 'message': f'Sync failed: {str(e)}'}), 500
         
-        modules = tools_manager.get_available_implementation_modules()
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@tools_bp.route('/chat_assistant/<tool_id>', methods=['POST'])
+def chat_with_tool_assistant(tool_id):
+    """Chat with a tool's assistant"""
+    try:
+        request_data = request.get_json() or {}
+        message = request_data.get('message', '')
+        thread_id = request_data.get('thread_id', None)
         
+        if not message:
+            return jsonify({'success': False, 'message': 'Message required'}), 400
+        
+        if not IMPLEMENTATION_MODULES_AVAILABLE:
+            return jsonify({'success': False, 'message': 'Implementation module system not available'}), 500
+        
+        # Run async function in thread
+        import threading
+        import asyncio
+        
+        result_container = {}
+        exception_container = {}
+        
+        def run_async_chat():
+            try:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                result = loop.run_until_complete(tools_manager.chat_with_tool_assistant(tool_id, message, thread_id))
+                result_container['result'] = result
+            except Exception as e:
+                exception_container['error'] = e
+            finally:
+                loop.close()
+        
+        thread = threading.Thread(target=run_async_chat)
+        thread.start()
+        thread.join(timeout=60)  # 60 second timeout for chat
+        
+        if thread.is_alive():
+            return jsonify({'success': False, 'message': 'Chat operation timed out'}), 500
+        
+        if 'error' in exception_container:
+            raise exception_container['error']
+        
+        result = result_container.get('result', {'success': False, 'message': 'No result'})
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@tools_bp.route('/api/<tool_id>/assistant/enable', methods=['POST'])
+def enable_tool_assistant(tool_id):
+    """Enable assistant functionality for a tool"""
+    try:
+        data = request.get_json() or {}
+        assistant_config = data.get('assistant_config', {})
+        
+        success = tools_manager.enable_assistant_for_tool(tool_id, assistant_config)
+        if success:
+            return jsonify({'success': True, 'message': 'Assistant functionality enabled'})
+        else:
+            return jsonify({'success': False, 'message': 'Failed to enable assistant'}), 400
+            
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@tools_bp.route('/api/<tool_id>/assistant/disable', methods=['POST'])
+def disable_tool_assistant(tool_id):
+    """Disable assistant functionality for a tool"""
+    try:
+        success = tools_manager.disable_assistant_for_tool(tool_id)
+        if success:
+            return jsonify({'success': True, 'message': 'Assistant functionality disabled'})
+        else:
+            return jsonify({'success': False, 'message': 'Failed to disable assistant'}), 400
+            
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@tools_bp.route('/api/<tool_id>/assistant/config', methods=['PUT'])
+def update_tool_assistant_config(tool_id):
+    """Update assistant configuration for a tool"""
+    try:
+        data = request.get_json() or {}
+        assistant_config = data.get('assistant_config', {})
+        
+        success = tools_manager.update_assistant_config(tool_id, assistant_config)
+        if success:
+            return jsonify({'success': True, 'message': 'Assistant configuration updated'})
+        else:
+            return jsonify({'success': False, 'message': 'Failed to update assistant config'}), 400
+            
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@tools_bp.route('/api/assistant-enabled')
+def get_assistant_enabled_tools():
+    """Get all tools with assistant functionality enabled"""
+    try:
+        tools = tools_manager.get_assistant_enabled_tools()
         return jsonify({
             'success': True,
-            'modules': modules,
-            'total_count': len(modules)
+            'tools': tools,
+            'count': len(tools)
         })
-        
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500

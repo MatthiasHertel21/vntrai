@@ -19,63 +19,7 @@
 
 # BACKLOG
 
-## ✅ **Abgeschlossener Sprint 16: Agents Foundation (1.-5. Juli 2025)**
-### 🎯 Ziel: Core Agent System mit CRUD Operations und Basic UI - **VOLLSTÄNDIG ERFÜLLT**
-
-**✅ ERFOLGREICH ABGESCHLOSSEN:**
-
-### **🏗️ Agent Data Structure & Backend**
-- ✅ **Agent Data Manager**: AgentsManager Klasse in `app/utils/data_manager.py` erweitert
-- ✅ **Agent CRUD Routes**: Vollständige Routes in `app/routes/agents.py` implementiert
-  - `/agents` - Agent List View mit Card Grid Layout
-  - `/agents/create` - Agent Creation mit CSRF-Protection  
-  - `/agents/edit/<uuid>` - Agent Edit mit Two-Column Layout
-  - `/agents/view/<uuid>` - Agent Details View
-  - `/agents/delete/<uuid>` - Agent Deletion mit Confirmation
-- ✅ **UUID-basierte Agent IDs**: Echte UUIDs und Timestamps implementiert
-- ✅ **Basic Agent Properties**: name, category, description, status, tasks[], knowledge_base[]
-- ✅ **Agent Validation**: sanitize_agent_data und validate_agent_data in `app/utils/validation.py`
-
-### **🎨 Agent List View & Card Layout**
-- ✅ **Agent Overview Page**: Card Grid Layout mit responsive Design
-- ✅ **Gestackte Action-Buttons**: Vollständige Aktionen implementiert
-  - "New Session", "Edit", "Duplicate", "Export", "Delete", "Reconnect", "Cleanup"
-- ✅ **JavaScript-Funktionalität**: toggleActionsMenu, confirmDeleteAgent, exportAgent etc.
-- ✅ **Agent Statistics**: Card-Footer mit Agent-Run-Counts (Vorbereitung für Sprint 19)
-
-### **✏️ Agent Edit/Create Pages**
-- ✅ **Two-Column Layout**: Links Basic Info + AI Assistant, Rechts Tasks + Knowledge Base
-- ✅ **Basic Information Container**: Name, Category, Description, Status
-- ✅ **AI Assistant Configuration**: AI Assistant Tool Auswahl (statt Assistant ID)
-- ✅ **Tasks Container**: Simplified Task Liste (erweiterte Features in Sprint 18)
-- ✅ **Knowledge Base Container**: Knowledge Items Liste (erweiterte Features in Sprint 18)
-- ✅ **Toolbar Integration**: Save-Button in page_header statt Footer
-
-### **🔧 Infrastructure & Navigation**
-- ✅ **Agent Icon**: Agent - black.png in Sidebar oberhalb Tools
-- ✅ **Blueprint Registration**: agents_bp korrekt in Flask App registriert
-- ✅ **Navigation**: Active State für agent routes in Sidebar
-- ✅ **Dashboard Layout**: Context-Area rechts neben Content (Layout-Fix)
-- ✅ **CSRF-Security**: Alle Agent-Forms haben CSRF-Token-Protection
-
-### **📊 Sprint 16 Definition of Done - VOLLSTÄNDIG ERFÜLLT:**
-- [x] Agent Data Manager implementiert (JSON-basierte Speicherung)
-- [x] Agent CRUD Routes funktionsfähig (/agents/create, /edit, /view, /delete)  
-- [x] Agent List View mit Card Grid Layout
-- [x] Basic Agent Edit/Create Pages mit Two-Column Layout
-- [x] Agent Statistics und Navigation
-- [x] Docker-kompatible Implementation (keine direkten Python-Aufrufe)
-
-### **🎉 Sprint 16 Achievements:**
-- **Core Agent System**: Vollständige CRUD-Funktionalität für Agents
-- **Modern UI**: Card-basierte Liste mit gestackten Aktionen
-- **Responsive Design**: Two-Column Layout funktioniert auf allen Bildschirmgrößen
-- **Clean Architecture**: Saubere Trennung zwischen Backend (Data Manager) und Frontend (Templates)
-- **Future-Ready**: Vorbereitet für erweiterte Features in Sprint 17-20
-
----
-
-## 🎯 **Nächster Sprint: Sprint 17 AI Assistant Integration (8.-12. Juli 2025)**
+## 🎯 **Aktueller Sprint: Sprint 17 AI Assistant Integration (8.-12. Juli 2025)**
 ### Ziel: OpenAI Assistant Integration und Tool-Connection
 
 **Geplante Tasks:**
@@ -94,6 +38,17 @@
    - Tools "options" Feld erweitern um "assistent" Option
    - V2 Assistant API Tool als primäres Assistant-Tool registrieren
    - Tool Selection in Agent Configuration
+
+**Sprint 17 Definition of Done:**
+- [ ] V2 Assistant API Tool für OpenAI Assistant v2 API entwickelt
+- [ ] OpenAI Assistant API Client implementiert
+- [ ] Assistant CRUD Operations funktionsfähig
+- [ ] Assistant Management UI in Agent Edit Page
+- [ ] Tool-Assistant Connection über "options" Feld
+- [ ] File Upload/Management für Assistants
+- [ ] System Prompt Preview und Generation
+
+---
 
 ## 📋 **Abgeschlossener Sprint 15 (30. Juni 2025) - Layout-Verbesserungen & Icon-Design-System**
 ### ✅ **Erfolgreich abgeschlossen:**
@@ -172,7 +127,7 @@
 - jeder agent hat eine liste von Ausfgaben (tasks), eine task ist vom typ ai-task  oder tool-task
 ### visualisierung
 - agenten haben eigene CRUD-Operations, 
-- Zum erstellen braucht es keine eigene Seite, ein neuer agentrund wird im backenend erzeugt und über die edit seite bearbeitet
+- Zum erstellen braucht es keine eigene seite, ein neuer agentrund wird im backenend erzeugt und über die edit seite bearbeitet
 #### card layout
 - die übersicht der agenten wird visualisert über ein card layout
 - jede card hat als stacked button die funktionen New Session", "Edit", "Duplicate", "Export", "Delete", "Reconnect" und "Cleanup"
@@ -716,62 +671,6 @@ Die Neuausrichtung auf das Agent-System folgt der strategischen Roadmap und den 
 ### **✅ KRITISCHES PROBLEM VOLLSTÄNDIG GELÖST:**
 Das Integration-Edit-System war komplett defekt mit schwerwiegenden Datenverlust-Problemen. In dieser Session wurden alle Probleme systematisch identifiziert und behoben:
 
-#### **🔧 Behobene Bugs:**
-1. **Implementation-Dropdown repariert**:
-   - Korrekte Vorauswahl der aktuellen Implementation
-   - available_implementations Backend-Route erweitert
-   - ImplementationManager Integration funktioniert
-
-2. **JSON-Parameter-System komplett überarbeitet**:
-   - config_params, input_params, output_params werden korrekt angezeigt
-   - Direkte Bearbeitung in Textareas statt Toggle-JSON-Editor
-   - JSON-Validierung mit Error-Handling implementiert
-
-3. **Selektive Speicherung implementiert**:
-   - Backend speichert nur geänderte Felder
-   - Keine Überschreibung von nicht-modifizierten Parametern
-   - Datenverlust-Prevention vollständig implementiert
-
-4. **Error-Handling verbessert**:
-   - JSON-Validierung mit benutzerfreundlichen Fehlermeldungen
-   - Flash-Messages für alle Speichervorgänge
-   - Robuste Fehlerbehandlung bei Invalid JSON
-
-#### **📂 Geänderte Dateien:**
-- `/app/templates/integrations/edit.html` - JSON-Textarea-Editor, Implementation-Dropdown
-- `/app/routes/integrations.py` - Selektive Field-Updates, available_implementations
-- `/app/static/css/style.css` - Textarea-Styling für JSON-Editor
-
-#### **🎯 Technische Details:**
-- **Backend-Logik**: Nur Felder mit neuen Werten werden gespeichert
-- **Frontend**: Direkte JSON-Bearbeitung in styled textareas
-- **Validation**: JSON.parse() mit try/catch und User-Feedback
-- **Integration**: ImplementationManager für verfügbare Module
-
-#### **🚀 Impact:**
-- **ZERO DATA LOSS**: Kein Datenverlust mehr beim Speichern von Integrations
-- **FULL FUNCTIONALITY**: Implementation-Management funktioniert vollständig
-- **USER EXPERIENCE**: Direkte JSON-Bearbeitung ist benutzerfreundlicher
-- **SYSTEM STABILITY**: Robuste Error-Handling verhindert System-Crashes
-
-### **📋 Sprint 15 Layout-Verbesserungen parallel abgeschlossen:**
-- Filter-Optimierung in /integrations (überflüssige Filter entfernt)
-- Card-Footer-Layout mit Aktionen rechts, Status links
-- Last-Used-Datum für Tool-Karten
-- Label-Anzeige optimiert (nebeneinander statt gestapelt)
-- Button-Sizing optimiert für kompaktere Karten
-
-**➡️ NÄCHSTE SESSION: UI/UX-Refactoring mit Container-Limits, Two-Column-Layout und gestackten Action-Buttons implementieren**
-
----
-
-# 🎉 **SESSION WRAPUP - 30. Dezember 2024**
-
-## **✅ KRITISCHE BUGFIXES VOLLSTÄNDIG ABGESCHLOSSEN:**
-
-### **🔧 Integration-Edit-System Repair - ERFOLGREICH:**
-Das Integration-Edit-System war mit schwerwiegenden Datenverlust-Problemen defekt. Alle Issues wurden systematisch diagnostiziert und behoben:
-
 #### **Root Cause identifiziert:**
 - `sanitize_integration_data()` in `app/utils/validation.py` hatte unvollständige Whitelist
 - Felder "implementation", "config_params", "input_params", "output_params", "metadata" wurden beim Speichern gelöscht
@@ -826,3 +725,22 @@ Nächster Task: Card-Aktionen in /integrations/list.html vereinfachen ("Test" un
 **Next Session: UI/UX-Verbesserungen mit UI-Cleanup, modernem Layout und responsivem Design implementieren.**
 
 **Next Session: UI/UX-Verbesserungen mit modernem Layout und responsivem Design implementieren.**
+
+---
+
+## 🎉 **Sprint 16 Closure Summary (5. Juli 2025)**
+
+**✅ SPRINT 16 ERFOLGREICH ABGESCHLOSSEN UND GESCHLOSSEN**
+
+**Vollständig implementiert:**
+- **Agent Data System**: AgentsManager mit UUID-Storage und JSON-Persistence
+- **Agent CRUD**: Komplette REST-API mit /agents/create, /edit, /view, /delete Routes
+- **Agent UI System**: Modern Card Grid Layout mit stacked actions
+- **Agent Edit/Create**: Two-Column Layout mit Toolbar-Integration
+- **Navigation**: Agent Icon in Sidebar, active state handling
+- **Validation**: Complete data sanitization and validation layer
+- **Docker Integration**: All features work in containerized environment
+
+**Sprint 16 bewegt nach `closed_sprints.md` für bessere Übersichtlichkeit.**
+
+**Bereit für Sprint 17: AI Assistant Integration (OpenAI Assistant v2 API)**

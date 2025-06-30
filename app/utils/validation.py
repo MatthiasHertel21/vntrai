@@ -295,8 +295,8 @@ class DataValidator:
         """
         allowed_fields = {
             'id', 'name', 'category', 'description', 'status',
-            'assistant_id', 'assistant_tool_id', 'tasks', 'knowledge_base', 
-            'files', 'global_variables', 'system_prompt', 'metadata',
+            'assistant_id', 'assistant_tool_id', 'ai_assistant_tool', 'model', 'instructions',
+            'tasks', 'knowledge_base', 'files', 'global_variables', 'system_prompt', 'metadata',
             'version', 'created_at', 'updated_at'
         }
         
@@ -397,6 +397,27 @@ class DataValidator:
         # Global variables validation
         if 'global_variables' in agent and not isinstance(agent['global_variables'], dict):
             errors.append("Global variables must be a dictionary")
+        
+        # AI Assistant Tool validation
+        if 'ai_assistant_tool' in agent and agent['ai_assistant_tool']:
+            ai_tool = agent['ai_assistant_tool']
+            if ai_tool.startswith('tool:'):
+                # Validate that the tool exists and is assistant-enabled
+                from app.utils.data_manager import DataManager
+                tools_manager = DataManager('tools')
+                try:
+                    tool_id = ai_tool[5:]  # Remove 'tool:' prefix
+                    tool = tools_manager.load(tool_id)
+                    if not tool:
+                        errors.append(f"AI Assistant Tool not found: {tool_id}")
+                    else:
+                        assistant_options = tool.get('options', {}).get('assistant', {})
+                        if not assistant_options.get('enabled', False):
+                            errors.append(f"Tool {tool.get('name', tool_id)} is not assistant-enabled")
+                except Exception as e:
+                    errors.append(f"Error validating AI Assistant Tool: {str(e)}")
+            else:
+                errors.append("AI Assistant Tool must start with 'tool:' prefix for tool-based assistants")
         
         return len(errors) == 0, errors
     

@@ -2,15 +2,15 @@
 
 Dieses Dokument enthält alle erfolgreich abgeschlossenen Sprints und umgesetzten Anforderungen aus der development.md, um das Hauptdokument übersichtlicher zu halten.
 
-## 📊 Projekt-Statistiken (Stand: 30. Juni 2025)
+## 📊 Projekt-Statistiken (Stand: 5. Juli 2025)
 
-- **Gesamtsprints abgeschlossen**: 15
-- **Implementierungszeit**: ~15 Tage
-- **Migrierte Daten**: 13 Integrations, 15 Tools, 12 Icons
-- **Codezeilen**: ~18.000+ LOC
-- **Templates**: 30+ HTML-Templates
-- **JavaScript-Module**: 12+ dynamische UI-Module
-- **Backend-Routes**: 60+ Flask-Routes
+- **Gesamtsprints abgeschlossen**: 16
+- **Implementierungszeit**: ~20 Tage
+- **Migrierte Daten**: 13 Integrations, 15 Tools, 12 Icons, Agents System
+- **Codezeilen**: ~22.000+ LOC
+- **Templates**: 35+ HTML-Templates
+- **JavaScript-Module**: 15+ dynamische UI-Module
+- **Backend-Routes**: 75+ Flask-Routes
 
 ---
 
@@ -392,6 +392,70 @@ Dieses Dokument enthält alle erfolgreich abgeschlossenen Sprints und umgesetzte
 - [x] Google Sheets Module ist vollständig implementiert
 - [x] UI zeigt Implementation Module Status an
 - [x] Fallback zu Simulation bei fehlenden Modulen
+
+---
+
+## ✅ **Sprint 16: Agents Foundation (1.-5. Juli 2025) - ABGESCHLOSSEN**
+### 🎯 Ziel: Core Agent System mit CRUD Operations und Basic UI - **VOLLSTÄNDIG ERFÜLLT**
+
+**✅ ERFOLGREICH ABGESCHLOSSEN:**
+
+### **🏗️ Agent Data Structure & Backend**
+- ✅ **Agent Data Manager**: AgentsManager Klasse in `app/utils/data_manager.py` erweitert
+- ✅ **Agent CRUD Routes**: Vollständige Routes in `app/routes/agents.py` implementiert
+  - `/agents` - Agent List View mit Card Grid Layout
+  - `/agents/create` - Agent Creation mit CSRF-Protection  
+  - `/agents/edit/<uuid>` - Agent Edit mit Two-Column Layout
+  - `/agents/view/<uuid>` - Agent Details View
+  - `/agents/delete/<uuid>` - Agent Deletion mit Confirmation
+- ✅ **UUID-basierte Agent IDs**: Echte UUIDs und Timestamps implementiert
+- ✅ **Basic Agent Properties**: name, category, description, status, tasks[], knowledge_base[]
+- ✅ **Agent Validation**: sanitize_agent_data und validate_agent_data in `app/utils/validation.py`
+
+### **🎨 Agent List View & Card Layout**
+- ✅ **Agent Overview Page**: Card Grid Layout mit responsive Design
+- ✅ **Gestackte Action-Buttons**: Vollständige Aktionen implementiert
+  - "New Session", "Edit", "Duplicate", "Export", "Delete", "Reconnect", "Cleanup"
+- ✅ **JavaScript-Funktionalität**: toggleActionsMenu, confirmDeleteAgent, exportAgent etc.
+- ✅ **Agent Statistics**: Card-Footer mit Agent-Run-Counts (Vorbereitung für Sprint 19)
+
+### **✏️ Agent Edit/Create Pages**
+- ✅ **Two-Column Layout**: Links Basic Info + AI Assistant, Rechts Tasks + Knowledge Base
+- ✅ **Basic Information Container**: Name, Category, Description, Status
+- ✅ **AI Assistant Configuration**: AI Assistant Tool Auswahl (statt Assistant ID)
+- ✅ **Tasks Container**: Simplified Task Liste (erweiterte Features in Sprint 18)
+- ✅ **Knowledge Base Container**: Knowledge Items Liste (erweiterte Features in Sprint 18)
+- ✅ **Toolbar Integration**: Save-Button in page_header statt Footer
+
+### **🔧 Infrastructure & Navigation**
+- ✅ **Agent Icon**: Agent - black.png in Sidebar oberhalb Tools
+- ✅ **Blueprint Registration**: agents_bp korrekt in Flask App registriert
+- ✅ **Navigation**: Active State für agent routes in Sidebar
+- ✅ **Dashboard Layout**: Context-Area rechts neben Content (Layout-Fix)
+- ✅ **CSRF-Security**: Alle Agent-Forms haben CSRF-Token-Protection
+
+### **📊 Sprint 16 Definition of Done - VOLLSTÄNDIG ERFÜLLT:**
+- [x] Agent Data Manager implementiert (JSON-basierte Speicherung)
+- [x] Agent CRUD Routes funktionsfähig (/agents/create, /edit, /view, /delete)  
+- [x] Agent List View mit Card Grid Layout
+- [x] Basic Agent Edit/Create Pages mit Two-Column Layout
+- [x] Agent Statistics und Navigation
+- [x] Docker-kompatible Implementation (keine direkten Python-Aufrufe)
+
+### **🎉 Sprint 16 Achievements:**
+- **Core Agent System**: Vollständige CRUD-Funktionalität für Agents
+- **Modern UI**: Card-basierte Liste mit gestackten Aktionen
+- **Responsive Design**: Two-Column Layout funktioniert auf allen Bildschirmgrößen
+- **Clean Architecture**: Saubere Trennung zwischen Backend (Data Manager) und Frontend (Templates)
+- **Future-Ready**: Vorbereitet für erweiterte Features in Sprint 17-20
+
+**🔧 Technical Implementation:**
+- **AgentsManager Class**: In `app/utils/data_manager.py` with UUID-based storage
+- **Agent Routes**: Complete CRUD in `app/routes/agents.py`
+- **Validation Layer**: `app/utils/validation.py` for data sanitization
+- **Template System**: 4 Agent templates (list, create, view, edit)
+- **Navigation Integration**: Sidebar icon and active state handling
+- **CSRF Protection**: All forms secured with Flask-WTF tokens
 
 ---
 

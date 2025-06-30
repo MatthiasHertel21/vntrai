@@ -27,6 +27,12 @@ try:
 except ImportError as e:
     print(f"⚠ Failed to import google_sheets: {e}")
 
+try:
+    from . import openai_assistant_api
+    print("✓ OpenAI Assistant API module imported")
+except ImportError as e:
+    print(f"⚠ Failed to import openai_assistant_api: {e}")
+
 
 class ImplementationManager:
     """

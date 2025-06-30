@@ -137,9 +137,13 @@ def edit_agent(agent_id):
                 flash('Agent not found', 'error')
                 return redirect(url_for('agents.list_agents'))
             
-            # Get available tools with 'assistant' option for assistant connection
+            # Get available tools with assistant functionality enabled
             available_tools = tools_manager.load_all()
-            assistant_tools = [t for t in available_tools if t.get('options', {}).get('assistant', False)]
+            assistant_tools = []
+            for tool in available_tools:
+                assistant_options = tool.get('options', {}).get('assistant', {})
+                if assistant_options.get('enabled', False):
+                    assistant_tools.append(tool)
             
             return render_template('agents/edit.html', 
                                  agent=agent,
@@ -171,8 +175,16 @@ def edit_agent(agent_id):
         if 'instructions' in request.form:
             agent['instructions'] = request.form.get('instructions', '')
         
-        # Sanitize and save
+        # Sanitize and validate agent data
         sanitized_agent = DataValidator.sanitize_agent_data(agent)
+        
+        # Validate the data
+        is_valid, validation_errors = DataValidator.validate_agent_data(sanitized_agent)
+        if not is_valid:
+            for error in validation_errors:
+                flash(error, 'error')
+            return redirect(url_for('agents.edit_agent', agent_id=agent_id))
+        
         if agents_manager.save(sanitized_agent):
             flash('Agent updated successfully', 'success')
         else:
