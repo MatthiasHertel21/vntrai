@@ -18,7 +18,7 @@
             <a href="{{ url_for('integrations.create_integration') }}" 
                class="btn btn-primary">
                 <i class="bi bi-plus-lg"></i>
-                New Integration
+                Add Integration
             </a>
         </div>
     </div>
@@ -46,177 +46,162 @@
             <div class="text-sm text-gray-500">Other</div>
         </div>
     </div>
-
-    <!-- Filters -->
-    <form method="GET" class="space-y-4">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
-                <input type="text" name="search" value="{{ search_query }}" 
-                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                       placeholder="Search integrations...">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Vendor</label>
-                <select name="vendor" 
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">All Vendors</option>
-                    {% for vendor in vendors %}
-                    <option value="{{ vendor }}" {% if vendor_filter == vendor %}selected{% endif %}>
-                        {{ vendor }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select name="status" 
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">All Status</option>
-                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
-                    <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
-                    <option value="testing" {% if status_filter == 'testing' %}selected{% endif %}>Testing</option>
-                    <option value="error" {% if status_filter == 'error' %}selected{% endif %}>Error</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                <select name="type" 
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">All Types</option>
-                    <option value="api" {% if type_filter == 'api' %}selected{% endif %}>API</option>
-                    <option value="webhook" {% if type_filter == 'webhook' %}selected{% endif %}>Webhook</option>
-                    <option value="database" {% if type_filter == 'database' %}selected{% endif %}>Database</option>
-                    <option value="file" {% if type_filter == 'file' %}selected{% endif %}>File</option>
-                    <option value="service" {% if type_filter == 'service' %}selected{% endif %}>Service</option>
-                    <option value="other" {% if type_filter == 'other' %}selected{% endif %}>Other</option>
-                </select>
-            </div>
-        </div>
-        <div class="flex gap-2">
-            <button type="submit" class="btn btn-primary">
-                <i class="bi bi-search"></i>
-                Filter
-            </button>
-            <a href="{{ url_for('integrations.list_integrations') }}" class="btn btn-outline">
-                <i class="bi bi-x"></i>
-                Clear
-            </a>
-        </div>
-    </form>
 </div>
 {% endblock %}
 
 {% block content %}
-<div class="bg-white rounded-lg shadow-sm border border-gray-200">
+<div class="space-y-6">
+    <!-- Filter Section - Moved to content area for visibility -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <form method="GET" class="space-y-4" id="filterForm">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                    <input type="text" name="search" value="{{ search_query }}" 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="Search integrations..."
+                           onchange="document.getElementById('filterForm').submit()">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Vendor</label>
+                    <select name="vendor" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            onchange="document.getElementById('filterForm').submit()">
+                        <option value="">All Vendors</option>
+                        {% for vendor in vendors %}
+                        <option value="{{ vendor }}" {% if vendor_filter == vendor %}selected{% endif %}>
+                            {{ vendor }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select name="status" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            onchange="document.getElementById('filterForm').submit()">
+                        <option value="">All Status</option>
+                        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+                        <option value="testing" {% if status_filter == 'testing' %}selected{% endif %}>Testing</option>
+                        <option value="error" {% if status_filter == 'error' %}selected{% endif %}>Error</option>
+                    </select>
+                </div>
+            </div>
+        </form>
+    </div>
+
     {% if integrations %}
-    <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Integration
-                    </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Vendor
-                    </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Type
-                    </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                    </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Updated
-                    </th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                    </th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                {% for integration in integrations %}
-                <tr class="hover:bg-gray-50 clickable-row" data-integration-id="{{ integration.id }}">
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="flex items-center">
-                            {% if integration.icon_url %}
-                            <img class="h-10 w-10 rounded-lg mr-3" src="{{ integration.icon_url }}" alt="{{ integration.vendor }}">
-                            {% else %}
-                            <div class="h-10 w-10 bg-gray-200 rounded-lg mr-3 flex items-center justify-center">
-                                <i class="bi bi-gear text-gray-500"></i>
-                            </div>
-                            {% endif %}
-                            <div>
-                                <div class="text-sm font-medium text-gray-900">
-                                    <a href="{{ url_for('integrations.view_integration', integration_id=integration.id) }}" 
-                                       class="hover:text-blue-600">
-                                        {{ integration.name }}
-                                    </a>
-                                </div>
-                                <div class="text-sm text-gray-500">{{ integration.description[:50] }}{% if integration.description|length > 50 %}...{% endif %}</div>
-                            </div>
+    <!-- Card Grid Layout -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+        {% for integration in integrations %}
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer clickable-row card-hover" data-integration-id="{{ integration.id }}">
+            <!-- Card Header with Icon and Status -->
+            <div class="p-4 pb-3">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center space-x-2">
+                        {% if integration.icon_url %}
+                        <img class="h-10 w-10 rounded-lg object-contain bg-gray-50 border border-gray-200 p-1" 
+                             src="{{ integration.icon_url }}" 
+                             alt="{{ integration.vendor }}">
+                        {% else %}
+                        <div class="h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                            <i class="bi bi-gear text-gray-500 text-lg"></i>
                         </div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {{ integration.vendor }}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                            {{ integration.type }}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        {% set status_colors = {
-                            'active': 'bg-green-100 text-green-800',
-                            'inactive': 'bg-gray-100 text-gray-800',
-                            'testing': 'bg-yellow-100 text-yellow-800',
-                            'error': 'bg-red-100 text-red-800'
-                        } %}
-                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full {{ status_colors.get(integration.status, 'bg-gray-100 text-gray-800') }}">
-                            {{ integration.status }}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {{ integration.updated_at[:10] if integration.updated_at else 'Unknown' }}
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div class="flex justify-end gap-2">
-                            <a href="{{ url_for('integrations.view_integration', integration_id=integration.id) }}" 
-                               class="text-blue-600 hover:text-blue-900">
-                                <i class="bi bi-eye"></i>
-                            </a>
-                            <a href="{{ url_for('integrations.edit_integration', integration_id=integration.id) }}" 
-                               class="text-green-600 hover:text-green-900">
-                                <i class="bi bi-pencil"></i>
-                            </a>
-                            <button onclick="confirmDelete('{{ integration.id }}', '{{ integration.name }}')" 
-                                    class="text-red-600 hover:text-red-900">
-                                <i class="bi bi-trash"></i>
-                            </button>
+                        {% endif %}
+                        <div class="min-w-0 flex-1">
+                            <h3 class="text-sm font-semibold text-gray-900 truncate">{{ integration.name }}</h3>
+                            <p class="text-xs text-gray-500 truncate">{{ integration.vendor }}</p>
                         </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                    </div>
+                </div>
+                
+                <!-- Status and Type Labels -->
+                {% set status_colors = {
+                    'active': 'bg-green-100 text-green-800',
+                    'inactive': 'bg-gray-100 text-gray-800',
+                    'testing': 'bg-yellow-100 text-yellow-800',
+                    'error': 'bg-red-100 text-red-800'
+                } %}
+                <div class="flex flex-wrap gap-2 mb-3">
+                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full {{ status_colors.get(integration.status, 'bg-gray-100 text-gray-800') }}">
+                        {{ integration.status }}
+                    </span>
+                    <span class="inline-flex px-2 py-1 rounded-full bg-blue-100 text-blue-800 font-medium text-xs">
+                        {{ integration.type if integration.type else 'API' }}
+                    </span>
+                    {% if integration.implementation %}
+                    <span class="inline-flex px-2 py-1 rounded-full bg-green-100 text-green-800 font-medium text-xs">
+                        <i class="bi bi-code mr-1"></i>impl
+                    </span>
+                    {% endif %}
+                </div>
+                
+                <!-- Description -->
+                <p class="text-xs text-gray-600 line-clamp-2">
+                    {{ integration.description if integration.description else 'No description available' }}
+                </p>
+            </div>
+            
+            <!-- Card Footer with Actions and Info -->
+            <div class="px-4 py-3 border-t border-gray-100 bg-gray-50 rounded-b-lg">
+                <div class="flex justify-between items-center">
+                    <!-- Status Info -->
+                    <div class="text-xs text-gray-500">
+                        {{ integration.tool_count if integration.tool_count else 0 }} tools
+                    </div>
+                    
+                    <!-- Actions -->
+                    <div class="flex space-x-1">
+                        <!-- View Button -->
+                        <button onclick="location.href='{{ url_for('integrations.view_integration', integration_id=integration.id) }}'" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors" title="View">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                        
+                        <!-- Edit Button -->
+                        <button onclick="location.href='{{ url_for('integrations.edit_integration', integration_id=integration.id) }}'" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors" title="Edit">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        
+                        <!-- Test Button -->
+                        <button onclick="testIntegration('{{ integration.id }}')" 
+                                class="bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors" title="Test">
+                            <i class="bi bi-play"></i>
+                        </button>
+                        
+                        <!-- Delete Button -->
+                        <button onclick="confirmDelete('{{ integration.id }}', '{{ integration.name }}')" 
+                                class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors" title="Delete">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
     </div>
     {% else %}
+    <!-- Empty State -->
     <div class="text-center py-12">
-        <i class="bi bi-gear text-6xl text-gray-300 mb-4"></i>
-        <h3 class="text-lg font-medium text-gray-900 mb-2">No integrations found</h3>
-        <p class="text-gray-500 mb-6">
-            {% if search_query or vendor_filter or status_filter or type_filter %}
-                No integrations match your current filters.
-            {% else %}
-                Get started by creating your first integration.
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12">
+            <i class="bi bi-gear text-6xl text-gray-300 mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">No integrations found</h3>
+            <p class="text-gray-500 mb-6">
+                {% if search_query or vendor_filter or status_filter or type_filter %}
+                    No integrations match your current filters. Try adjusting your search criteria.
+                {% else %}
+                    Get started by creating your first integration to connect external services.
+                {% endif %}
+            </p>
+            {% if not (search_query or vendor_filter or status_filter or type_filter) %}
+            <a href="{{ url_for('integrations.create_integration') }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg mr-2"></i>
+                Create Integration
+            </a>
             {% endif %}
-        </p>
-        {% if not (search_query or vendor_filter or status_filter or type_filter) %}
-        <a href="{{ url_for('integrations.create_integration') }}" class="btn btn-primary">
-            <i class="bi bi-plus-lg"></i>
-            Create Integration
-        </a>
-        {% endif %}
+        </div>
     </div>
     {% endif %}
 </div>
@@ -258,6 +243,34 @@ function confirmDelete(integrationId, integrationName) {
 
 function hideDeleteModal() {
     document.getElementById('deleteModal').classList.add('hidden');
+}
+
+function testIntegration(integrationId) {
+    // Show a simple test message for now
+    alert('Integration test feature coming soon!');
+    
+    // TODO: Implement actual integration testing
+    /*
+    fetch(`/integrations/test/${integrationId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Integration test successful!');
+        } else {
+            alert('Integration test failed: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error testing integration');
+    });
+    */
 }
 
 // Hide modal when clicking outside

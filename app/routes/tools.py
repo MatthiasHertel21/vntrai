@@ -59,17 +59,8 @@ def list_tools():
                 None
             )
         
-        # Gruppierung nach Integration
-        tools_by_integration = {}
-        for tool in tools:
-            integration_name = tool.get('tool_definition', 'Unknown')
-            if integration_name not in tools_by_integration:
-                tools_by_integration[integration_name] = []
-            tools_by_integration[integration_name].append(tool)
-        
         return render_template('tools/list.html', 
                              tools=tools,
-                             tools_by_integration=tools_by_integration,
                              integrations=integrations,
                              search_query=search_query,
                              integration_filter=integration_filter,
@@ -80,7 +71,7 @@ def list_tools():
         import traceback
         traceback.print_exc()
         flash(f'Fehler beim Laden der Tools: {str(e)}', 'error')
-        return render_template('tools/list.html', tools=[], tools_by_integration={})
+        return render_template('tools/list.html', tools=[], integrations=[])
 
 @tools_bp.route('/view/<tool_id>')
 def view_tool(tool_id):

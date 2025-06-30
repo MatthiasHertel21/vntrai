@@ -65,14 +65,14 @@
                 
                 <!-- Section 3: Platform -->
                 <li class="vntr-nav-item">
-                    <a href="{{ url_for('main.tools') }}" class="vntr-nav-link {% if request.endpoint == 'main.tools' %}active{% endif %}" title="Tools">
+                    <a href="{{ url_for('tools.list_tools') }}" class="vntr-nav-link {% if request.endpoint.startswith('tools.') %}active{% endif %}" title="Tools">
                         <img src="{{ url_for('static', filename='icons/Tools - black.png') }}" 
                              class="vntr-nav-icon" alt="Tools">
                         <span>Tools</span>
                     </a>
                 </li>
                 <li class="vntr-nav-item">
-                    <a href="{{ url_for('main.integrations') }}" class="vntr-nav-link {% if request.endpoint == 'main.integrations' %}active{% endif %}" title="Integrations">
+                    <a href="{{ url_for('integrations.list_integrations') }}" class="vntr-nav-link {% if request.endpoint.startswith('integrations.') %}active{% endif %}" title="Integrations">
                         <img src="{{ url_for('static', filename='icons/Integrations - white.svg') }}" 
                              class="vntr-nav-icon" alt="Integrations">
                         <span>Integrations</span>

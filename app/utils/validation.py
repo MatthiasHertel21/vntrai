@@ -200,7 +200,8 @@ class DataValidator:
             'type': 20,
             'description': 500,
             'status': 20,
-            'version': 20
+            'version': 20,
+            'implementation': 100  # CRITICAL FIX: implementation field hinzugefügt
         }
         
         for field, max_len in string_fields.items():
@@ -218,6 +219,21 @@ class DataValidator:
             sanitized['auth'] = data['auth']
         
         if 'endpoints' in data and isinstance(data['endpoints'], dict):
+            sanitized['endpoints'] = data['endpoints']
+        
+        # CRITICAL FIX: JSON-Parameter Felder hinzufügen
+        if 'config_params' in data and isinstance(data['config_params'], list):
+            sanitized['config_params'] = data['config_params']
+            
+        if 'input_params' in data and isinstance(data['input_params'], list):
+            sanitized['input_params'] = data['input_params']
+            
+        if 'output_params' in data and isinstance(data['output_params'], list):
+            sanitized['output_params'] = data['output_params']
+        
+        # Copy metadata
+        if 'metadata' in data and isinstance(data['metadata'], dict):
+            sanitized['metadata'] = data['metadata']
             sanitized['endpoints'] = data['endpoints']
         
         # Copy timestamps

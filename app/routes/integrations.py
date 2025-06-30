@@ -8,6 +8,7 @@ from werkzeug.utils import secure_filename
 import os
 import json
 from app.utils import integrations_manager, validator, icon_manager
+from datetime import datetime
 
 integrations_bp = Blueprint('integrations', __name__, url_prefix='/integrations')
 
@@ -65,6 +66,35 @@ def view_integration(integration_id):
         if not integration:
             flash('Integration not found', 'error')
             return redirect(url_for('integrations.list_integrations'))
+        
+        # KRITISCHER FIX: Datenstruktur-Migration für View-System
+        # Migration: Daten aus metadata.original_data auf Root-Level kopieren
+        if 'metadata' in integration and 'original_data' in integration['metadata']:
+            original = integration['metadata']['original_data']
+            
+            # JSON-Parameter auf Root-Level migrieren wenn nicht vorhanden
+            if 'config_params' not in integration:
+                integration['config_params'] = original.get('config_params', [])
+            if 'input_params' not in integration:
+                integration['input_params'] = original.get('input_params', [])
+            if 'output_params' not in integration:
+                integration['output_params'] = original.get('output_params', [])
+        
+        # Sicherstellen, dass Implementation-Feld existiert + Auto-Migration
+        if 'implementation' not in integration:
+            integration['implementation'] = ''
+            
+        # AUTO-MIGRATION: ChatGPT → openai_chatcompletion (einmalig)
+        if integration.get('name') == 'ChatGPT' and not integration.get('implementation'):
+            integration['implementation'] = 'openai_chatcompletion'
+            print(f"DEBUG View Auto-Migration - ChatGPT assigned to openai_chatcompletion")
+            
+        # AUTO-MIGRATION: GoogleSheets → google_sheets (einmalig)  
+        if integration.get('name') == 'GoogleSheets' and not integration.get('implementation'):
+            integration['implementation'] = 'google_sheets'
+            print(f"DEBUG View Auto-Migration - GoogleSheets assigned to google_sheets")
+            
+        print(f"DEBUG View - Integration {integration_id}: implementation='{integration.get('implementation', 'MISSING')}'")
         
         # Icon URL hinzufügen
         integration['icon_url'] = icon_manager.get_icon_path(integration_id)
@@ -128,39 +158,159 @@ def edit_integration(integration_id):
         return redirect(url_for('integrations.list_integrations'))
     
     if request.method == 'GET':
+        # Lade verfügbare Implementations
+        from app.implementation_modules import ImplementationManager
+        impl_manager = ImplementationManager()
+        available_implementations = impl_manager.list_available_implementations()
+        
+        # KRITISCHER FIX: Datenstruktur-Migration für Edit-System
+        # Migration: Daten aus metadata.original_data auf Root-Level kopieren
+        if 'metadata' in integration and 'original_data' in integration['metadata']:
+            original = integration['metadata']['original_data']
+            
+            # JSON-Parameter auf Root-Level migrieren wenn nicht vorhanden
+            if 'config_params' not in integration:
+                integration['config_params'] = original.get('config_params', [])
+            if 'input_params' not in integration:
+                integration['input_params'] = original.get('input_params', [])
+            if 'output_params' not in integration:
+                integration['output_params'] = original.get('output_params', [])
+        
+        # Sicherstellen, dass alle erforderlichen Felder existieren
+        if 'config_params' not in integration:
+            integration['config_params'] = []
+        if 'input_params' not in integration:
+            integration['input_params'] = []
+        if 'output_params' not in integration:
+            integration['output_params'] = []
+        if 'implementation' not in integration:
+            integration['implementation'] = ''
+            
+        # AUTO-MIGRATION: ChatGPT → openai_chatcompletion (einmalig)
+        if integration.get('name') == 'ChatGPT' and not integration.get('implementation'):
+            integration['implementation'] = 'openai_chatcompletion'
+            print(f"DEBUG Auto-Migration - ChatGPT assigned to openai_chatcompletion")
+            
+        # AUTO-MIGRATION: GoogleSheets → google_sheets (einmalig)  
+        if integration.get('name') == 'GoogleSheets' and not integration.get('implementation'):
+            integration['implementation'] = 'google_sheets'
+            print(f"DEBUG Auto-Migration - GoogleSheets assigned to google_sheets")
+            
+        print(f"DEBUG Edit GET - Integration {integration_id}: implementation='{integration.get('implementation', 'MISSING')}'")
+        print(f"DEBUG Edit GET - Available implementations: {[impl.get('name', 'Unknown') if isinstance(impl, dict) else getattr(impl, 'name', 'Unknown') for impl in available_implementations]}")
+        
         integration['icon_url'] = icon_manager.get_icon_path(integration_id)
-        return render_template('integrations/edit.html', integration=integration)
+        return render_template('integrations/edit.html', 
+                             integration=integration,
+                             available_implementations=available_implementations)
     
     try:
-        # Form data extrahieren und validieren
-        integration['name'] = request.form.get('name', '').strip()
-        integration['vendor'] = request.form.get('vendor', '').strip()
-        integration['type'] = request.form.get('type', 'api')
-        integration['description'] = request.form.get('description', '').strip()
-        integration['status'] = request.form.get('status', 'inactive')
-        integration['version'] = request.form.get('version', '1.0.0')
+        # KRITISCHER FIX: Migration AUCH beim POST durchführen
+        # Migration: Daten aus metadata.original_data auf Root-Level kopieren
+        if 'metadata' in integration and 'original_data' in integration['metadata']:
+            original = integration['metadata']['original_data']
+            
+            # JSON-Parameter auf Root-Level migrieren wenn nicht vorhanden
+            if 'config_params' not in integration:
+                integration['config_params'] = original.get('config_params', [])
+                print(f"DEBUG Edit POST - Migrated config_params: {len(integration['config_params'])} items")
+            if 'input_params' not in integration:
+                integration['input_params'] = original.get('input_params', [])
+                print(f"DEBUG Edit POST - Migrated input_params: {len(integration['input_params'])} items")
+            if 'output_params' not in integration:
+                integration['output_params'] = original.get('output_params', [])
+                print(f"DEBUG Edit POST - Migrated output_params: {len(integration['output_params'])} items")
         
-        # JSON-Felder verarbeiten (v036 Format)
-        config_params_data = request.form.get('config_params_data', '')
-        input_params_data = request.form.get('input_params_data', '')
-        output_params_data = request.form.get('output_params_data', '')
+        # Form data extrahieren und validieren - nur Basic Fields aktualisieren
+        if 'name' in request.form:
+            integration['name'] = request.form.get('name', '').strip()
+        if 'vendor' in request.form:
+            integration['vendor'] = request.form.get('vendor', '').strip()
+        if 'type' in request.form:
+            integration['type'] = request.form.get('type', 'api')
+        if 'description' in request.form:
+            integration['description'] = request.form.get('description', '').strip()
+        if 'status' in request.form:
+            integration['status'] = request.form.get('status', 'inactive')
+        if 'version' in request.form:
+            integration['version'] = request.form.get('version', '1.0.0')
+        if 'implementation' in request.form:
+            implementation_value = request.form.get('implementation', '').strip()
+            integration['implementation'] = implementation_value
+            print(f"DEBUG Edit POST - Setting implementation to: '{implementation_value}'")
         
-        if config_params_data:
-            integration['config_params'] = json.loads(config_params_data)
-        if input_params_data:
-            integration['input_params'] = json.loads(input_params_data)
-        if output_params_data:
-            integration['output_params'] = json.loads(output_params_data)
+        # JSON-Felder direkt verarbeiten - nur wenn übermittelt
+        config_params = request.form.get('config_params', '')
+        input_params = request.form.get('input_params', '')  
+        output_params = request.form.get('output_params', '')
+        
+        print(f"DEBUG Edit POST - Form data received: config_params={bool(config_params.strip())}, input_params={bool(input_params.strip())}, output_params={bool(output_params.strip())}")
+        
+        # JSON-Felder nur verarbeiten wenn sie übermittelt wurden (nicht-leer)
+        if config_params.strip():
+            try:
+                integration['config_params'] = json.loads(config_params)
+                print(f"DEBUG Edit POST - config_params parsed successfully: {len(integration['config_params'])} items")
+            except json.JSONDecodeError as e:
+                flash(f'Invalid config_params JSON: {str(e)}', 'error')
+                # Lade verfügbare Implementations für Fehlerfall
+                from app.implementation_modules import ImplementationManager
+                impl_manager = ImplementationManager()
+                available_implementations = impl_manager.list_available_implementations()
+                return render_template('integrations/edit.html', 
+                                     integration=integration,
+                                     available_implementations=available_implementations)
+        # NICHT überschreiben wenn leer - bestehende Daten beibehalten
+            
+        if input_params.strip():
+            try:
+                integration['input_params'] = json.loads(input_params)
+                print(f"DEBUG Edit POST - input_params parsed successfully: {len(integration['input_params'])} items")
+            except json.JSONDecodeError as e:
+                flash(f'Invalid input_params JSON: {str(e)}', 'error')
+                # Lade verfügbare Implementations für Fehlerfall
+                from app.implementation_modules import ImplementationManager
+                impl_manager = ImplementationManager()
+                available_implementations = impl_manager.list_available_implementations()
+                return render_template('integrations/edit.html', 
+                                     integration=integration,
+                                     available_implementations=available_implementations)
+        # NICHT überschreiben wenn leer - bestehende Daten beibehalten
+            
+        if output_params.strip():
+            try:
+                integration['output_params'] = json.loads(output_params)
+                print(f"DEBUG Edit POST - output_params parsed successfully: {len(integration['output_params'])} items")
+            except json.JSONDecodeError as e:
+                flash(f'Invalid output_params JSON: {str(e)}', 'error')
+                # Lade verfügbare Implementations für Fehlerfall
+                from app.implementation_modules import ImplementationManager
+                impl_manager = ImplementationManager()
+                available_implementations = impl_manager.list_available_implementations()
+                return render_template('integrations/edit.html', 
+                                     integration=integration,
+                                     available_implementations=available_implementations)
+        # NICHT überschreiben wenn leer - bestehende Daten beibehalten
         
         # Validierung
         is_valid, errors = validator.validate_integration(integration)
         if not is_valid:
+            # Lade verfügbare Implementations für Fehlerfall
+            from app.implementation_modules import ImplementationManager
+            impl_manager = ImplementationManager()
+            available_implementations = impl_manager.list_available_implementations()
+            
             for error in errors:
                 flash(error, 'error')
-            return render_template('integrations/edit.html', integration=integration)
+            return render_template('integrations/edit.html', 
+                                 integration=integration,
+                                 available_implementations=available_implementations)
         
         # Sanitization
         integration = validator.sanitize_integration_data(integration)
+        
+        # Updated timestamp
+        integration['updated_at'] = datetime.now().isoformat()
         
         # Icon verarbeiten
         if 'icon' in request.files:
@@ -171,16 +321,31 @@ def edit_integration(integration_id):
                 icon_manager.save_icon(integration_id, icon_data, filename)
         
         # Speichern
-        if integrations_manager.save(integration):
+        print(f"DEBUG Edit POST - Before save: implementation='{integration.get('implementation', 'MISSING')}'")
+        save_result = integrations_manager.save(integration)
+        
+        # Nach dem Speichern nochmal prüfen
+        saved_integration = integrations_manager.load(integration_id)
+        print(f"DEBUG Edit POST - After save reload: implementation='{saved_integration.get('implementation', 'MISSING') if saved_integration else 'NONE'}'")
+        
+        if save_result:
+            print(f"DEBUG Edit POST - Integration saved successfully with implementation: '{integration.get('implementation', 'MISSING')}'")
             flash(f'Integration "{integration["name"]}" updated successfully', 'success')
             return redirect(url_for('integrations.view_integration', integration_id=integration_id))
         else:
             flash('Failed to save integration', 'error')
             
     except Exception as e:
+        # Lade verfügbare Implementations für Fehlerfall
+        from app.implementation_modules import ImplementationManager
+        impl_manager = ImplementationManager()
+        available_implementations = impl_manager.list_available_implementations()
+        
         flash(f'Error updating integration: {str(e)}', 'error')
     
-    return render_template('integrations/edit.html', integration=integration)
+    return render_template('integrations/edit.html', 
+                         integration=integration,
+                         available_implementations=available_implementations)
 
 @integrations_bp.route('/delete/<integration_id>', methods=['POST'])
 def delete_integration(integration_id):
@@ -322,3 +487,71 @@ def export_integrations():
     except Exception as e:
         flash(f'Export failed: {str(e)}', 'error')
         return redirect(url_for('integrations.list_integrations'))
+
+@integrations_bp.route('/bind-implementation/<integration_id>', methods=['POST'])
+def bind_implementation(integration_id):
+    """Bindet eine Implementation an eine Integration"""
+    try:
+        implementation_name = request.form.get('implementation')
+        
+        if not implementation_name:
+            flash('Bitte wählen Sie eine Implementation aus', 'error')
+            return redirect(url_for('integrations.view_integration', integration_id=integration_id))
+        
+        # Lade Integration
+        integration = integrations_manager.load_by_id(integration_id)
+        if not integration:
+            flash('Integration nicht gefunden', 'error')
+            return redirect(url_for('integrations.list_integrations'))
+        
+        # Prüfe ob Implementation verfügbar ist
+        from app.implementation_modules import ImplementationManager
+        impl_manager = ImplementationManager()
+        
+        if implementation_name not in impl_manager.get_available_implementations():
+            flash(f'Implementation "{implementation_name}" nicht verfügbar', 'error')
+            return redirect(url_for('integrations.view_integration', integration_id=integration_id))
+        
+        # Binde Implementation
+        integration['implementation'] = implementation_name
+        integration['status'] = 'active' if implementation_name else 'inactive'
+        integration['updated_at'] = datetime.now().isoformat()
+        
+        # Speichere Integration
+        if integrations_manager.save(integration):
+            flash(f'Implementation "{implementation_name}" erfolgreich zugewiesen', 'success')
+        else:
+            flash('Fehler beim Speichern der Integration', 'error')
+            
+    except Exception as e:
+        flash(f'Fehler beim Zuweisen der Implementation: {str(e)}', 'error')
+    
+    return redirect(url_for('integrations.view_integration', integration_id=integration_id))
+
+@integrations_bp.route('/unbind-implementation/<integration_id>', methods=['POST'])
+def unbind_implementation(integration_id):
+    """Entfernt Implementation-Binding von einer Integration"""
+    try:
+        # Lade Integration
+        integration = integrations_manager.load_by_id(integration_id)
+        if not integration:
+            flash('Integration nicht gefunden', 'error')
+            return redirect(url_for('integrations.list_integrations'))
+        
+        # Entferne Implementation
+        if 'implementation' in integration:
+            del integration['implementation']
+        
+        integration['status'] = 'inactive'
+        integration['updated_at'] = datetime.now().isoformat()
+        
+        # Speichere Integration
+        if integrations_manager.save(integration):
+            flash('Implementation erfolgreich entfernt', 'success')
+        else:
+            flash('Fehler beim Speichern der Integration', 'error')
+            
+    except Exception as e:
+        flash(f'Fehler beim Entfernen der Implementation: {str(e)}', 'error')
+    
+    return redirect(url_for('integrations.view_integration', integration_id=integration_id))

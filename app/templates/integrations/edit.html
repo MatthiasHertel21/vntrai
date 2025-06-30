@@ -3,22 +3,36 @@
 {% block title %}Edit Integration - {{ integration.name }}{% endblock %}
 
 {% block page_header %}
-<div class="flex items-center">
-    <a href="{{ url_for('integrations.view_integration', integration_id=integration.id) }}" 
-       class="text-gray-500 hover:text-gray-700 mr-4">
-        <i class="bi bi-arrow-left text-xl"></i>
-    </a>
-    <div class="flex items-center">
-        {% if integration.icon_url %}
-        <img class="h-12 w-12 rounded-lg mr-4" src="{{ integration.icon_url }}" alt="{{ integration.vendor }}">
-        {% else %}
-        <div class="h-12 w-12 bg-gray-200 rounded-lg mr-4 flex items-center justify-center">
-            <i class="bi bi-gear text-gray-500 text-xl"></i>
+<div class="page-header">
+    <div class="flex justify-between items-center">
+        <div class="flex items-center">
+            <a href="{{ url_for('integrations.view_integration', integration_id=integration.id) }}" 
+               class="text-gray-500 hover:text-gray-700 mr-4">
+                <i class="bi bi-arrow-left text-xl"></i>
+            </a>
+            <div class="flex items-center">
+                {% if integration.icon_url %}
+                <img class="h-12 w-12 rounded-lg mr-4" src="{{ integration.icon_url }}" alt="{{ integration.vendor }}">
+                {% else %}
+                <div class="h-12 w-12 bg-gray-200 rounded-lg mr-4 flex items-center justify-center">
+                    <i class="bi bi-gear text-gray-500 text-xl"></i>
+                </div>
+                {% endif %}
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">{{ integration.name }}</h1>
+                    <p class="text-gray-600">Edit {{ integration.vendor }} Integration</p>
+                </div>
+            </div>
         </div>
-        {% endif %}
-        <div>
-            <h1 class="text-2xl font-bold text-gray-900">Edit Integration</h1>
-            <p class="text-gray-600">{{ integration.name }}</p>
+        <div class="flex gap-2">
+            <a href="{{ url_for('integrations.view_integration', integration_id=integration.id) }}" 
+               class="btn btn-outline">
+                Cancel
+            </a>
+            <button type="submit" form="editForm" class="btn btn-primary">
+                <i class="bi bi-check-lg"></i>
+                Save Changes
+            </button>
         </div>
     </div>
 </div>
@@ -29,7 +43,7 @@
     <div class="flex items-center">
         <i class="bi bi-exclamation-triangle text-yellow-500 mr-2"></i>
         <div class="text-sm text-yellow-800">
-            <strong>Editing Integration:</strong> Changes will be saved immediately. 
+            <strong>Editing Integration:</strong> Changes will only be saved when you click "Save Changes". 
             Make sure to test the integration after making configuration changes.
         </div>
     </div>
@@ -37,189 +51,202 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto">
-    <form method="POST" enctype="multipart/form-data" class="space-y-6">
+<div class="max-w-7xl mx-auto">
+    <form method="POST" enctype="multipart/form-data" class="space-y-6" id="editForm">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-        <!-- Basic Information -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 class="text-lg font-medium text-gray-900 mb-4">Basic Information</h2>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
-                        Name <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" id="name" name="name" value="{{ integration.name }}" required 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                           maxlength="100">
-                </div>
-                
-                <div>
-                    <label for="vendor" class="block text-sm font-medium text-gray-700 mb-1">
-                        Vendor <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" id="vendor" name="vendor" value="{{ integration.vendor }}" required 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                           maxlength="50">
-                </div>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                <div>
-                    <label for="type" class="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                    <select id="type" name="type" 
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="api" {% if integration.type == 'api' %}selected{% endif %}>API</option>
-                        <option value="webhook" {% if integration.type == 'webhook' %}selected{% endif %}>Webhook</option>
-                        <option value="database" {% if integration.type == 'database' %}selected{% endif %}>Database</option>
-                        <option value="file" {% if integration.type == 'file' %}selected{% endif %}>File</option>
-                        <option value="service" {% if integration.type == 'service' %}selected{% endif %}>Service</option>
-                        <option value="other" {% if integration.type == 'other' %}selected{% endif %}>Other</option>
-                    </select>
-                </div>
-                
-                <div>
-                    <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <select id="status" name="status" 
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="active" {% if integration.status == 'active' %}selected{% endif %}>Active</option>
-                        <option value="inactive" {% if integration.status == 'inactive' %}selected{% endif %}>Inactive</option>
-                        <option value="testing" {% if integration.status == 'testing' %}selected{% endif %}>Testing</option>
-                        <option value="error" {% if integration.status == 'error' %}selected{% endif %}>Error</option>
-                    </select>
-                </div>
-                
-                <div>
-                    <label for="version" class="block text-sm font-medium text-gray-700 mb-1">Version</label>
-                    <input type="text" id="version" name="version" value="{{ integration.version }}" 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                           pattern="^\d+\.\d+\.\d+$" placeholder="1.0.0">
-                </div>
-            </div>
-            
-            <div class="mt-4">
-                <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea id="description" name="description" rows="3"
-                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          maxlength="500">{{ integration.description }}</textarea>
-            </div>
-        </div>
-
-        <!-- Icon -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h2 class="text-lg font-medium text-gray-900 mb-4">Icon</h2>
-            
-            <div class="flex items-center space-x-4">
-                <div class="flex-shrink-0">
-                    <div id="iconPreview" class="h-16 w-16 bg-gray-200 rounded-lg flex items-center justify-center">
-                        {% if integration.icon_url %}
-                        <img src="{{ integration.icon_url }}" class="h-16 w-16 object-cover rounded-lg">
-                        {% else %}
-                        <i class="bi bi-image text-gray-400 text-xl"></i>
-                        {% endif %}
+        
+        <!-- Two-Column Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Left Column: Basic Information -->
+            <div class="space-y-6">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-lg font-medium text-gray-900 mb-4">Basic Information</h2>
+                    
+                    <div class="space-y-4">
+                        <!-- Name and Vendor -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Name <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" id="name" name="name" value="{{ integration.name }}" required 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                       maxlength="100">
+                            </div>
+                            
+                            <div>
+                                <label for="vendor" class="block text-sm font-medium text-gray-700 mb-1">
+                                    Vendor <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" id="vendor" name="vendor" value="{{ integration.vendor }}" required 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                       maxlength="50">
+                            </div>
+                        </div>
+                        
+                        <!-- Type, Status, Version -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label for="type" class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                                <select id="type" name="type" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="api" {% if integration.type == 'api' %}selected{% endif %}>API</option>
+                                    <option value="webhook" {% if integration.type == 'webhook' %}selected{% endif %}>Webhook</option>
+                                    <option value="database" {% if integration.type == 'database' %}selected{% endif %}>Database</option>
+                                    <option value="file" {% if integration.type == 'file' %}selected{% endif %}>File</option>
+                                    <option value="service" {% if integration.type == 'service' %}selected{% endif %}>Service</option>
+                                    <option value="other" {% if integration.type == 'other' %}selected{% endif %}>Other</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                <select id="status" name="status" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <option value="active" {% if integration.status == 'active' %}selected{% endif %}>Active</option>
+                                    <option value="inactive" {% if integration.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                                    <option value="testing" {% if integration.status == 'testing' %}selected{% endif %}>Testing</option>
+                                    <option value="error" {% if integration.status == 'error' %}selected{% endif %}>Error</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label for="version" class="block text-sm font-medium text-gray-700 mb-1">Version</label>
+                                <input type="text" id="version" name="version" value="{{ integration.version }}" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                       pattern="^\d+\.\d+\.\d+$" placeholder="1.0.0">
+                            </div>
+                        </div>
+                        
+                        <!-- Description -->
+                        <div>
+                            <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
+                                Description
+                            </label>
+                            <textarea id="description" name="description" rows="3" 
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      maxlength="500">{{ integration.description or '' }}</textarea>
+                        </div>
+                        
+                        <!-- Implementation Module -->
+                        <div>
+                            <label for="implementation" class="block text-sm font-medium text-gray-700 mb-1">
+                                Implementation Module
+                            </label>
+                            <select id="implementation" name="implementation" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">No Implementation</option>
+                                {% for impl in available_implementations %}
+                                <option value="{{ impl.get('name', '') }}" 
+                                        {% if integration.implementation == impl.get('name', '') %}selected{% endif %}>
+                                    {{ impl.get('name', 'Unknown') }} - {{ impl.get('description', 'No description') }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">
+                                Select an implementation module to enable tool execution for this integration.
+                            </p>
+                            
+                            <!-- Implementation Status -->
+                            <div class="mt-2">
+                                {% if integration.implementation and integration.implementation != '' %}
+                                <span class="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                    <i class="bi bi-check-circle mr-1"></i>
+                                    Implementation Available: {{ integration.implementation }}
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    <i class="bi bi-exclamation-triangle mr-1"></i>
+                                    No Implementation Selected
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Icon Upload -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Icon</label>
+                            <div class="flex items-center space-x-4">
+                                <div id="iconPreview" class="h-16 w-16 bg-gray-200 rounded-lg flex items-center justify-center">
+                                    {% if integration.icon_url %}
+                                    <img src="{{ integration.icon_url }}" class="h-16 w-16 object-cover rounded-lg">
+                                    {% else %}
+                                    <i class="bi bi-image text-gray-400 text-xl"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-1">
+                                    <input type="file" id="icon" name="icon" accept="image/*"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <p class="text-xs text-gray-500 mt-1">Upload a new icon (PNG, JPG, SVG) or leave empty to keep current</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="flex-1">
-                    <input type="file" id="icon" name="icon" accept="image/*"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <p class="text-xs text-gray-500 mt-1">Upload a new icon (PNG, JPG, SVG) or leave empty to keep current</p>
+            </div>
+            
+            <!-- Right Column: Parameters -->
+            <div class="space-y-6">
+                <!-- Configuration Parameters -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-lg font-medium text-gray-900 mb-4">Configuration Parameters</h2>
+                    <p class="text-sm text-gray-600 mb-4">
+                        Define the configuration parameters required for this integration (JSON format).
+                    </p>
+                    
+                    <textarea id="config_params" name="config_params" rows="10" 
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                              placeholder='[{"name": "api_key", "type": "string", "required": true, "description": "API Key"}]'>{{ integration.config_params | tojson(indent=2) if integration.config_params else '[]' }}</textarea>
+                </div>
+
+                <!-- Input Parameters -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-lg font-medium text-gray-900 mb-4">Input Parameters</h2>
+                    <p class="text-sm text-gray-600 mb-4">
+                        Define the input parameters that tools can accept (JSON format).
+                    </p>
+                    
+                    <textarea id="input_params" name="input_params" rows="8" 
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                              placeholder='[{"name": "message", "type": "string", "required": true, "description": "Input message"}]'>{{ integration.input_params | tojson(indent=2) if integration.input_params else '[]' }}</textarea>
+                </div>
+
+                <!-- Output Parameters -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-lg font-medium text-gray-900 mb-4">Output Parameters</h2>
+                    <p class="text-sm text-gray-600 mb-4">
+                        Define the output parameters that this integration provides (JSON format).
+                    </p>
+                    
+                    <textarea id="output_params" name="output_params" rows="8" 
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                              placeholder='[{"name": "response", "type": "string", "description": "Response message"}]'>{{ integration.output_params | tojson(indent=2) if integration.output_params else '[]' }}</textarea>
+                </div>
+                
+                <!-- Test Integration -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-lg font-medium text-gray-900 mb-4">Test Integration</h2>
+                    <p class="text-sm text-gray-600 mb-4">
+                        Test the integration configuration and connectivity.
+                    </p>
+                    
+                    <button type="button" id="testIntegration" 
+                            class="w-full btn btn-outline">
+                        <i class="bi bi-play-circle"></i>
+                        Test Integration
+                    </button>
+                    
+                    <div id="testResults" class="mt-4 hidden">
+                        <div class="p-3 border rounded-md bg-gray-50">
+                            <div class="text-sm font-medium text-gray-700">Test Results:</div>
+                            <div id="testOutput" class="text-sm text-gray-600 mt-1"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Configuration Parameters -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-medium text-gray-900">Configuration Parameters</h2>
-                <button type="button" onclick="toggleJsonEditor('config_params')" 
-                        class="text-sm text-blue-600 hover:text-blue-800">
-                    <i class="bi bi-code-square"></i>
-                    Edit JSON
-                </button>
-            </div>
-            
-            <div id="configParamsDisplay" class="bg-gray-50 rounded-md p-4">
-                <pre class="text-sm text-gray-800 whitespace-pre-wrap">{{ integration.config_params | tojson(indent=2) if integration.config_params else '[]' }}</pre>
-            </div>
-            
-            <div id="configParamsEditor" class="hidden">
-                <textarea id="configParamsJson" name="config_params_data" rows="10" 
-                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm">{{ integration.config_params | tojson(indent=2) if integration.config_params else '[]' }}</textarea>
-                <div class="flex justify-end gap-2 mt-2">
-                    <button type="button" onclick="cancelJsonEdit('config_params')" class="text-sm text-gray-600 hover:text-gray-800">Cancel</button>
-                    <button type="button" onclick="saveJsonEdit('config_params')" class="text-sm text-blue-600 hover:text-blue-800">Save</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Input Parameters -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-medium text-gray-900">Input Parameters</h2>
-                <button type="button" onclick="toggleJsonEditor('input_params')" 
-                        class="text-sm text-blue-600 hover:text-blue-800">
-                    <i class="bi bi-code-square"></i>
-                    Edit JSON
-                </button>
-            </div>
-            
-            <div id="inputParamsDisplay" class="bg-gray-50 rounded-md p-4">
-                <pre class="text-sm text-gray-800 whitespace-pre-wrap">{{ integration.input_params | tojson(indent=2) if integration.input_params else '[]' }}</pre>
-            </div>
-            
-            <div id="inputParamsEditor" class="hidden">
-                <textarea id="inputParamsJson" name="input_params_data" rows="8" 
-                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm">{{ integration.input_params | tojson(indent=2) if integration.input_params else '[]' }}</textarea>
-                <div class="flex justify-end gap-2 mt-2">
-                    <button type="button" onclick="cancelJsonEdit('input_params')" class="text-sm text-gray-600 hover:text-gray-800">Cancel</button>
-                    <button type="button" onclick="saveJsonEdit('input_params')" class="text-sm text-blue-600 hover:text-blue-800">Save</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Output Parameters -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-medium text-gray-900">Output Parameters</h2>
-                <button type="button" onclick="toggleJsonEditor('output_params')" 
-                        class="text-sm text-blue-600 hover:text-blue-800">
-                    <i class="bi bi-code-square"></i>
-                    Edit JSON
-                </button>
-            </div>
-            
-            <div id="outputParamsDisplay" class="bg-gray-50 rounded-md p-4">
-                <pre class="text-sm text-gray-800 whitespace-pre-wrap">{{ integration.output_params | tojson(indent=2) if integration.output_params else '[]' }}</pre>
-            </div>
-            
-            <div id="outputParamsEditor" class="hidden">
-                <textarea id="outputParamsJson" name="output_params_data" rows="10" 
-                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm">{{ integration.output_params | tojson(indent=2) if integration.output_params else '[]' }}</textarea>
-                <div class="flex justify-end gap-2 mt-2">
-                    <button type="button" onclick="cancelJsonEdit('output_params')" class="text-sm text-gray-600 hover:text-gray-800">Cancel</button>
-                    <button type="button" onclick="saveJsonEdit('output_params')" class="text-sm text-blue-600 hover:text-blue-800">Save</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Form Actions -->
-        <div class="flex justify-end space-x-3 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <a href="{{ url_for('integrations.view_integration', integration_id=integration.id) }}" 
-               class="btn btn-outline">
-                Cancel
-            </a>
-            <button type="submit" class="btn btn-primary">
-                <i class="bi bi-check-lg"></i>
-                Save Changes
-            </button>
         </div>
     </form>
 </div>
-
-<!-- Hidden inputs for JSON data -->
-<input type="hidden" id="configData" name="config_data" value="">
-<input type="hidden" id="authData" name="auth_data" value="">
-<input type="hidden" id="endpointsData" name="endpoints_data" value="">
 
 <script>
 // Icon preview
@@ -236,60 +263,59 @@ document.getElementById('icon').addEventListener('change', function(e) {
     }
 });
 
-// JSON Editor functionality
-function toCamelCase(str) {
-    return str.replace(/_([a-z])/g, function(g) { return g[1].toUpperCase(); });
-}
-
-function toggleJsonEditor(section) {
-    const camelSection = toCamelCase(section);
-    const display = document.getElementById(`${camelSection}Display`);
-    const editor = document.getElementById(`${camelSection}Editor`);
+// Test Integration functionality
+document.getElementById('testIntegration').addEventListener('click', function() {
+    const button = this;
+    const resultsDiv = document.getElementById('testResults');
+    const outputDiv = document.getElementById('testOutput');
     
-    if (display && editor) {
-        display.classList.add('hidden');
-        editor.classList.remove('hidden');
-    }
-}
-
-function cancelJsonEdit(section) {
-    const camelSection = toCamelCase(section);
-    const display = document.getElementById(`${camelSection}Display`);
-    const editor = document.getElementById(`${camelSection}Editor`);
+    // Show loading state
+    button.disabled = true;
+    button.innerHTML = '<i class="bi bi-arrow-clockwise animate-spin"></i> Testing...';
+    resultsDiv.classList.remove('hidden');
+    outputDiv.innerHTML = 'Running integration test...';
     
-    if (display && editor) {
-        editor.classList.add('hidden');
-        display.classList.remove('hidden');
-    }
-}
-
-function saveJsonEdit(section) {
-    const camelSection = toCamelCase(section);
-    const textarea = document.getElementById(`${camelSection}Json`);
-    const display = document.getElementById(`${camelSection}Display`);
-    const editor = document.getElementById(`${camelSection}Editor`);
-    
-    if (!textarea || !display || !editor) {
-        console.error('Required elements not found for section:', section);
-        return;
-    }
-    
-    try {
-        const data = JSON.parse(textarea.value);
-        const preElement = display.querySelector('pre');
-        if (preElement) {
-            preElement.textContent = JSON.stringify(data, null, 2);
+    // Make actual API call to test endpoint
+    fetch(`/integrations/api/test/{{ integration.id }}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrf_token]').value
         }
-        
-        editor.classList.add('hidden');
-        display.classList.remove('hidden');
-        
-        // The textarea already has the correct name attribute for form submission
-        // No need to update hidden inputs since we're using the textarea directly
-    } catch (e) {
-        alert('Invalid JSON: ' + e.message);
-    }
-}
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            outputDiv.innerHTML = `
+                <div class="text-green-600 font-medium">✓ Integration test successful</div>
+                <div class="text-sm text-gray-600 mt-2">
+                    <div>• Configuration: ${data.config_valid ? '✓ Valid' : '✗ Invalid'}</div>
+                    <div>• Authentication: ${data.auth_configured ? '✓ Configured' : '⚠ Not configured'}</div>
+                    <div>• Endpoints: ${data.endpoints_defined ? '✓ Defined' : '⚠ Not defined'}</div>
+                    <div>• Status: ${data.status}</div>
+                </div>
+            `;
+        } else {
+            outputDiv.innerHTML = `
+                <div class="text-red-600 font-medium">✗ Integration test failed</div>
+                <div class="text-sm text-gray-600 mt-2">
+                    ${data.error || 'One or more test conditions failed'}
+                </div>
+            `;
+        }
+    })
+    .catch(error => {
+        outputDiv.innerHTML = `
+            <div class="text-red-600 font-medium">✗ Test error</div>
+            <div class="text-sm text-gray-600 mt-2">${error.message}</div>
+        `;
+    })
+    .finally(() => {
+        // Reset button
+        button.disabled = false;
+        button.innerHTML = '<i class="bi bi-play-circle"></i> Test Integration';
+    });
+});
 
 // Form validation and submission
 document.querySelector('form').addEventListener('submit', function(e) {
@@ -309,21 +335,21 @@ document.querySelector('form').addEventListener('submit', function(e) {
         return false;
     }
     
-    // Capture JSON data
-    ['config', 'auth', 'endpoints'].forEach(section => {
-        const editor = document.getElementById(`${section}Editor`);
-        if (!editor.classList.contains('hidden')) {
-            const textarea = document.getElementById(`${section}Json`);
+    // Validate JSON fields
+    const jsonFields = ['config_params', 'input_params', 'output_params'];
+    for (let fieldName of jsonFields) {
+        const textarea = document.getElementById(fieldName);
+        if (textarea && textarea.value.trim()) {
             try {
                 JSON.parse(textarea.value);
-                document.getElementById(`${section}Data`).value = textarea.value;
-            } catch (e) {
+            } catch (error) {
                 e.preventDefault();
-                alert(`Invalid ${section} JSON: ` + e.message);
+                alert(`Invalid JSON in ${fieldName.replace('_', ' ')}: ${error.message}`);
+                textarea.focus();
                 return false;
             }
         }
-    });
+    }
     
     return true;
 });
