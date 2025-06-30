@@ -544,8 +544,11 @@ class ToolsManager(DataManager):
             # Get tool's configuration for API key
             config = tool.get('config', {})
             
+            # Map tool config to implementation config format
+            impl_config = self._map_tool_config_to_implementation(config, 'openai_assistant_api')
+            
             # Get OpenAI Assistant API implementation with tool's configuration
-            openai_assistant_module = self.implementation_manager.get_implementation('openai_assistant_api', config)
+            openai_assistant_module = self.implementation_manager.get_implementation('openai_assistant_api', impl_config)
             if not openai_assistant_module:
                 return {'success': False, 'error': 'OpenAI Assistant API implementation not found or configuration invalid'}
             
@@ -621,8 +624,11 @@ class ToolsManager(DataManager):
             # Get tool's configuration for API key
             config = tool.get('config', {})
             
+            # Map tool config to implementation config format
+            impl_config = self._map_tool_config_to_implementation(config, 'openai_assistant_api')
+            
             # Get OpenAI Assistant API implementation with tool's configuration
-            openai_assistant_module = self.implementation_manager.get_implementation('openai_assistant_api', config)
+            openai_assistant_module = self.implementation_manager.get_implementation('openai_assistant_api', impl_config)
             if not openai_assistant_module:
                 return {'success': False, 'error': 'OpenAI Assistant API implementation not found or configuration invalid'}
             
@@ -646,6 +652,17 @@ class ToolsManager(DataManager):
                 'error': f'Error chatting with assistant: {str(e)}'
             }
     
+    def _map_tool_config_to_implementation(self, config: Dict[str, Any], implementation_name: str) -> Dict[str, Any]:
+        """Map tool configuration to implementation configuration format"""
+        impl_config = config.copy()
+        
+        # Mapping für OpenAI Assistant API
+        if implementation_name == 'openai_assistant_api':
+            if 'openai_api_key' in config and 'api_key' not in config:
+                impl_config['api_key'] = config['openai_api_key']
+        
+        return impl_config
+
 
 class IconManager:
     """Manager for vendor icons"""
