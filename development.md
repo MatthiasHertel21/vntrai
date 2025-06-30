@@ -12,31 +12,88 @@
 - Alle GUI Elemente der Anwendung auf Englisch, 
 - Sprache Im Chat ist DEUTSCH
 
-# AKTUELLER SPRINT (Agent-System Implementation)
-**Current focus: Sprint 16 Agents Foundation - Core Agent System**
+# AKTUELLER SPRINT (AI Assistant Integration)
+**Current focus: Sprint 17 AI Assistant Integration (8.-12. Juli 2025)**
 
-## 🎯 **Sprint 16: Agents Foundation (1. Juli - 5. Juli 2025)**
-### Ziel: Core Agent System mit CRUD Operations und Basic UI
-
-**Priority Tasks:**
-1. **🏗️ Agent Data Structure & Backend**
-   - Agent Data Manager für JSON-basierte Speicherung (data/agents/uuid.json)
-   - Agent CRUD Routes (/agents/create, /edit, /view, /delete)
-   - UUID-basierte Agent IDs und Timestamps
-   - Basic Agent Properties: name, category, description, status, tasks[], knowledge_base[]
-
-2. **🎨 Agent List View & Card Layout** 
-   - Agent Overview Page mit Card Grid Layout
-   - Gestackte Action-Buttons: "New Session", "Edit", "Duplicate", "Export", "Delete", "Reconnect", "Cleanup"
-   - Agent Statistics: AgentRuns nach Status gruppiert
-   - Clickable Card-Footer Statistics mit Detail-Toggle
-
-3. **✏️ Agent Edit/Create Pages**
-   - Two-Column Layout: Links Basic Info + Task Editor, Rechts AI Assistant + Tasks + Files + Knowledge Base
-   - Basic Information Container: Name, Category, Description
-   - Task Editor Container: Add/Edit/Delete Tasks, Drag&Drop Reordering
+✅ **Sprint 16 (1.-5. Juli 2025): Agents Foundation - ABGESCHLOSSEN UND GESCHLOSSEN**
 
 # BACKLOG
+
+## ✅ **Abgeschlossener Sprint 16: Agents Foundation (1.-5. Juli 2025)**
+### 🎯 Ziel: Core Agent System mit CRUD Operations und Basic UI - **VOLLSTÄNDIG ERFÜLLT**
+
+**✅ ERFOLGREICH ABGESCHLOSSEN:**
+
+### **🏗️ Agent Data Structure & Backend**
+- ✅ **Agent Data Manager**: AgentsManager Klasse in `app/utils/data_manager.py` erweitert
+- ✅ **Agent CRUD Routes**: Vollständige Routes in `app/routes/agents.py` implementiert
+  - `/agents` - Agent List View mit Card Grid Layout
+  - `/agents/create` - Agent Creation mit CSRF-Protection  
+  - `/agents/edit/<uuid>` - Agent Edit mit Two-Column Layout
+  - `/agents/view/<uuid>` - Agent Details View
+  - `/agents/delete/<uuid>` - Agent Deletion mit Confirmation
+- ✅ **UUID-basierte Agent IDs**: Echte UUIDs und Timestamps implementiert
+- ✅ **Basic Agent Properties**: name, category, description, status, tasks[], knowledge_base[]
+- ✅ **Agent Validation**: sanitize_agent_data und validate_agent_data in `app/utils/validation.py`
+
+### **🎨 Agent List View & Card Layout**
+- ✅ **Agent Overview Page**: Card Grid Layout mit responsive Design
+- ✅ **Gestackte Action-Buttons**: Vollständige Aktionen implementiert
+  - "New Session", "Edit", "Duplicate", "Export", "Delete", "Reconnect", "Cleanup"
+- ✅ **JavaScript-Funktionalität**: toggleActionsMenu, confirmDeleteAgent, exportAgent etc.
+- ✅ **Agent Statistics**: Card-Footer mit Agent-Run-Counts (Vorbereitung für Sprint 19)
+
+### **✏️ Agent Edit/Create Pages**
+- ✅ **Two-Column Layout**: Links Basic Info + AI Assistant, Rechts Tasks + Knowledge Base
+- ✅ **Basic Information Container**: Name, Category, Description, Status
+- ✅ **AI Assistant Configuration**: AI Assistant Tool Auswahl (statt Assistant ID)
+- ✅ **Tasks Container**: Simplified Task Liste (erweiterte Features in Sprint 18)
+- ✅ **Knowledge Base Container**: Knowledge Items Liste (erweiterte Features in Sprint 18)
+- ✅ **Toolbar Integration**: Save-Button in page_header statt Footer
+
+### **🔧 Infrastructure & Navigation**
+- ✅ **Agent Icon**: Agent - black.png in Sidebar oberhalb Tools
+- ✅ **Blueprint Registration**: agents_bp korrekt in Flask App registriert
+- ✅ **Navigation**: Active State für agent routes in Sidebar
+- ✅ **Dashboard Layout**: Context-Area rechts neben Content (Layout-Fix)
+- ✅ **CSRF-Security**: Alle Agent-Forms haben CSRF-Token-Protection
+
+### **📊 Sprint 16 Definition of Done - VOLLSTÄNDIG ERFÜLLT:**
+- [x] Agent Data Manager implementiert (JSON-basierte Speicherung)
+- [x] Agent CRUD Routes funktionsfähig (/agents/create, /edit, /view, /delete)  
+- [x] Agent List View mit Card Grid Layout
+- [x] Basic Agent Edit/Create Pages mit Two-Column Layout
+- [x] Agent Statistics und Navigation
+- [x] Docker-kompatible Implementation (keine direkten Python-Aufrufe)
+
+### **🎉 Sprint 16 Achievements:**
+- **Core Agent System**: Vollständige CRUD-Funktionalität für Agents
+- **Modern UI**: Card-basierte Liste mit gestackten Aktionen
+- **Responsive Design**: Two-Column Layout funktioniert auf allen Bildschirmgrößen
+- **Clean Architecture**: Saubere Trennung zwischen Backend (Data Manager) und Frontend (Templates)
+- **Future-Ready**: Vorbereitet für erweiterte Features in Sprint 17-20
+
+---
+
+## 🎯 **Nächster Sprint: Sprint 17 AI Assistant Integration (8.-12. Juli 2025)**
+### Ziel: OpenAI Assistant Integration und Tool-Connection
+
+**Geplante Tasks:**
+1. **🔗 Assistant API Integration**
+   - V2 Assistant API Tool entwickeln für OpenAI Assistant v2 API
+   - OpenAI Assistant API Client in `app/utils/openai_client.py`
+   - Assistant CRUD Operations (create, update, delete)
+   - File Upload/Management für Assistants
+
+2. **⚙️ Assistant Management UI**
+   - Assistant Container in Agent Edit Page erweitern
+   - System Prompt Preview und Generation
+   - "Update" und "New" Buttons für Assistant Management
+
+3. **🛠️ Tool-Assistant Connection**
+   - Tools "options" Feld erweitern um "assistent" Option
+   - V2 Assistant API Tool als primäres Assistant-Tool registrieren
+   - Tool Selection in Agent Configuration
 
 ## 📋 **Abgeschlossener Sprint 15 (30. Juni 2025) - Layout-Verbesserungen & Icon-Design-System**
 ### ✅ **Erfolgreich abgeschlossen:**
