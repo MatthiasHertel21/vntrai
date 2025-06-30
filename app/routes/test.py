@@ -3,7 +3,7 @@ Test System Routes für vntrai
 Zentrale Test-Übersicht und Backend-Route Testing
 """
 
-from flask import Blueprint, render_template, request, jsonify, flash
+from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
 import json
 import os
 import importlib
@@ -109,9 +109,14 @@ def test_overview():
     """Zentrale Test-Übersicht"""
     try:
         # Test-Statistiken generieren
+        total_routes = 0
+        for module in TEST_MODULES.values():
+            if 'routes' in module:
+                total_routes += len(module['routes'])
+        
         stats = {
             'total_modules': len(TEST_MODULES),
-            'total_routes': sum(len(module['routes']) for module in TEST_MODULES.values()),
+            'total_routes': total_routes,
             'last_run': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
         
@@ -354,3 +359,197 @@ def test_dynamic_field(field_type):
         
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
+
+@test_bp.route('/form/<module_name>/<route_function>')
+def test_form(module_name, route_function):
+    """Generate test form for POST routes with input fields"""
+    try:
+        if module_name not in TEST_MODULES:
+            flash(f'Test-Modul "{module_name}" nicht gefunden', 'error')
+            return redirect(url_for('test.test_overview'))
+        
+        module_info = TEST_MODULES[module_name]
+        route_info = next((r for r in module_info['routes'] if r['function'] == route_function), None)
+        
+        if not route_info:
+            flash(f'Route "{route_function}" nicht gefunden', 'error')
+            return redirect(url_for('test.test_overview'))
+        
+        # Define common form fields based on route function
+        form_fields = get_form_fields_for_route(module_name, route_function)
+        
+        return render_template('test/form.html',
+                             module_name=module_name,
+                             route_info=route_info,
+                             form_fields=form_fields)
+        
+    except Exception as e:
+        flash(f'Fehler beim Laden des Test-Formulars: {str(e)}', 'error')
+        return redirect(url_for('test.test_overview'))
+
+@test_bp.route('/execute/<module_name>/<route_function>', methods=['POST'])
+def execute_test_route(module_name, route_function):
+    """Execute a route test with form data"""
+    try:
+        if module_name not in TEST_MODULES:
+            return jsonify({'success': False, 'error': f'Modul {module_name} nicht gefunden'})
+        
+        module_info = TEST_MODULES[module_name]
+        route_info = next((r for r in module_info['routes'] if r['function'] == route_function), None)
+        
+        if not route_info:
+            return jsonify({'success': False, 'error': f'Route {route_function} nicht gefunden'})
+        
+        # Get form data
+        form_data = {}
+        if request.content_type == 'application/json':
+            form_data = request.get_json() or {}
+        else:
+            form_data = request.form.to_dict()
+        
+        # Execute the actual test with form data
+        test_result = execute_actual_route_test(module_name, route_function, form_data)
+        
+        return jsonify({'success': True, 'result': test_result})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+def get_form_fields_for_route(module_name, route_function):
+    """Define form fields based on the route function"""
+    
+    # Common field templates
+    common_fields = {
+        'create_integration': [
+            {'name': 'name', 'type': 'text', 'required': True, 'label': 'Integration Name', 'placeholder': 'OpenAI Integration'},
+            {'name': 'vendor', 'type': 'text', 'required': True, 'label': 'Vendor', 'placeholder': 'OpenAI'},
+            {'name': 'description', 'type': 'textarea', 'required': False, 'label': 'Description', 'placeholder': 'Description of the integration'},
+            {'name': 'config_params', 'type': 'json', 'required': True, 'label': 'Config Parameters', 'default': '[{"name": "api_key", "type": "text", "required": true}]'},
+            {'name': 'input_params', 'type': 'json', 'required': True, 'label': 'Input Parameters', 'default': '[{"name": "prompt", "type": "text", "required": true}]'},
+            {'name': 'output_params', 'type': 'json', 'required': True, 'label': 'Output Parameters', 'default': '[{"name": "response", "type": "text"}]'}
+        ],
+        'create_tool': [
+            {'name': 'name', 'type': 'text', 'required': True, 'label': 'Tool Name', 'placeholder': 'My ChatGPT Tool'},
+            {'name': 'integration_id', 'type': 'text', 'required': True, 'label': 'Integration ID', 'placeholder': 'openai-integration-001'},
+            {'name': 'description', 'type': 'textarea', 'required': False, 'label': 'Description', 'placeholder': 'Tool description'},
+            {'name': 'config', 'type': 'json', 'required': False, 'label': 'Configuration', 'default': '{"model": "gpt-4", "temperature": 0.7}'},
+            {'name': 'prefilled_inputs', 'type': 'json', 'required': False, 'label': 'Prefilled Inputs', 'default': '{}'},
+            {'name': 'locked_inputs', 'type': 'json', 'required': False, 'label': 'Locked Inputs', 'default': '[]'}
+        ],
+        'edit_integration': [
+            {'name': 'id', 'type': 'text', 'required': True, 'label': 'Integration ID', 'placeholder': 'integration-id'},
+            {'name': 'name', 'type': 'text', 'required': True, 'label': 'Integration Name'},
+            {'name': 'vendor', 'type': 'text', 'required': True, 'label': 'Vendor'},
+            {'name': 'description', 'type': 'textarea', 'required': False, 'label': 'Description'}
+        ],
+        'edit_tool': [
+            {'name': 'id', 'type': 'text', 'required': True, 'label': 'Tool ID', 'placeholder': 'tool-id'},
+            {'name': 'name', 'type': 'text', 'required': True, 'label': 'Tool Name'},
+            {'name': 'description', 'type': 'textarea', 'required': False, 'label': 'Description'},
+            {'name': 'config', 'type': 'json', 'required': False, 'label': 'Configuration'}
+        ],
+        'test_integration': [
+            {'name': 'id', 'type': 'text', 'required': True, 'label': 'Integration ID', 'placeholder': 'integration-id'}
+        ],
+        'test_tool': [
+            {'name': 'id', 'type': 'text', 'required': True, 'label': 'Tool ID', 'placeholder': 'tool-id'}
+        ],
+        'execute_tool': [
+            {'name': 'id', 'type': 'text', 'required': True, 'label': 'Tool ID', 'placeholder': 'tool-id'},
+            {'name': 'inputs', 'type': 'json', 'required': True, 'label': 'Input Parameters', 'default': '{"prompt": "Hello, world!"}'}
+        ],
+        'delete_integration': [
+            {'name': 'id', 'type': 'text', 'required': True, 'label': 'Integration ID', 'placeholder': 'integration-id'}
+        ],
+        'delete_tool': [
+            {'name': 'id', 'type': 'text', 'required': True, 'label': 'Tool ID', 'placeholder': 'tool-id'}
+        ]
+    }
+    
+    return common_fields.get(route_function, [
+        {'name': 'data', 'type': 'json', 'required': False, 'label': 'Request Data', 'default': '{}'}
+    ])
+
+def execute_actual_route_test(module_name, route_function, form_data):
+    """Execute the actual route with form data and return results"""
+    from datetime import datetime
+    import requests
+    
+    try:
+        # Get the route info
+        module_info = TEST_MODULES[module_name]
+        route_info = next((r for r in module_info['routes'] if r['function'] == route_function), None)
+        
+        if not route_info:
+            raise Exception(f'Route {route_function} not found')
+        
+        # Build the test URL
+        base_url = 'http://localhost:5004'
+        test_url = base_url + route_info['path']
+        
+        # Replace path parameters with form data
+        if '<id>' in test_url and 'id' in form_data:
+            test_url = test_url.replace('<id>', str(form_data['id']))
+        
+        # Prepare request data
+        request_data = {}
+        headers = {'Content-Type': 'application/json'}
+        
+        # Filter out path parameters from form data
+        for key, value in form_data.items():
+            if key not in ['id']:  # id is typically a path parameter
+                try:
+                    # Try to parse JSON strings
+                    if isinstance(value, str) and (value.startswith('{') or value.startswith('[')):
+                        request_data[key] = json.loads(value)
+                    else:
+                        request_data[key] = value
+                except json.JSONDecodeError:
+                    request_data[key] = value
+        
+        # Execute the request
+        start_time = datetime.now()
+        
+        if route_info['method'] == 'GET':
+            response = requests.get(test_url, params=request_data, timeout=10)
+        elif route_info['method'] == 'POST':
+            response = requests.post(test_url, json=request_data, headers=headers, timeout=10)
+        else:
+            raise Exception(f'Unsupported method: {route_info["method"]}')
+        
+        end_time = datetime.now()
+        response_time = (end_time - start_time).total_seconds() * 1000
+        
+        # Parse response
+        try:
+            response_data = response.json()
+        except:
+            response_data = response.text
+        
+        test_result = {
+            'route': route_info['path'],
+            'method': route_info['method'],
+            'function': route_info['function'],
+            'status_code': response.status_code,
+            'status': 'success' if response.status_code < 400 else 'error',
+            'message': f'HTTP {response.status_code} - {"Success" if response.status_code < 400 else "Error"}',
+            'timestamp': datetime.now().isoformat(),
+            'response_time': f'{response_time:.1f}ms',
+            'request_data': request_data,
+            'response_data': response_data[:1000] if isinstance(response_data, str) else response_data  # Truncate long responses
+        }
+        
+        return test_result
+        
+    except Exception as e:
+        return {
+            'route': route_info['path'] if 'route_info' in locals() else 'unknown',
+            'method': route_info['method'] if 'route_info' in locals() else 'unknown',
+            'function': route_function,
+            'status': 'error',
+            'message': f'Test execution failed: {str(e)}',
+            'timestamp': datetime.now().isoformat(),
+            'response_time': '0ms',
+            'request_data': form_data,
+            'error': str(e)
+        }

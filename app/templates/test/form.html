@@ -1,0 +1,339 @@
+{% extends "base.html" %}
+
+{% block title %}Test Form: {{ route_info.function }} - VNTRAI{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">Test: {{ route_info.function }}</h1>
+            <p class="text-gray-600 mt-2">{{ route_info.method }} {{ route_info.path }}</p>
+            <p class="text-sm text-gray-500">{{ route_info.description }}</p>
+        </div>
+        <a href="{{ url_for('test.test_overview') }}" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg">
+            <i class="bi bi-arrow-left mr-2"></i>Zurück zur Übersicht
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Test Form -->
+        <div class="bg-white rounded-lg shadow-md">
+            <div class="bg-gray-50 px-6 py-4 border-b">
+                <h2 class="text-lg font-semibold text-gray-900">Test-Eingaben</h2>
+            </div>
+            
+            <div class="p-6">
+                <form id="testForm" class="space-y-4">
+                    {% if form_fields %}
+                        {% for field in form_fields %}
+                        <div class="form-group">
+                            <label for="{{ field.name }}" class="block text-sm font-medium text-gray-700 mb-2">
+                                {{ field.label }}
+                                {% if field.required %}
+                                <span class="text-red-500">*</span>
+                                {% endif %}
+                            </label>
+                            
+                            {% if field.type == 'text' %}
+                                <input type="text" 
+                                       id="{{ field.name }}" 
+                                       name="{{ field.name }}"
+                                       class="w-full border border-gray-300 rounded-md px-3 py-2"
+                                       placeholder="{{ field.placeholder or '' }}"
+                                       {% if field.required %}required{% endif %}>
+                            
+                            {% elif field.type == 'textarea' %}
+                                <textarea id="{{ field.name }}" 
+                                         name="{{ field.name }}"
+                                         rows="3"
+                                         class="w-full border border-gray-300 rounded-md px-3 py-2"
+                                         placeholder="{{ field.placeholder or '' }}"
+                                         {% if field.required %}required{% endif %}></textarea>
+                            
+                            {% elif field.type == 'json' %}
+                                <div>
+                                    <textarea id="{{ field.name }}" 
+                                             name="{{ field.name }}"
+                                             rows="6"
+                                             class="w-full border border-gray-300 rounded-md px-3 py-2 font-mono text-sm"
+                                             placeholder="{{ field.placeholder or 'JSON object' }}"
+                                             {% if field.required %}required{% endif %}>{{ field.default or '' }}</textarea>
+                                    <div class="mt-1 text-xs text-gray-500">
+                                        <i class="bi bi-info-circle"></i> JSON-Format erwartet
+                                    </div>
+                                </div>
+                            
+                            {% elif field.type == 'select' %}
+                                <select id="{{ field.name }}" 
+                                        name="{{ field.name }}"
+                                        class="w-full border border-gray-300 rounded-md px-3 py-2"
+                                        {% if field.required %}required{% endif %}>
+                                    {% if field.options %}
+                                        {% for option in field.options %}
+                                        <option value="{{ option.value }}">{{ option.label }}</option>
+                                        {% endfor %}
+                                    {% endif %}
+                                </select>
+                            
+                            {% elif field.type == 'number' %}
+                                <input type="number" 
+                                       id="{{ field.name }}" 
+                                       name="{{ field.name }}"
+                                       class="w-full border border-gray-300 rounded-md px-3 py-2"
+                                       {% if field.min %}min="{{ field.min }}"{% endif %}
+                                       {% if field.max %}max="{{ field.max }}"{% endif %}
+                                       {% if field.required %}required{% endif %}>
+                            
+                            {% else %}
+                                <input type="text" 
+                                       id="{{ field.name }}" 
+                                       name="{{ field.name }}"
+                                       class="w-full border border-gray-300 rounded-md px-3 py-2"
+                                       placeholder="{{ field.placeholder or '' }}"
+                                       {% if field.required %}required{% endif %}>
+                            {% endif %}
+                            
+                            {% if field.description %}
+                            <div class="mt-1 text-sm text-gray-500">{{ field.description }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="bi bi-info-circle text-3xl mb-3"></i>
+                            <p>Keine spezifischen Eingabefelder für diese Route definiert.</p>
+                            <p class="text-sm">Verwenden Sie das generische JSON-Feld unten.</p>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="generic_data" class="block text-sm font-medium text-gray-700 mb-2">
+                                Request Data (JSON)
+                            </label>
+                            <textarea id="generic_data" 
+                                     name="data"
+                                     rows="6"
+                                     class="w-full border border-gray-300 rounded-md px-3 py-2 font-mono text-sm"
+                                     placeholder='{"key": "value"}'>{}</textarea>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" onclick="resetForm()" 
+                                class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded">
+                            Zurücksetzen
+                        </button>
+                        <button type="submit" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                            <i class="bi bi-play-fill mr-2"></i>Test ausführen
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Test Results -->
+        <div class="bg-white rounded-lg shadow-md">
+            <div class="bg-gray-50 px-6 py-4 border-b">
+                <h2 class="text-lg font-semibold text-gray-900">Test-Ergebnisse</h2>
+            </div>
+            
+            <div id="testResults" class="p-6">
+                <div class="text-center py-8 text-gray-500">
+                    <i class="bi bi-clock text-3xl mb-3"></i>
+                    <p>Bereit für Test-Ausführung</p>
+                    <p class="text-sm">Füllen Sie das Formular aus und klicken Sie "Test ausführen"</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Route Information -->
+    <div class="mt-6 bg-white rounded-lg shadow-md">
+        <div class="bg-gray-50 px-6 py-4 border-b">
+            <h2 class="text-lg font-semibold text-gray-900">Route Information</h2>
+        </div>
+        
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <h3 class="text-sm font-medium text-gray-700">HTTP Methode</h3>
+                    <span class="inline-flex px-2 py-1 text-sm font-semibold rounded-full 
+                        {% if route_info.method == 'GET' %}bg-green-100 text-green-800
+                        {% elif route_info.method == 'POST' %}bg-blue-100 text-blue-800
+                        {% elif route_info.method == 'PUT' %}bg-yellow-100 text-yellow-800
+                        {% elif route_info.method == 'DELETE' %}bg-red-100 text-red-800
+                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ route_info.method }}
+                    </span>
+                </div>
+                
+                <div>
+                    <h3 class="text-sm font-medium text-gray-700">Route Path</h3>
+                    <code class="text-sm bg-gray-100 px-2 py-1 rounded">{{ route_info.path }}</code>
+                </div>
+                
+                <div>
+                    <h3 class="text-sm font-medium text-gray-700">Function</h3>
+                    <code class="text-sm text-gray-600">{{ route_info.function }}</code>
+                </div>
+            </div>
+            
+            <div class="mt-4">
+                <h3 class="text-sm font-medium text-gray-700 mb-2">Beschreibung</h3>
+                <p class="text-gray-600">{{ route_info.description }}</p>
+            </div>
+            
+            <div class="mt-4">
+                <h3 class="text-sm font-medium text-gray-700 mb-2">Modul</h3>
+                <p class="text-gray-600">{{ module_name }} ({{ TEST_MODULES[module_name].file if TEST_MODULES and module_name in TEST_MODULES else 'N/A' }})</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('testForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    executeTest();
+});
+
+function executeTest() {
+    const form = document.getElementById('testForm');
+    const formData = new FormData(form);
+    const data = {};
+    
+    // Convert FormData to object
+    for (let [key, value] of formData.entries()) {
+        try {
+            // Try to parse JSON fields
+            if (value.trim().startsWith('{') || value.trim().startsWith('[')) {
+                data[key] = JSON.parse(value);
+            } else {
+                data[key] = value;
+            }
+        } catch (e) {
+            data[key] = value;
+        }
+    }
+    
+    // Show loading state
+    const resultsDiv = document.getElementById('testResults');
+    resultsDiv.innerHTML = `
+        <div class="text-center py-8">
+            <i class="bi bi-hourglass-split text-3xl text-blue-500 mb-3"></i>
+            <p class="text-gray-600">Test wird ausgeführt...</p>
+            <div class="mt-4">
+                <div class="bg-blue-100 text-blue-800 px-3 py-2 rounded inline-block">
+                    {{ route_info.method }} {{ route_info.path }}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Execute the test
+    fetch(`/test/execute/{{ module_name }}/{{ route_info.function }}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        displayTestResult(result);
+    })
+    .catch(error => {
+        displayTestError(error);
+    });
+}
+
+function displayTestResult(result) {
+    const resultsDiv = document.getElementById('testResults');
+    
+    if (result.success) {
+        const testResult = result.result;
+        resultsDiv.innerHTML = `
+            <div class="space-y-4">
+                <div class="bg-${testResult.status === 'success' ? 'green' : 'red'}-50 border border-${testResult.status === 'success' ? 'green' : 'red'}-200 rounded-lg p-4">
+                    <div class="flex items-center">
+                        <i class="bi bi-${testResult.status === 'success' ? 'check' : 'x'}-circle text-${testResult.status === 'success' ? 'green' : 'red'}-500 mr-3"></i>
+                        <div>
+                            <h4 class="text-${testResult.status === 'success' ? 'green' : 'red'}-800 font-medium">
+                                ${testResult.status === 'success' ? 'Test erfolgreich' : 'Test fehlgeschlagen'}
+                            </h4>
+                            <p class="text-${testResult.status === 'success' ? 'green' : 'red'}-600 text-sm">${testResult.message}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <h4 class="font-medium text-gray-700 mb-2">Status Code</h4>
+                        <span class="inline-flex px-2 py-1 text-sm rounded ${testResult.status_code < 400 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${testResult.status_code || 'N/A'}
+                        </span>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-gray-700 mb-2">Response Time</h4>
+                        <span class="text-sm text-gray-600">${testResult.response_time}</span>
+                    </div>
+                </div>
+                
+                ${testResult.request_data ? `
+                <div>
+                    <h4 class="font-medium text-gray-700 mb-2">Request Data</h4>
+                    <pre class="text-xs bg-gray-100 p-3 rounded overflow-x-auto">${JSON.stringify(testResult.request_data, null, 2)}</pre>
+                </div>
+                ` : ''}
+                
+                ${testResult.response_data ? `
+                <div>
+                    <h4 class="font-medium text-gray-700 mb-2">Response Data</h4>
+                    <pre class="text-xs bg-gray-100 p-3 rounded overflow-x-auto max-h-64">${typeof testResult.response_data === 'object' ? JSON.stringify(testResult.response_data, null, 2) : testResult.response_data}</pre>
+                </div>
+                ` : ''}
+                
+                ${testResult.error ? `
+                <div>
+                    <h4 class="font-medium text-red-700 mb-2">Error Details</h4>
+                    <pre class="text-xs bg-red-50 p-3 rounded overflow-x-auto">${testResult.error}</pre>
+                </div>
+                ` : ''}
+                
+                <div class="text-xs text-gray-500">
+                    Test ausgeführt: ${new Date(testResult.timestamp).toLocaleString()}
+                </div>
+            </div>
+        `;
+    } else {
+        displayTestError(result.error);
+    }
+}
+
+function displayTestError(error) {
+    const resultsDiv = document.getElementById('testResults');
+    resultsDiv.innerHTML = `
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div class="flex items-center">
+                <i class="bi bi-exclamation-triangle text-red-500 mr-3"></i>
+                <div>
+                    <h4 class="text-red-800 font-medium">Test-Fehler</h4>
+                    <p class="text-red-600 text-sm">${error}</p>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function resetForm() {
+    document.getElementById('testForm').reset();
+    document.getElementById('testResults').innerHTML = `
+        <div class="text-center py-8 text-gray-500">
+            <i class="bi bi-clock text-3xl mb-3"></i>
+            <p>Bereit für Test-Ausführung</p>
+            <p class="text-sm">Füllen Sie das Formular aus und klicken Sie "Test ausführen"</p>
+        </div>
+    `;
+}
+</script>
+{% endblock %}

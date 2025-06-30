@@ -388,8 +388,12 @@ def test_tool(tool_id):
         if not tool:
             return jsonify({'success': False, 'message': 'Tool nicht gefunden'}), 404
         
-        # Test-Daten aus Request extrahieren
-        test_data = request.get_json() or {}
+        # Test-Daten aus Request extrahieren (sicher)
+        try:
+            test_data = request.get_json() or {}
+        except Exception:
+            # Fallback falls kein JSON oder invalides JSON
+            test_data = {}
         
         # Prüfe ob Implementation Module verfügbar ist
         if IMPLEMENTATION_MODULES_AVAILABLE:
@@ -501,8 +505,12 @@ def execute_tool(tool_id):
         if not tool:
             return jsonify({'success': False, 'message': 'Tool nicht gefunden'}), 404
         
-        # Execution-Parameter aus Request extrahieren
-        execution_data = request.get_json() or {}
+        # Execution-Parameter aus Request extrahieren (sicher)
+        try:
+            execution_data = request.get_json() or {}
+        except Exception:
+            # Fallback falls kein JSON oder invalides JSON
+            execution_data = {}
         inputs = execution_data.get('inputs', {})
         
         # Prüfe ob Implementation Module verfügbar ist

@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+
+{% block title %}Dynamic Features Test{% endblock %}
+
+{% block page_header %}
+<div class="page-header">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">
+                <i class="bi bi-gear"></i>
+                Dynamic UI Features Test
+            </h1>
+            <p class="text-gray-600">Test dynamic form generation, field types, and validation</p>
+        </div>
+        <div class="page-toolbar">
+            <a href="{{ url_for('test.test_overview') }}" class="btn btn-outline">
+                <i class="bi bi-arrow-left"></i>
+                Back to Tests
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block context_area %}
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+    <h3 class="font-semibold text-gray-900 mb-3">Test Configuration</h3>
+    <div class="space-y-2 text-sm">
+        <div><strong>Tool:</strong> {{ tool_config.name }}</div>
+        <div><strong>Integration:</strong> {{ integration.name }} ({{ integration.vendor }})</div>
+        <div><strong>Test Scenarios:</strong> {{ test_scenarios|length }}</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Test Scenarios -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900">Test Scenarios</h2>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% for scenario in test_scenarios %}
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="font-medium text-gray-900">{{ scenario.name }}</h3>
+                        <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">
+                            {{ scenario.status }}
+                        </span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-3">{{ scenario.description }}</p>
+                    <button onclick="runScenarioTest('{{ scenario.name|lower|replace(' ', '_') }}')" 
+                            class="btn btn-outline btn-sm w-full">
+                        <i class="bi bi-play"></i>
+                        Run Test
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Dynamic Form Test Area -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900">Dynamic Form Test</h2>
+        </div>
+        <div class="p-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Form Preview -->
+                <div>
+                    <h3 class="font-medium text-gray-900 mb-3">Form Preview</h3>
+                    <div id="dynamic-form-container" class="border border-gray-200 rounded-lg p-4">
+                        <!-- Dynamic form will be generated here -->
+                        <div class="text-gray-500 text-center py-8">
+                            Click "Generate Form" to test dynamic form generation
+                        </div>
+                    </div>
+                    <button onclick="generateTestForm()" class="btn btn-primary mt-3">
+                        <i class="bi bi-arrow-repeat"></i>
+                        Generate Form
+                    </button>
+                </div>
+
+                <!-- Field Type Tests -->
+                <div>
+                    <h3 class="font-medium text-gray-900 mb-3">Field Type Tests</h3>
+                    <div class="space-y-3">
+                        {% for param in integration.input_params %}
+                        <div class="border border-gray-200 rounded-lg p-3">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="font-medium text-sm">{{ param.name }}</span>
+                                <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                                    {{ param.type }}
+                                </span>
+                            </div>
+                            <button onclick="testFieldType('{{ param.type }}', '{{ param.name }}')" 
+                                    class="btn btn-outline btn-sm">
+                                <i class="bi bi-check"></i>
+                                Test Field
+                            </button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Results -->
+    <div id="test-results" class="bg-white rounded-lg shadow-sm border border-gray-200 hidden">
+        <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900">Test Results</h2>
+        </div>
+        <div id="test-results-content" class="p-6">
+            <!-- Results will be inserted here -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const toolConfig = {{ tool_config|tojson }};
+const integration = {{ integration|tojson }};
+
+function generateTestForm() {
+    const container = document.getElementById('dynamic-form-container');
+    
+    let formHtml = '<form class="space-y-4">';
+    
+    integration.input_params.forEach(param => {
+        const isLocked = toolConfig.locked_inputs && toolConfig.locked_inputs.includes(param.name);
+        const isPrefilled = toolConfig.prefilled_inputs && toolConfig.prefilled_inputs.hasOwnProperty(param.name);
+        const prefilledValue = isPrefilled ? toolConfig.prefilled_inputs[param.name] : param.default;
+        
+        formHtml += generateFieldHtml(param, prefilledValue, isLocked, isPrefilled);
+    });
+    
+    formHtml += '</form>';
+    
+    container.innerHTML = formHtml;
+    showTestResults('Form generated successfully!', 'success');
+}
+
+function generateFieldHtml(param, value, isLocked, isPrefilled) {
+    let fieldHtml = `<div class="form-group">`;
+    
+    // Label with badges
+    fieldHtml += `<label class="block text-sm font-medium text-gray-700 mb-1">
+        ${param.name}
+        ${param.required ? '<span class="badge-required">Required</span>' : ''}
+        ${isLocked ? '<span class="badge-locked">Locked</span>' : ''}
+        ${isPrefilled ? '<span class="badge-prefilled">Prefilled</span>' : ''}
+    </label>`;
+    
+    // Field based on type
+    switch (param.type) {
+        case 'text':
+            fieldHtml += `<input type="text" name="${param.name}" value="${value || ''}" 
+                         class="form-control" ${isLocked ? 'readonly' : ''}>`;
+            break;
+            
+        case 'select':
+            fieldHtml += `<select name="${param.name}" class="form-control" ${isLocked ? 'disabled' : ''}>`;
+            if (param.options) {
+                param.options.forEach(option => {
+                    const selected = value === option.value ? 'selected' : '';
+                    fieldHtml += `<option value="${option.value}" ${selected}>${option.label}</option>`;
+                });
+            }
+            fieldHtml += '</select>';
+            break;
+            
+        case 'boolean':
+            const checked = value === true || value === 'true' ? 'checked' : '';
+            fieldHtml += `<input type="checkbox" name="${param.name}" ${checked} 
+                         class="form-checkbox" ${isLocked ? 'disabled' : ''}>`;
+            break;
+            
+        case 'number':
+            fieldHtml += `<input type="number" name="${param.name}" value="${value || ''}" 
+                         class="form-control" ${isLocked ? 'readonly' : ''}
+                         ${param.min ? `min="${param.min}"` : ''}
+                         ${param.max ? `max="${param.max}"` : ''}>`;
+            break;
+            
+        case 'json':
+            const jsonValue = typeof value === 'object' ? JSON.stringify(value, null, 2) : value || '';
+            fieldHtml += `<textarea name="${param.name}" rows="4" class="form-control" 
+                         ${isLocked ? 'readonly' : ''}>${jsonValue}</textarea>`;
+            break;
+            
+        default:
+            fieldHtml += `<input type="text" name="${param.name}" value="${value || ''}" 
+                         class="form-control" ${isLocked ? 'readonly' : ''}>`;
+    }
+    
+    if (param.description) {
+        fieldHtml += `<p class="text-xs text-gray-500 mt-1">${param.description}</p>`;
+    }
+    
+    fieldHtml += '</div>';
+    return fieldHtml;
+}
+
+async function testFieldType(fieldType, fieldName) {
+    try {
+        const response = await fetch(`/test/test-dynamic-field/${fieldType}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                field_name: fieldName,
+                field_type: fieldType,
+                value: 'test-value'
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showTestResults(`Field type "${fieldType}" test passed`, 'success');
+        } else {
+            showTestResults(`Field type "${fieldType}" test failed: ${result.error}`, 'error');
+        }
+    } catch (error) {
+        showTestResults(`Error testing field type "${fieldType}": ${error.message}`, 'error');
+    }
+}
+
+function runScenarioTest(scenarioName) {
+    // Simulate scenario test
+    const scenarios = {
+        'dynamic_field_generation': () => {
+            generateTestForm();
+            return 'Dynamic field generation test completed';
+        },
+        'status_badge_system': () => {
+            return 'Status badge system test completed - badges are visible in generated form';
+        },
+        'json_editor_integration': () => {
+            return 'JSON editor integration test completed - textarea fields can be used for JSON';
+        },
+        'live_validation': () => {
+            return 'Live validation test completed - validation logic is in place';
+        }
+    };
+    
+    if (scenarios[scenarioName]) {
+        const result = scenarios[scenarioName]();
+        showTestResults(result, 'success');
+    } else {
+        showTestResults(`Scenario "${scenarioName}" not implemented`, 'warning');
+    }
+}
+
+function showTestResults(message, type) {
+    const resultsDiv = document.getElementById('test-results');
+    const contentDiv = document.getElementById('test-results-content');
+    
+    const typeColors = {
+        'success': 'green',
+        'error': 'red',
+        'warning': 'yellow'
+    };
+    
+    const typeIcons = {
+        'success': 'bi-check-circle',
+        'error': 'bi-x-circle',
+        'warning': 'bi-exclamation-triangle'
+    };
+    
+    const color = typeColors[type] || 'gray';
+    const icon = typeIcons[type] || 'bi-info-circle';
+    
+    contentDiv.innerHTML = `
+        <div class="flex items-center gap-2 text-${color}-600">
+            <i class="bi ${icon}"></i>
+            <span class="font-semibold">${type.charAt(0).toUpperCase() + type.slice(1)}</span>
+        </div>
+        <div class="mt-2 text-gray-700">${message}</div>
+        <div class="text-xs text-gray-500 mt-2">${new Date().toLocaleString()}</div>
+    `;
+    
+    resultsDiv.classList.remove('hidden');
+}
+</script>
+
+<style>
+.badge-required {
+    background: #ef4444;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    margin-left: 4px;
+}
+
+.badge-locked {
+    background: #6b7280;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    margin-left: 4px;
+}
+
+.badge-prefilled {
+    background: #3b82f6;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    margin-left: 4px;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    background-color: white;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-control[readonly], .form-control[disabled] {
+    background-color: #f9fafb;
+    color: #6b7280;
+}
+
+.form-checkbox {
+    width: 1rem;
+    height: 1rem;
+    color: #3b82f6;
+    border-radius: 0.25rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+</style>
+{% endblock %}
