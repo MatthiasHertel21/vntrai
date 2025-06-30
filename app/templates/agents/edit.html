@@ -126,6 +126,16 @@
                     <h3 class="text-lg font-medium text-gray-900 border-b border-gray-200 pb-3 mb-4 flex items-center">
                         <i class="bi bi-cpu mr-2 text-purple-500"></i>
                         AI Assistant Configuration
+                        <div class="ml-auto flex gap-2">
+                            <button type="button" onclick="updateAssistant()" 
+                                    class="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
+                                <i class="bi bi-arrow-repeat mr-1"></i>Update
+                            </button>
+                            <button type="button" onclick="createNewAssistant()" 
+                                    class="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">
+                                <i class="bi bi-plus mr-1"></i>New
+                            </button>
+                        </div>
                     </h3>
                     
                     <div class="space-y-4">
@@ -202,6 +212,23 @@
                                       placeholder="System instructions for the AI assistant...">{{ agent.instructions or '' }}</textarea>
                             <p class="text-xs text-gray-500 mt-1">Instructions that define how the AI should behave</p>
                         </div>
+                        
+                        <!-- System Prompt Preview -->
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="block text-sm font-medium text-gray-700">
+                                    System Prompt Preview
+                                </label>
+                                <button type="button" onclick="generateSystemPrompt()" 
+                                        class="text-xs bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700">
+                                    Generate Preview
+                                </button>
+                            </div>
+                            <div id="system_prompt_preview" class="w-full p-3 border border-gray-300 rounded-md bg-gray-50 text-sm text-gray-700 min-h-[100px]">
+                                <em class="text-gray-500">Click "Generate Preview" to see the system prompt that will be sent to the AI assistant</em>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">This preview shows how the AI assistant will be instructed based on your agent configuration</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -256,6 +283,67 @@
                             <i class="bi bi-plus mr-2"></i>
                             Add Task
                         </button>
+                    </div>
+                </div>
+
+                <!-- Files -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-medium text-gray-900 border-b border-gray-200 pb-3 mb-4 flex items-center">
+                        <i class="bi bi-file-earmark mr-2 text-blue-500"></i>
+                        Files
+                        <span class="ml-auto text-sm font-normal text-gray-500">{{ (agent.files or [])|length }} files</span>
+                    </h3>
+                    
+                    <div class="space-y-3">
+                        <!-- File Upload -->
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-4">
+                            <input type="file" id="file_upload" multiple class="hidden" onchange="handleFileUpload(event)">
+                            <button type="button" onclick="document.getElementById('file_upload').click()" 
+                                    class="w-full flex flex-col items-center justify-center py-2 text-gray-600 hover:text-blue-500 transition-colors">
+                                <i class="bi bi-cloud-upload text-2xl mb-2"></i>
+                                <span class="text-sm">Click to upload files</span>
+                                <span class="text-xs text-gray-500">Support for documents, images, and text files</span>
+                            </button>
+                        </div>
+                        
+                        <!-- File List -->
+                        <div id="files_list">
+                            {% if agent.files %}
+                                {% for file in agent.files %}
+                                    <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gray-50">
+                                        <div class="flex items-center">
+                                            <i class="bi bi-file-earmark text-blue-500 mr-2"></i>
+                                            <div>
+                                                <div class="font-medium text-gray-900">{{ file.name }}</div>
+                                                <div class="text-xs text-gray-500">
+                                                    {{ file.size_formatted | default(file.size, true) }} • 
+                                                    {{ file.type | default('Unknown', true) }}
+                                                    {% if file.file_id %}
+                                                    • ID: {{ file.file_id[:8] }}...
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="flex gap-1">
+                                            <button type="button" onclick="downloadFile('{{ file.name }}')" 
+                                                    class="text-blue-500 hover:text-blue-700 text-sm p-1">
+                                                <i class="bi bi-download"></i>
+                                            </button>
+                                            <button type="button" onclick="deleteFile('{{ file.name }}')" 
+                                                    class="text-red-500 hover:text-red-700 text-sm p-1">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-6 text-gray-500">
+                                    <i class="bi bi-files text-2xl mb-2"></i>
+                                    <p>No files uploaded</p>
+                                    <p class="text-sm">Upload files to make them available to the AI assistant</p>
+                                </div>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
 
@@ -459,6 +547,192 @@ function showNotification(message, success) {
             notification.remove();
         }
     }, 5000);
+}
+
+function generateSystemPrompt() {
+    const agentId = "{{ agent.id }}";
+    
+    fetch(`/agents/generate_system_prompt/${agentId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const previewDiv = document.getElementById('system_prompt_preview');
+                previewDiv.innerHTML = `<pre class="whitespace-pre-wrap text-sm">${data.system_prompt}</pre>`;
+                showNotification('System prompt generated successfully', true);
+            } else {
+                showNotification('Failed to generate system prompt: ' + data.error, false);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to generate system prompt: ' + error.message, false);
+        });
+}
+
+function updateAssistant() {
+    const selectedTool = document.getElementById('ai_assistant_tool').value;
+    
+    if (!selectedTool) {
+        showNotification('Please select an AI assistant tool first', false);
+        return;
+    }
+    
+    if (selectedTool.startsWith('tool:')) {
+        const toolId = selectedTool.substring(5);
+        const agentId = "{{ agent.id }}";
+        
+        // Get current form data
+        const formData = {
+            name: document.getElementById('name').value,
+            description: document.getElementById('description').value,
+            model: document.getElementById('model').value,
+            instructions: document.getElementById('instructions').value
+        };
+        
+        fetch(`/tools/update_assistant/${toolId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                agent_id: agentId,
+                config: formData
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            showNotification(data.message || 'Assistant updated successfully', data.success);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to update assistant: ' + error.message, false);
+        });
+    }
+}
+
+function createNewAssistant() {
+    const selectedTool = document.getElementById('ai_assistant_tool').value;
+    
+    if (!selectedTool) {
+        showNotification('Please select an AI assistant tool first', false);
+        return;
+    }
+    
+    if (selectedTool.startsWith('tool:')) {
+        const toolId = selectedTool.substring(5);
+        const agentId = "{{ agent.id }}";
+        
+        // Get current form data
+        const formData = {
+            name: document.getElementById('name').value,
+            description: document.getElementById('description').value,
+            model: document.getElementById('model').value,
+            instructions: document.getElementById('instructions').value
+        };
+        
+        fetch(`/tools/create_assistant/${toolId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                agent_id: agentId,
+                config: formData
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            showNotification(data.message || 'New assistant created successfully', data.success);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Failed to create new assistant: ' + error.message, false);
+        });
+    }
+}
+
+function handleFileUpload(event) {
+    const files = event.target.files;
+    const agentId = "{{ agent.id }}";
+    
+    if (files.length === 0) return;
+    
+    for (let file of files) {
+        uploadFile(file, agentId);
+    }
+    
+    // Reset input
+    event.target.value = '';
+}
+
+function uploadFile(file, agentId) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('agent_id', agentId);
+    
+    fetch('/agents/upload_file', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(`File "${file.name}" uploaded successfully`, true);
+            // Refresh the page to show the new file
+            location.reload();
+        } else {
+            showNotification(`Failed to upload "${file.name}": ` + data.message, false);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification(`Failed to upload "${file.name}": ` + error.message, false);
+    });
+}
+
+function downloadFile(filename) {
+    const agentId = "{{ agent.id }}";
+    const url = `/agents/download_file/${agentId}/${encodeURIComponent(filename)}`;
+    
+    // Create temporary link to trigger download
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
+function deleteFile(filename) {
+    if (!confirm(`Are you sure you want to delete "${filename}"?`)) {
+        return;
+    }
+    
+    const agentId = "{{ agent.id }}";
+    
+    fetch(`/agents/delete_file/${agentId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            filename: filename
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(`File "${filename}" deleted successfully`, true);
+            // Refresh the page to remove the file from list
+            location.reload();
+        } else {
+            showNotification(`Failed to delete "${filename}": ` + data.message, false);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification(`Failed to delete "${filename}": ` + error.message, false);
+    });
 }
 
 // Add change listeners to form fields

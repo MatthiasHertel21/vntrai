@@ -19,6 +19,35 @@
 
 # BACKLOG
 
+## New Backlog Items
+
+### Insights 
+
+#### Context
+- Insights sind ein chat mit einer AI, der dicht an der standardfunktionilität von chatgpt liegt
+- alle insights teilen sich einen assistent-api Thread
+- die assistent_id und alle Insight-übergreifenden Konfigurationen werden gespeichert in data/insights/config.json
+- jeder insight entspricht einer user-session, eine user-session kann geteilt werden über verschiedene vntrai nutzer 
+- jeder insight hat eine uuid
+- die daten zu jedem insight werden gespeichert in einem json unter data/insights/uuid.json
+- die files zu einem insight werden gespeichert unter data/insights/uuid/filename
+- jeder insight kann files und datasets verwenden, die zur user-session hinzugefügt werden
+- ist kein assisten verfügbar, wird automatisch einer erzeugt und dessen daten in der data/insights/config.json gespeichert
+#### GUI
+- zweispaltige GUI, 
+- Container links: "Chat"
+- container rechts: "Files", "Datasets", "Knowledge", "Prompts"
+##### container chat
+- großes ausgabefenster für ergebnisse der ai
+- kleines message-fenster zum eingeben von usermessages und "send" Button
+- nach dem absetzen von "send" wird ein context-prmpt erzeugt und abgesetzt und die antwort in das ausgabefenster gestreamed
+##### container files
+- file upload-control
+- liste der hochgeladenen files mit Löschaktion
+- files werden beim hochladen in der usersession registriert, die fileids werden in der json des ignsights gepsiechert (zusammen mit name, typ, grö0e)
+- die file_ids werden der nutzersession zugefügt (additional file ids)
+
+
 ## 🎯 **Aktueller Sprint: Sprint 17 AI Assistant Integration (8.-12. Juli 2025)**
 ### Ziel: OpenAI Assistant Integration und Tool-Connection
 
@@ -40,13 +69,13 @@
    - Tool Selection in Agent Configuration
 
 **Sprint 17 Definition of Done:**
-- [ ] V2 Assistant API Tool für OpenAI Assistant v2 API entwickelt
-- [ ] OpenAI Assistant API Client implementiert
-- [ ] Assistant CRUD Operations funktionsfähig
-- [ ] Assistant Management UI in Agent Edit Page
-- [ ] Tool-Assistant Connection über "options" Feld
-- [ ] File Upload/Management für Assistants
-- [ ] System Prompt Preview und Generation
+- [x] V2 Assistant API Tool für OpenAI Assistant v2 API entwickelt
+- [x] OpenAI Assistant API Client implementiert
+- [x] Assistant CRUD Operations funktionsfähig
+- [x] Assistant Management UI in Agent Edit Page
+- [x] Tool-Assistant Connection über "options" Feld
+- [x] File Upload/Management für Assistants
+- [x] System Prompt Preview und Generation
 
 ---
 

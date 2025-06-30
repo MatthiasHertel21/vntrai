@@ -1019,3 +1019,117 @@ def get_assistant_enabled_tools():
         })
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)}), 500
+
+@tools_bp.route('/update_assistant/<tool_id>', methods=['POST'])
+def update_assistant(tool_id):
+    """Update an existing assistant via tool"""
+    try:
+        request_data = request.get_json() or {}
+        agent_id = request_data.get('agent_id')
+        config = request_data.get('config', {})
+        
+        if not agent_id:
+            return jsonify({'success': False, 'message': 'Agent ID required'}), 400
+        
+        if not IMPLEMENTATION_MODULES_AVAILABLE:
+            return jsonify({'success': False, 'message': 'Implementation module system not available'}), 500
+        
+        # Get the tool
+        tool = tools_manager.get_tool(tool_id)
+        if not tool:
+            return jsonify({'success': False, 'message': 'Tool not found'}), 404
+        
+        # Check if tool has assistant functionality
+        if not tool.get('options', {}).get('assistant', {}).get('enabled', False):
+            return jsonify({'success': False, 'message': 'Tool does not have assistant functionality enabled'}), 400
+        
+        # Run async update operation
+        import threading
+        import asyncio
+        
+        result_container = {}
+        exception_container = {}
+        
+        def run_async_update():
+            try:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                result = loop.run_until_complete(tools_manager.update_tool_assistant(tool_id, agent_id, config))
+                result_container['result'] = result
+            except Exception as e:
+                exception_container['error'] = e
+            finally:
+                loop.close()
+        
+        thread = threading.Thread(target=run_async_update)
+        thread.start()
+        thread.join(timeout=30)  # 30 second timeout
+        
+        if thread.is_alive():
+            return jsonify({'success': False, 'message': 'Update operation timed out'}), 500
+        
+        if 'error' in exception_container:
+            raise exception_container['error']
+        
+        result = result_container.get('result', {'success': False, 'message': 'No result'})
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@tools_bp.route('/create_assistant/<tool_id>', methods=['POST'])
+def create_assistant(tool_id):
+    """Create a new assistant via tool"""
+    try:
+        request_data = request.get_json() or {}
+        agent_id = request_data.get('agent_id')
+        config = request_data.get('config', {})
+        
+        if not agent_id:
+            return jsonify({'success': False, 'message': 'Agent ID required'}), 400
+        
+        if not IMPLEMENTATION_MODULES_AVAILABLE:
+            return jsonify({'success': False, 'message': 'Implementation module system not available'}), 500
+        
+        # Get the tool
+        tool = tools_manager.get_tool(tool_id)
+        if not tool:
+            return jsonify({'success': False, 'message': 'Tool not found'}), 404
+        
+        # Check if tool has assistant functionality
+        if not tool.get('options', {}).get('assistant', {}).get('enabled', False):
+            return jsonify({'success': False, 'message': 'Tool does not have assistant functionality enabled'}), 400
+        
+        # Run async create operation
+        import threading
+        import asyncio
+        
+        result_container = {}
+        exception_container = {}
+        
+        def run_async_create():
+            try:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                result = loop.run_until_complete(tools_manager.create_tool_assistant(tool_id, agent_id, config))
+                result_container['result'] = result
+            except Exception as e:
+                exception_container['error'] = e
+            finally:
+                loop.close()
+        
+        thread = threading.Thread(target=run_async_create)
+        thread.start()
+        thread.join(timeout=30)  # 30 second timeout
+        
+        if thread.is_alive():
+            return jsonify({'success': False, 'message': 'Create operation timed out'}), 500
+        
+        if 'error' in exception_container:
+            raise exception_container['error']
+        
+        result = result_container.get('result', {'success': False, 'message': 'No result'})
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500

@@ -3,14 +3,17 @@ Agent Routes für vntrai Agent System
 Handles CRUD operations for AI agents
 """
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, make_response
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, make_response, send_file
+from werkzeug.utils import secure_filename
 from app.utils.data_manager import agents_manager, tools_manager
 from app.utils.validation import DataValidator
 import uuid
 import os
+from datetime import datetime
 import json
 from datetime import datetime
 from datetime import datetime
+from werkzeug.utils import secure_filename
 
 agents_bp = Blueprint('agents', __name__)
 
@@ -480,3 +483,208 @@ def api_delete_knowledge(knowledge_id):
             
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@agents_bp.route('/generate_system_prompt/<agent_id>', methods=['GET'])
+def generate_system_prompt(agent_id):
+    """Generate system prompt for agent"""
+    try:
+        agent = agents_manager.get_agent(agent_id)
+        if not agent:
+            return jsonify({'error': 'Agent not found'}), 404
+        
+        # Generate system prompt based on agent data
+        system_prompt = _generate_system_prompt_from_agent(agent)
+        
+        return jsonify({
+            'success': True,
+            'system_prompt': system_prompt
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+def _generate_system_prompt_from_agent(agent):
+    """Generate system prompt from agent configuration"""
+    prompt_parts = []
+    
+    # Base role and description
+    prompt_parts.append(f"You are {agent.get('name', 'an AI assistant')}.")
+    if agent.get('description'):
+        prompt_parts.append(agent['description'])
+    
+    # Category-specific instructions
+    category = agent.get('category', '').lower()
+    if category == 'content':
+        prompt_parts.append("You specialize in content creation, writing, and editing tasks.")
+    elif category == 'data':
+        prompt_parts.append("You specialize in data analysis, processing, and insights generation.")
+    elif category == 'automation':
+        prompt_parts.append("You specialize in workflow automation and task execution.")
+    elif category == 'research':
+        prompt_parts.append("You specialize in research, analysis, and information gathering.")
+    
+    # Language preference
+    prompt_parts.append("Respond in German unless specifically requested otherwise.")
+    
+    # Knowledge base integration
+    knowledge_base = agent.get('knowledge_base', [])
+    if knowledge_base:
+        prompt_parts.append("\nKnowledge Base:")
+        for item in knowledge_base:
+            if item.get('knowledge_text'):
+                prompt_parts.append(f"- {item.get('title', 'Knowledge')}: {item['knowledge_text']}")
+    
+    # Tasks information
+    tasks = agent.get('tasks', [])
+    if tasks:
+        prompt_parts.append(f"\nYou can perform the following tasks:")
+        for task in tasks:
+            task_desc = f"- {task.get('name', 'Unnamed task')}"
+            if task.get('description'):
+                task_desc += f": {task['description']}"
+            prompt_parts.append(task_desc)
+    
+    # Behavior guidelines
+    prompt_parts.append("\nGeneral Guidelines:")
+    prompt_parts.append("- Be helpful, accurate, and professional")
+    prompt_parts.append("- Ask for clarification when needed")
+    prompt_parts.append("- Provide structured and clear responses")
+    prompt_parts.append("- Use the available tools and knowledge effectively")
+    
+    return "\n".join(prompt_parts)
+
+@agents_bp.route('/upload_file', methods=['POST'])
+def upload_file():
+    """Upload file for agent"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+            
+        file = request.files['file']
+        agent_id = request.form.get('agent_id')
+        
+        if not agent_id:
+            return jsonify({'error': 'Agent ID required'}), 400
+            
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        agent = agents_manager.get_agent(agent_id)
+        if not agent:
+            return jsonify({'error': 'Agent not found'}), 404
+        
+        # Create agent files directory
+        agent_files_dir = os.path.join('data', 'agents', agent_id)
+        os.makedirs(agent_files_dir, exist_ok=True)
+        
+        # Save file
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(agent_files_dir, filename)
+        file.save(file_path)
+        
+        # Get file info
+        file_size = os.path.getsize(file_path)
+        file_info = {
+            'name': filename,
+            'size': file_size,
+            'size_formatted': format_file_size(file_size),
+            'type': file.content_type or 'application/octet-stream',
+            'uploaded_at': datetime.now().isoformat()
+        }
+        
+        # Add to agent files list
+        if 'files' not in agent:
+            agent['files'] = []
+        
+        # Remove existing file with same name
+        agent['files'] = [f for f in agent['files'] if f.get('name') != filename]
+        agent['files'].append(file_info)
+        
+        # Save agent
+        agents_manager.save_agent(agent)
+        
+        return jsonify({
+            'success': True,
+            'message': f'File "{filename}" uploaded successfully',
+            'file_info': file_info
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@agents_bp.route('/download_file/<agent_id>/<filename>')
+def download_file(agent_id, filename):
+    """Download agent file"""
+    try:
+        agent = agents_manager.get_agent(agent_id)
+        if not agent:
+            return jsonify({'error': 'Agent not found'}), 404
+        
+        # Check if file exists in agent's files list
+        agent_files = agent.get('files', [])
+        file_info = next((f for f in agent_files if f.get('name') == filename), None)
+        
+        if not file_info:
+            return jsonify({'error': 'File not found in agent'}), 404
+        
+        # Check if file exists on disk
+        file_path = os.path.join('data', 'agents', agent_id, filename)
+        if not os.path.exists(file_path):
+            return jsonify({'error': 'File not found on disk'}), 404
+        
+        return send_file(file_path, as_attachment=True, download_name=filename)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@agents_bp.route('/delete_file/<agent_id>', methods=['DELETE'])
+def delete_file(agent_id):
+    """Delete agent file"""
+    try:
+        data = request.get_json() or {}
+        filename = data.get('filename')
+        
+        if not filename:
+            return jsonify({'error': 'Filename required'}), 400
+        
+        agent = agents_manager.get_agent(agent_id)
+        if not agent:
+            return jsonify({'error': 'Agent not found'}), 404
+        
+        # Remove from agent files list
+        agent_files = agent.get('files', [])
+        file_info = next((f for f in agent_files if f.get('name') == filename), None)
+        
+        if not file_info:
+            return jsonify({'error': 'File not found in agent'}), 404
+        
+        # Remove from list
+        agent['files'] = [f for f in agent_files if f.get('name') != filename]
+        
+        # Delete file from disk
+        file_path = os.path.join('data', 'agents', agent_id, filename)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        
+        # Save agent
+        agents_manager.save_agent(agent)
+        
+        return jsonify({
+            'success': True,
+            'message': f'File "{filename}" deleted successfully'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+def format_file_size(size_bytes):
+    """Format file size in human readable format"""
+    if size_bytes == 0:
+        return "0 B"
+    
+    size_names = ["B", "KB", "MB", "GB"]
+    import math
+    i = int(math.floor(math.log(size_bytes, 1024)))
+    p = math.pow(1024, i)
+    s = round(size_bytes / p, 2)
+    return f"{s} {size_names[i]}"
