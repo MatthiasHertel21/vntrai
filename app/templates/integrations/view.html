@@ -3,7 +3,7 @@
 {% block title %}{{ integration.name }} - Integration Details{% endblock %}
 
 {% block page_header %}
-<div class="flex justify-between items-center">
+<div class="flex justify-between items-center max-w-4xl mx-auto w-full">
     <div class="flex items-center">
         <a href="{{ url_for('integrations.list_integrations') }}" 
            class="text-gray-500 hover:text-gray-700 mr-4">
@@ -24,10 +24,6 @@
         </div>
     </div>
     <div class="flex gap-2">
-        <button onclick="testIntegration()" class="btn btn-outline" id="testBtn">
-            <i class="bi bi-play-circle"></i>
-            Test
-        </button>
         <a href="{{ url_for('integrations.edit_integration', integration_id=integration.id) }}" 
            class="btn btn-primary">
             <i class="bi bi-pencil"></i>
@@ -38,7 +34,7 @@
 {% endblock %}
 
 {% block context_area %}
-<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 max-w-4xl mx-auto w-full">
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div>
             <div class="text-sm text-gray-500">Status</div>
@@ -69,7 +65,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto">
+<div class="max-w-4xl mx-auto w-full">
     <!-- Two-Column Layout -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Left Column: Basic Information -->
@@ -148,6 +144,27 @@
                         <dd class="text-sm text-gray-900">{{ integration.updated_at[:10] if integration.updated_at else 'Unknown' }}</dd>
                     </div>
                 </dl>
+            </div>
+            
+            <!-- Raw JSON Data -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-gray-900">Raw JSON Data</h2>
+                    <button id="toggleRawData" class="text-sm text-blue-600 hover:text-blue-800">
+                        <i class="bi bi-eye-slash" id="toggleIcon"></i>
+                        <span id="toggleText">Hide</span>
+                    </button>
+                </div>
+                
+                <div id="rawDataContainer">
+                    <pre class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-xs overflow-x-auto"><code id="rawDataJson">{{ integration | tojson(indent=2) }}</code></pre>
+                    <div class="mt-2 flex justify-end">
+                        <button id="copyRawData" class="text-xs text-gray-500 hover:text-gray-700">
+                            <i class="bi bi-clipboard"></i>
+                            Copy JSON
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -270,67 +287,72 @@
     </div>
 </div>
 
-<!-- JSON Editor for Advanced Users -->
-<div class="mt-6">
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Raw JSON Data</h2>
-        <div class="bg-gray-50 rounded-lg p-4">
-            <pre class="text-sm text-gray-700 overflow-x-auto"><code id="jsonDisplay">{{ integration | tojson(indent=2) }}</code></pre>
-        </div>
-    </div>
-</div>
+<!-- Raw JSON Data Bereich unterhalb entfernt, Anzeige jetzt nur noch in linker Spalte -->
 {% endblock %}
 
 {% block scripts %}
 <script>
-function testIntegration() {
-    const btn = document.getElementById('testBtn');
-    const originalContent = btn.innerHTML;
-    
-    btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Testing...';
-    btn.disabled = true;
-    
-    // Make actual API call to test endpoint
-    fetch(`/integrations/api/test/{{ integration.id }}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
+// Raw JSON Data Toggle Functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const toggleBtn = document.getElementById('toggleRawData');
+    const rawDataContainer = document.getElementById('rawDataContainer');
+    const toggleIcon = document.getElementById('toggleIcon');
+    const toggleText = document.getElementById('toggleText');
+    const copyBtn = document.getElementById('copyRawData');
+
+    // Toggle Raw JSON Data visibility
+    if (toggleBtn && rawDataContainer) {
+        toggleBtn.addEventListener('click', function() {
+            if (rawDataContainer.classList.contains('hidden')) {
+                rawDataContainer.classList.remove('hidden');
+                toggleIcon.className = 'bi bi-eye-slash';
+                toggleText.textContent = 'Hide';
+            } else {
+                rawDataContainer.classList.add('hidden');
+                toggleIcon.className = 'bi bi-eye';
+                toggleText.textContent = 'Show';
+            }
+        });
+    }
+
+    // Copy JSON to clipboard
+    if (copyBtn) {
+        copyBtn.addEventListener('click', function() {
+            const jsonData = document.getElementById('rawDataJson').textContent;
+            
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(jsonData).then(() => {
+                    showToast('JSON copied to clipboard', 'success');
+                }).catch(() => {
+                    fallbackCopyTextToClipboard(jsonData);
+                });
+            } else {
+                fallbackCopyTextToClipboard(jsonData);
+            }
+        });
+    }
+
+    // Fallback copy function for older browsers
+    function fallbackCopyTextToClipboard(text) {
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        try {
+            document.execCommand('copy');
+            showToast('JSON copied to clipboard', 'success');
+        } catch (err) {
+            showToast('Failed to copy JSON', 'error');
         }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            btn.innerHTML = '<i class="bi bi-check-circle text-green-600"></i> Test Passed';
-            btn.className = 'btn btn-outline border-green-300 text-green-700';
-        } else {
-            btn.innerHTML = '<i class="bi bi-x-circle text-red-600"></i> Test Failed';
-            btn.className = 'btn btn-outline border-red-300 text-red-700';
-        }
         
-        // Show toast notification with details
-        showToast(data.success ? 'Test successful' : 'Test failed', 
-                 data.success ? 'success' : 'error');
-        
-        // Reset button after delay
-        setTimeout(() => {
-            btn.innerHTML = originalContent;
-            btn.className = 'btn btn-outline';
-            btn.disabled = false;
-        }, 3000);
-    })
-    .catch(error => {
-        btn.innerHTML = '<i class="bi bi-exclamation-circle text-yellow-600"></i> Test Error';
-        btn.className = 'btn btn-outline border-yellow-300 text-yellow-700';
-        
-        showToast('Test error: ' + error.message, 'error');
-        
-        setTimeout(() => {
-            btn.innerHTML = originalContent;
-            btn.className = 'btn btn-outline';
-            btn.disabled = false;
-        }, 3000);
-    });
-}
+        document.body.removeChild(textArea);
+    }
+});
 
 // Simple toast notification function
 function showToast(message, type = 'info') {

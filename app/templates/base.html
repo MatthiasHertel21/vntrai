@@ -65,6 +65,13 @@
                 
                 <!-- Section 3: Platform -->
                 <li class="vntr-nav-item">
+                    <a href="{{ url_for('agents.list_agents') }}" class="vntr-nav-link {% if request.endpoint.startswith('agents.') %}active{% endif %}" title="Agents">
+                        <img src="{{ url_for('static', filename='icons/Agent - black.png') }}" 
+                             class="vntr-nav-icon" alt="Agents">
+                        <span>Agents</span>
+                    </a>
+                </li>
+                <li class="vntr-nav-item">
                     <a href="{{ url_for('tools.list_tools') }}" class="vntr-nav-link {% if request.endpoint.startswith('tools.') %}active{% endif %}" title="Tools">
                         <img src="{{ url_for('static', filename='icons/Tools - black.png') }}" 
                              class="vntr-nav-icon" alt="Tools">

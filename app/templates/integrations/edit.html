@@ -3,7 +3,7 @@
 {% block title %}Edit Integration - {{ integration.name }}{% endblock %}
 
 {% block page_header %}
-<div class="page-header">
+<div class="page-header max-w-5xl mx-auto w-full">
     <div class="flex justify-between items-center">
         <div class="flex items-center">
             <a href="{{ url_for('integrations.view_integration', integration_id=integration.id) }}" 
@@ -39,19 +39,11 @@
 {% endblock %}
 
 {% block context_area %}
-<div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-    <div class="flex items-center">
-        <i class="bi bi-exclamation-triangle text-yellow-500 mr-2"></i>
-        <div class="text-sm text-yellow-800">
-            <strong>Editing Integration:</strong> Changes will only be saved when you click "Save Changes". 
-            Make sure to test the integration after making configuration changes.
-        </div>
-    </div>
-</div>
+<!-- Hinweisbereich entfernt: Test Integration Abschnitt entfällt für UI-Cleanup -->
 {% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto">
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
     <form method="POST" enctype="multipart/form-data" class="space-y-6" id="editForm">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         
@@ -183,6 +175,27 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- Raw JSON Data -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-semibold text-gray-900">Raw JSON Data</h2>
+                        <button type="button" id="toggleRawData" class="text-sm text-blue-600 hover:text-blue-800">
+                            <i class="bi bi-eye" id="toggleIcon"></i>
+                            <span id="toggleText">Show</span>
+                        </button>
+                    </div>
+                    
+                    <div id="rawDataContainer" style="display:none;">
+                        <pre class="bg-gray-50 border border-gray-200 rounded-lg p-4 text-xs overflow-x-auto"><code id="rawDataJson">{{ integration | tojson(indent=2) }}</code></pre>
+                        <div class="mt-2 flex justify-end">
+                            <button type="button" id="copyRawData" class="text-xs text-gray-500 hover:text-gray-700">
+                                <i class="bi bi-clipboard"></i>
+                                Copy JSON
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <!-- Right Column: Parameters -->
@@ -222,27 +235,6 @@
                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
                               placeholder='[{"name": "response", "type": "string", "description": "Response message"}]'>{{ integration.output_params | tojson(indent=2) if integration.output_params else '[]' }}</textarea>
                 </div>
-                
-                <!-- Test Integration -->
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h2 class="text-lg font-medium text-gray-900 mb-4">Test Integration</h2>
-                    <p class="text-sm text-gray-600 mb-4">
-                        Test the integration configuration and connectivity.
-                    </p>
-                    
-                    <button type="button" id="testIntegration" 
-                            class="w-full btn btn-outline">
-                        <i class="bi bi-play-circle"></i>
-                        Test Integration
-                    </button>
-                    
-                    <div id="testResults" class="mt-4 hidden">
-                        <div class="p-3 border rounded-md bg-gray-50">
-                            <div class="text-sm font-medium text-gray-700">Test Results:</div>
-                            <div id="testOutput" class="text-sm text-gray-600 mt-1"></div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </form>
@@ -261,60 +253,6 @@ document.getElementById('icon').addEventListener('change', function(e) {
         };
         reader.readAsDataURL(file);
     }
-});
-
-// Test Integration functionality
-document.getElementById('testIntegration').addEventListener('click', function() {
-    const button = this;
-    const resultsDiv = document.getElementById('testResults');
-    const outputDiv = document.getElementById('testOutput');
-    
-    // Show loading state
-    button.disabled = true;
-    button.innerHTML = '<i class="bi bi-arrow-clockwise animate-spin"></i> Testing...';
-    resultsDiv.classList.remove('hidden');
-    outputDiv.innerHTML = 'Running integration test...';
-    
-    // Make actual API call to test endpoint
-    fetch(`/integrations/api/test/{{ integration.id }}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('[name=csrf_token]').value
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            outputDiv.innerHTML = `
-                <div class="text-green-600 font-medium">✓ Integration test successful</div>
-                <div class="text-sm text-gray-600 mt-2">
-                    <div>• Configuration: ${data.config_valid ? '✓ Valid' : '✗ Invalid'}</div>
-                    <div>• Authentication: ${data.auth_configured ? '✓ Configured' : '⚠ Not configured'}</div>
-                    <div>• Endpoints: ${data.endpoints_defined ? '✓ Defined' : '⚠ Not defined'}</div>
-                    <div>• Status: ${data.status}</div>
-                </div>
-            `;
-        } else {
-            outputDiv.innerHTML = `
-                <div class="text-red-600 font-medium">✗ Integration test failed</div>
-                <div class="text-sm text-gray-600 mt-2">
-                    ${data.error || 'One or more test conditions failed'}
-                </div>
-            `;
-        }
-    })
-    .catch(error => {
-        outputDiv.innerHTML = `
-            <div class="text-red-600 font-medium">✗ Test error</div>
-            <div class="text-sm text-gray-600 mt-2">${error.message}</div>
-        `;
-    })
-    .finally(() => {
-        // Reset button
-        button.disabled = false;
-        button.innerHTML = '<i class="bi bi-play-circle"></i> Test Integration';
-    });
 });
 
 // Form validation and submission
@@ -352,6 +290,29 @@ document.querySelector('form').addEventListener('submit', function(e) {
     }
     
     return true;
+});
+
+// Raw JSON Data Toggle Functionality
+document.addEventListener('DOMContentLoaded', function() {
+    var toggleBtn = document.getElementById('toggleRawData');
+    var rawDataContainer = document.getElementById('rawDataContainer');
+    var toggleIcon = document.getElementById('toggleIcon');
+    var toggleText = document.getElementById('toggleText');
+    if(toggleBtn && rawDataContainer && toggleIcon && toggleText) {
+        toggleBtn.addEventListener('click', function() {
+            if (rawDataContainer.style.display === 'none' || rawDataContainer.style.display === '') {
+                rawDataContainer.style.display = 'block';
+                toggleIcon.classList.remove('bi-eye');
+                toggleIcon.classList.add('bi-eye-slash');
+                toggleText.textContent = 'Hide';
+            } else {
+                rawDataContainer.style.display = 'none';
+                toggleIcon.classList.remove('bi-eye-slash');
+                toggleIcon.classList.add('bi-eye');
+                toggleText.textContent = 'Show';
+            }
+        });
+    }
 });
 </script>
 {% endblock %}

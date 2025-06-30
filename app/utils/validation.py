@@ -234,7 +234,9 @@ class DataValidator:
         # Copy metadata
         if 'metadata' in data and isinstance(data['metadata'], dict):
             sanitized['metadata'] = data['metadata']
-            sanitized['endpoints'] = data['endpoints']
+            # Only copy endpoints if it exists
+            if 'endpoints' in data:
+                sanitized['endpoints'] = data['endpoints']
         
         # Copy timestamps
         for field in ['created_at', 'updated_at']:
@@ -285,7 +287,119 @@ class DataValidator:
                 sanitized[field] = str(data[field])
         
         return sanitized
+    
+    @staticmethod
+    def sanitize_agent_data(agent: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Sanitize agent data to ensure only allowed fields are saved
+        """
+        allowed_fields = {
+            'id', 'name', 'category', 'description', 'status',
+            'assistant_id', 'assistant_tool_id', 'tasks', 'knowledge_base', 
+            'files', 'global_variables', 'system_prompt', 'metadata',
+            'version', 'created_at', 'updated_at'
+        }
+        
+        # Create sanitized copy with only allowed fields
+        sanitized = {}
+        
+        for field in allowed_fields:
+            if field in agent:
+                sanitized[field] = agent[field]
+        
+        # Ensure required fields exist with defaults
+        if 'status' not in sanitized:
+            sanitized['status'] = 'inactive'
+        
+        if 'tasks' not in sanitized:
+            sanitized['tasks'] = []
+        
+        if 'knowledge_base' not in sanitized:
+            sanitized['knowledge_base'] = []
+        
+        if 'files' not in sanitized:
+            sanitized['files'] = []
+        
+        if 'global_variables' not in sanitized:
+            sanitized['global_variables'] = {}
+        
+        if 'metadata' not in sanitized:
+            sanitized['metadata'] = {
+                'icon': 'default',
+                'color': 'blue',
+                'tags': []
+            }
+        
+        return sanitized
 
+    @staticmethod
+    def validate_agent_data(agent: Dict[str, Any]) -> Tuple[bool, List[str]]:
+        """
+        Validate agent data structure and content
+        """
+        errors = []
+        
+        # Required fields
+        required_fields = ['id', 'name']
+        for field in required_fields:
+            if field not in agent or not agent[field]:
+                errors.append(f"Missing required field: {field}")
+        
+        # Name validation
+        if 'name' in agent:
+            if not isinstance(agent['name'], str) or len(agent['name'].strip()) < 1:
+                errors.append("Agent name must be a non-empty string")
+            elif len(agent['name']) > 100:
+                errors.append("Agent name must not exceed 100 characters")
+        
+        # Category validation
+        if 'category' in agent:
+            if not isinstance(agent['category'], str):
+                errors.append("Category must be a string")
+            elif len(agent['category']) > 50:
+                errors.append("Category must not exceed 50 characters")
+        
+        # Status validation
+        if 'status' in agent:
+            valid_statuses = ['active', 'inactive', 'testing', 'error']
+            if agent['status'] not in valid_statuses:
+                errors.append(f"Status must be one of: {', '.join(valid_statuses)}")
+        
+        # Description validation
+        if 'description' in agent and isinstance(agent['description'], str):
+            if len(agent['description']) > 1000:
+                errors.append("Description must not exceed 1000 characters")
+        
+        # Tasks validation
+        if 'tasks' in agent:
+            if not isinstance(agent['tasks'], list):
+                errors.append("Tasks must be a list")
+            else:
+                for i, task in enumerate(agent['tasks']):
+                    if not isinstance(task, dict):
+                        errors.append(f"Task {i} must be a dictionary")
+                    elif 'id' not in task:
+                        errors.append(f"Task {i} missing required field: id")
+                    elif 'type' in task and task['type'] not in ['ai', 'tool']:
+                        errors.append(f"Task {i} type must be 'ai' or 'tool'")
+        
+        # Knowledge base validation
+        if 'knowledge_base' in agent:
+            if not isinstance(agent['knowledge_base'], list):
+                errors.append("Knowledge base must be a list")
+            else:
+                for i, item in enumerate(agent['knowledge_base']):
+                    if not isinstance(item, dict):
+                        errors.append(f"Knowledge item {i} must be a dictionary")
+                    elif 'id' not in item:
+                        errors.append(f"Knowledge item {i} missing required field: id")
+        
+        # Global variables validation
+        if 'global_variables' in agent and not isinstance(agent['global_variables'], dict):
+            errors.append("Global variables must be a dictionary")
+        
+        return len(errors) == 0, errors
+    
 class ToolValidator:
     """Validator für Tool-Daten basierend auf v036 Schema"""
     

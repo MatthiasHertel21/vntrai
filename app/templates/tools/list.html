@@ -3,7 +3,7 @@
 {% block title %}Tools{% endblock %}
 
 {% block page_header %}
-<div class="page-header">
+<div class="page-header max-w-4xl mx-auto w-full">
     <div class="flex justify-between items-center">
         <div>
             <h1 class="text-2xl font-bold text-gray-900">Tools</h1>
@@ -21,7 +21,7 @@
 {% endblock %}
 
 {% block context_area %}
-<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 max-w-4xl mx-auto w-full">
     <!-- Quick Stats -->
     <div class="grid grid-cols-3 gap-4 text-center">
         <div>
@@ -42,18 +42,18 @@
 
 {% block content %}
 <!-- Filter Section - Moved to content area for visibility -->
-<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6 max-w-4xl mx-auto w-full">
     <form method="GET" class="flex flex-wrap gap-4" id="filterForm">
         <div class="flex-1 min-w-64">
             <input type="text" name="search" value="{{ search_query or '' }}" 
-                   placeholder="Tools durchsuchen..." 
+                   placeholder="Search tools..." 
                    class="w-full px-3 py-2 border border-gray-300 rounded-md"
                    onchange="document.getElementById('filterForm').submit()">
         </div>
         <div class="min-w-48">
             <select name="integration" class="w-full px-3 py-2 border border-gray-300 rounded-md"
                     onchange="document.getElementById('filterForm').submit()">
-                <option value="">Alle Integrations</option>
+                <option value="">All Integrations</option>
                 {% for integration in integrations %}
                 <option value="{{ integration.name }}" 
                         {% if integration_filter == integration.name %}selected{% endif %}>
@@ -65,7 +65,7 @@
         <div class="min-w-36">
             <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-md"
                     onchange="document.getElementById('filterForm').submit()">
-                <option value="">Alle Status</option>
+                <option value="">All Status</option>
                 <option value="connected" {% if status_filter == 'connected' %}selected{% endif %}>Connected</option>
                 <option value="not_connected" {% if status_filter == 'not_connected' %}selected{% endif %}>Not Connected</option>
                 <option value="error" {% if status_filter == 'error' %}selected{% endif %}>Error</option>
@@ -76,9 +76,36 @@
 
 <!-- Tools Card Layout -->
 {% if tools %}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+    <div class="max-w-4xl mx-auto w-full">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
         {% for tool in tools %}
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer clickable-row card-hover" data-tool-id="{{ tool.id }}">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer clickable-row card-hover card-with-actions relative" data-tool-id="{{ tool.id }}">
+            <!-- Dropdown Action-Button (Top Right) -->
+            <div class="card-actions-stacked" style="z-index:20; position:absolute; top:1rem; right:1rem;">
+                <button class="card-action-btn card-action-btn-toggle" title="Show actions" onclick="event.stopPropagation(); toggleToolActionsMenu(event, '{{ tool.id }}')" style="background:#f3f4f6; color:#6b7280; width:1.5rem; height:1.5rem; min-width:1.5rem; min-height:1.5rem; max-width:1.5rem; max-height:1.5rem; padding:0.15rem;">
+                    <i class="bi bi-list" style="font-size:1rem;"></i>
+                </button>
+                <div class="card-actions-dropdown" id="tool-actions-dropdown-{{ tool.id }}" style="display:none; position:absolute; top:2.5rem; right:0; min-width:9rem; background:white; border:1px solid #e5e7eb; border-radius:0.5rem; box-shadow:0 2px 8px rgba(0,0,0,0.08); flex-direction:column;">
+                    <button onclick="closeAllToolActionsMenus(); event.stopPropagation(); testTool('{{ tool.id }}')" class="card-action-btn w-full justify-start" style="border:none; border-radius:0.5rem 0.5rem 0 0;">
+                        <i class="bi bi-play-circle mr-2"></i> Test
+                    </button>
+                    <button onclick="closeAllToolActionsMenus(); event.stopPropagation(); executeTool('{{ tool.id }}')" class="card-action-btn w-full justify-start" style="border:none;">
+                        <i class="bi bi-play-fill mr-2"></i> Run
+                    </button>
+                    <form method="POST" action="{{ url_for('tools.clone_tool', tool_id=tool.id) }}" style="display:contents;" onclick="event.stopPropagation();">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="card-action-btn w-full justify-start" style="border:none;">
+                            <i class="bi bi-files mr-2"></i> Duplicate
+                        </button>
+                    </form>
+                    <a href="{{ url_for('tools.edit_tool', tool_id=tool.id) }}" onclick="closeAllToolActionsMenus(); event.stopPropagation();" class="card-action-btn primary w-full justify-start" style="border:none;">
+                        <i class="bi bi-pencil mr-2"></i> Edit
+                    </a>
+                    <button onclick="closeAllToolActionsMenus(); event.stopPropagation(); confirmDeleteTool('{{ tool.id }}', '{{ tool.name }}')" class="card-action-btn danger w-full justify-start" style="border:none; border-radius:0 0 0.5rem 0.5rem;">
+                        <i class="bi bi-trash mr-2"></i> Delete
+                    </button>
+                </div>
+            </div>
             <!-- Card Header -->
             <div class="p-4 pb-3">
                 <div class="flex items-center justify-between mb-3">
@@ -87,7 +114,6 @@
                         <p class="text-xs text-gray-500 truncate">{{ tool.tool_definition or 'Unknown Integration' }}</p>
                     </div>
                 </div>
-                
                 <!-- Status Badge -->
                 <div class="mb-3">
                     {% if tool.status == 'connected' %}
@@ -104,119 +130,76 @@
                         </span>
                     {% endif %}
                 </div>
-                
                 <!-- Description -->
                 <p class="text-xs text-gray-600 mb-3 line-clamp-2">
                     {{ tool.description if tool.description else 'No description available' }}
                 </p>
-                
                 <!-- Parameters Info and Last Used -->
-                <div class="flex justify-between items-center text-xs text-gray-500 mb-2">
-                    <div class="flex gap-2">
-                        {% if tool.prefilled_inputs %}
-                        <span class="bg-blue-50 text-blue-700 px-2 py-1 rounded">
-                            <i class="bi bi-info-circle mr-1"></i>
-                            {{ tool.prefilled_inputs|length }} Prefilled
-                        </span>
-                        {% endif %}
-                        {% if tool.locked_inputs %}
-                        <span class="bg-orange-50 text-orange-700 px-2 py-1 rounded">
-                            <i class="bi bi-lock mr-1"></i>
-                            {{ tool.locked_inputs|length }} Locked
-                        </span>
-                        {% endif %}
+                <div class="flex flex-col gap-1 text-xs text-gray-500 mb-2">
+                    <!-- Input Fields Names -->
+                    {% if tool.input_params and tool.input_params|length > 0 %}
+                    <div>
+                        <span class="font-semibold text-blue-700">Inputs:</span>
+                        {% for param in tool.input_params %}
+                            <span class="inline-block bg-blue-100 text-blue-900 font-semibold rounded px-2 py-0.5 mr-1 border border-blue-200">{{ param.name }}</span>
+                        {% endfor %}
                     </div>
-                    
-                    <!-- Last Used Info -->
-                    <div class="text-right">
-                        {% if tool.last_execution %}
-                        <div class="text-xs text-gray-400">
-                            Last used: {{ tool.last_execution.timestamp[:10] if tool.last_execution.timestamp else 'Never' }}
-                        </div>
-                        {% elif tool.last_test %}
-                        <div class="text-xs text-gray-400">
-                            Last tested: {{ tool.last_test.timestamp[:10] if tool.last_test.timestamp else 'Never' }}
-                        </div>
-                        {% else %}
-                        <div class="text-xs text-gray-400">
-                            Never used
-                        </div>
-                        {% endif %}
+                    {% endif %}
+                    <!-- Output Fields Names -->
+                    {% if tool.output_params and tool.output_params|length > 0 %}
+                    <div>
+                        <span class="font-semibold text-green-700">Outputs:</span>
+                        {% for param in tool.output_params %}
+                            <span class="inline-block bg-green-100 text-green-900 font-semibold rounded px-2 py-0.5 mr-1 border border-green-200">{{ param.name }}</span>
+                        {% endfor %}
                     </div>
+                    {% endif %}
                 </div>
             </div>
-            
             <!-- Card Footer with Actions and Status -->
             <div class="px-4 py-3 border-t border-gray-100 bg-gray-50 rounded-b-lg">
                 <div class="flex justify-between items-center">
-                    <!-- Status Info -->
-                    <div class="text-xs text-gray-500">
-                        {{ tool.tool_definition or 'Unknown Integration' }}
+                    <!-- Status Info Left -->
+                    <div class="flex items-center gap-2 text-xs text-gray-500">
+                        <!-- Prefilled/Locked removed -->
                     </div>
-                    
-                    <!-- Actions -->
-                    <div class="flex space-x-1">
-                        <!-- Execute Button -->
-                        <button onclick="location.href='{{ url_for('tools.view_tool', tool_id=tool.id) }}'" 
-                                class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors" title="Execute Tool">
-                            <i class="bi bi-play-fill"></i>
-                        </button>
-                        
-                        <!-- Test Button -->
-                        <button onclick="testTool('{{ tool.id }}')" 
-                                class="bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors" title="Test Tool">
-                            <i class="bi bi-play"></i>
-                        </button>
-                        
-                        <!-- Edit Button -->
-                        <button onclick="location.href='{{ url_for('tools.edit_tool', tool_id=tool.id) }}'" 
-                                class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors" title="Edit Tool">
-                            <i class="bi bi-pencil"></i>
-                        </button>
-                        
-                        <!-- Clone Button -->
-                        <form method="POST" action="{{ url_for('tools.clone_tool', tool_id=tool.id) }}" class="inline">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                            <button type="submit" 
-                                    class="bg-gray-600 hover:bg-gray-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors" title="Clone Tool">
-                                <i class="bi bi-files"></i>
-                            </button>
-                        </form>
-                        
-                        <!-- Delete Button -->
-                        <form method="POST" action="{{ url_for('tools.delete_tool', tool_id=tool.id) }}" class="inline">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                            <button type="submit" 
-                                    onclick="return confirm('{{ tool.name }} wirklich löschen?')"
-                                    class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors" title="Delete Tool">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </form>
+                    <!-- Last Used Info Right -->
+                    <div class="text-xs text-gray-400 text-right">
+                        {% if tool.last_execution %}
+                        <div>Last used: {{ tool.last_execution.timestamp[:10] if tool.last_execution.timestamp else 'Never' }}</div>
+                        {% elif tool.last_test %}
+                        <div>Last tested: {{ tool.last_test.timestamp[:10] if tool.last_test.timestamp else 'Never' }}</div>
+                        {% else %}
+                        <div>Never used</div>
+                        {% endif %}
                     </div>
                 </div>
             </div>
         </div>
         {% endfor %}
+        </div>
     </div>
 {% else %}
     <!-- Empty State -->
-    <div class="text-center py-12">
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12">
-            <i class="bi bi-tools text-6xl text-gray-300 mb-4"></i>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">No tools found</h3>
-            <p class="text-gray-500 mb-6">
-                {% if search_query or integration_filter or status_filter %}
-                    No tools match your current filters. Try adjusting your search criteria.
-                {% else %}
-                    Get started by creating your first tool based on an integration.
+    <div class="max-w-4xl mx-auto w-full">
+        <div class="text-center py-12">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12">
+                <i class="bi bi-tools text-6xl text-gray-300 mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No tools found</h3>
+                <p class="text-gray-500 mb-6">
+                    {% if search_query or integration_filter or status_filter %}
+                        No tools match your current filters. Try adjusting your search criteria.
+                    {% else %}
+                        Get started by creating your first tool based on an integration.
+                    {% endif %}
+                </p>
+                {% if not (search_query or integration_filter or status_filter) %}
+                <a href="{{ url_for('tools.create_tool') }}" class="btn btn-primary">
+                    <i class="bi bi-plus-lg mr-2"></i>
+                    Create Tool
+                </a>
                 {% endif %}
-            </p>
-            {% if not (search_query or integration_filter or status_filter) %}
-            <a href="{{ url_for('tools.create_tool') }}" class="btn btn-primary">
-                <i class="bi bi-plus-lg mr-2"></i>
-                Create Tool
-            </a>
-            {% endif %}
+            </div>
         </div>
     </div>
 {% endif %}
@@ -241,12 +224,44 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- Execute Modal -->
+<div id="executeModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-auto">
+            <div class="p-6">
+                <h3 class="text-lg font-semibold mb-4">Execute Tool</h3>
+                <div id="executeForm" class="mb-4"></div>
+                <div id="executeResults" class="mb-4"></div>
+                <div class="flex justify-between items-center gap-2">
+                    <div>
+                        <button onclick="resetExecution()" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded" style="display: none;" id="resetExecuteBtn">
+                            <i class="bi bi-arrow-clockwise"></i> New Execution
+                        </button>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="closeExecuteModal()" 
+                                class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+                            Close
+                        </button>
+                        <button onclick="runExecution()" 
+                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded" id="executeBtn">
+                            <i class="bi bi-play"></i> Execute
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 function testTool(toolId) {
     fetch(`/tools/test/${toolId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
         },
         body: JSON.stringify({})
     })
@@ -280,8 +295,422 @@ function testTool(toolId) {
     });
 }
 
+let currentToolId = null;
+
+function executeTool(toolId) {
+    currentToolId = toolId;
+    // Load Tool configuration with Integration details
+    fetch(`/tools/api/config/${toolId}`)
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            throw new Error(data.message);
+        }
+        
+        const tool = data.tool;
+        const integration = data.integration;
+        const formDiv = document.getElementById('executeForm');
+        
+        // Generate dynamic input fields
+        let fieldsHtml = '';
+        
+        if (integration && integration.input_params && integration.input_params.length > 0) {
+            // Filter only visible (not locked) parameters
+            const visibleParams = integration.input_params.filter(param => 
+                !tool.locked_inputs || !tool.locked_inputs.includes(param.name)
+            );
+            
+            if (visibleParams.length > 0) {
+                fieldsHtml = `
+                    <div class="mb-4">
+                        <h4 class="font-semibold mb-3 text-gray-900">Parameters for execution:</h4>
+                        <div class="space-y-4">
+                            ${visibleParams.map(param => generateExecuteFieldHtml(param, tool)).join('')}
+                        </div>
+                    </div>
+                    
+                    <!-- JSON Editor as fallback -->
+                    <details class="mt-4">
+                        <summary class="cursor-pointer text-sm text-gray-600 hover:text-gray-800 mb-2">Advanced: JSON Editor</summary>
+                        <div>
+                            <label for="executionInputs" class="block text-sm font-medium text-gray-700 mb-2">
+                                Parameters (JSON)
+                            </label>
+                            <textarea id="executionInputs" rows="6" 
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      placeholder='{"parameter": "value"}'>${JSON.stringify(getVisibleInputs(tool), null, 2)}</textarea>
+                            <p class="text-xs text-gray-500 mt-1">Overrides the above fields during execution</p>
+                        </div>
+                    </details>
+                `;
+            } else {
+                // All parameters are locked
+                fieldsHtml = `
+                    <div class="mb-4">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <i class="bi bi-info-circle text-blue-600 mr-2"></i>
+                                <span class="text-sm text-blue-800">All parameters for this tool are already configured.</span>
+                            </div>
+                        </div>
+                        <!-- Hidden JSON field for locked values -->
+                        <input type="hidden" id="executionInputs" value='${JSON.stringify(getVisibleInputs(tool))}'>
+                    </div>
+                `;
+            }
+        } else {
+            // Fallback: Only JSON editor
+            fieldsHtml = `
+                <div class="mb-4">
+                    <h4 class="font-semibold mb-2">Parameters for execution:</h4>
+                    <textarea id="executionInputs" rows="6" 
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder='{"parameter": "value"}'>${JSON.stringify(getVisibleInputs(tool), null, 2)}</textarea>
+                </div>
+            `;
+        }
+        
+        formDiv.innerHTML = fieldsHtml;
+        
+        // Add event listeners for dynamic fields
+        addExecuteFieldListeners();
+        
+        document.getElementById('executeResults').innerHTML = '';
+        document.getElementById('executeModal').classList.remove('hidden');
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error loading tool configuration: ' + error.message);
+    });
+}
+
+// Generate HTML for Execute input fields
+function generateExecuteFieldHtml(param, tool) {
+    const fieldId = `execute_${param.name}`;
+    const fieldName = `execute_param_${param.name}`;
+    
+    // Check if parameter is locked or prefilled
+    const isLocked = tool.locked_inputs && tool.locked_inputs.includes(param.name);
+    
+    // Don't show locked fields
+    if (isLocked) {
+        return ''; // Locked fields are not shown in the dialog
+    }
+    
+    const isRequired = param.required;
+    const requiredMark = isRequired ? '<span class="text-red-500">*</span>' : '';
+    const prefilledValue = tool.prefilled_inputs && tool.prefilled_inputs[param.name] ? tool.prefilled_inputs[param.name] : (param.default || '');
+    
+    let fieldInput = '';
+    let statusBadges = '';
+    
+    // Status badges (only for visible fields)
+    if (prefilledValue && prefilledValue !== '') {
+        statusBadges += `
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 ml-2">
+                <i class="bi bi-check-circle-fill mr-1"></i>Prefilled
+            </span>
+        `;
+    }
+    
+    // Generate field based on type
+    if (param.type === 'select') {
+        fieldInput = `
+            <select id="${fieldId}" name="${fieldName}" 
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    ${isRequired ? 'required' : ''}>
+                ${!isRequired ? '<option value="">Not set</option>' : ''}
+                ${param.options ? param.options.map(opt => 
+                    `<option value="${opt.value}" ${prefilledValue == opt.value ? 'selected' : ''}>${opt.label || opt.value}</option>`
+                ).join('') : ''}
+            </select>
+        `;
+    } else if (param.type === 'boolean') {
+        fieldInput = `
+            <div class="flex items-center">
+                <input type="checkbox" id="${fieldId}" name="${fieldName}" value="true" 
+                       class="mr-2" 
+                       ${prefilledValue ? 'checked' : ''}>
+                <label for="${fieldId}" class="text-sm text-gray-700">${param.label || param.name}</label>
+            </div>
+        `;
+    } else if (param.type === 'json') {
+        const jsonValue = typeof prefilledValue === 'object' ? JSON.stringify(prefilledValue, null, 2) : prefilledValue;
+        fieldInput = `
+            <textarea id="${fieldId}" name="${fieldName}" rows="4"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder='${param.default || "{}"}'
+                      ${isRequired ? 'required' : ''}>${jsonValue}</textarea>
+            <button type="button" onclick="toggleExecuteJsonEditor('${fieldId}')" class="mt-1 text-xs text-blue-600 hover:text-blue-800">Toggle JSON Editor</button>
+        `;
+    } else {
+        // Default: text input
+        fieldInput = `
+            <input type="text" id="${fieldId}" name="${fieldName}" 
+                   value="${prefilledValue}"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   placeholder="${param.default || ''}"
+                   ${isRequired ? 'required' : ''}>
+        `;
+    }
+    
+    return `
+        <div>
+            <div class="flex items-center mb-1">
+                <label for="${fieldId}" class="block text-sm font-medium text-gray-700">
+                    ${param.label || param.name} ${requiredMark}
+                </label>
+                ${statusBadges}
+            </div>
+            ${param.description ? `<p class="text-xs text-gray-500 mb-2">${param.description}</p>` : ''}
+            ${fieldInput}
+        </div>
+    `;
+}
+
+// Helper function: Only return visible (not locked) inputs
+function getVisibleInputs(tool) {
+    const prefilled = tool.prefilled_inputs || {};
+    const locked = tool.locked_inputs || [];
+    
+    // Only non-locked inputs for JSON editor
+    const visible = {};
+    Object.keys(prefilled).forEach(key => {
+        if (!locked.includes(key)) {
+            visible[key] = prefilled[key];
+        }
+    });
+    
+    return visible;
+}
+
+// Add event listeners for dynamic fields
+function addExecuteFieldListeners() {
+    // Update JSON when form fields change
+    document.querySelectorAll('[name^="execute_param_"]').forEach(field => {
+        field.addEventListener('change', function() {
+            updateExecutionInputsFromFields();
+        });
+        field.addEventListener('input', function() {
+            updateExecutionInputsFromFields();
+        });
+    });
+}
+
+// Update JSON from form fields
+function updateExecutionInputsFromFields() {
+    const inputs = {};
+    document.querySelectorAll('[name^="execute_param_"]').forEach(field => {
+        const paramName = field.name.replace('execute_param_', '');
+        
+        if (field.type === 'checkbox') {
+            inputs[paramName] = field.checked;
+        } else if (field.tagName === 'TEXTAREA' && field.id.includes('json')) {
+            try {
+                inputs[paramName] = JSON.parse(field.value || '{}');
+            } catch (e) {
+                inputs[paramName] = field.value;
+            }
+        } else {
+            const value = field.value;
+            if (value !== '') {
+                inputs[paramName] = value;
+            }
+        }
+    });
+    
+    const jsonTextarea = document.getElementById('executionInputs');
+    if (jsonTextarea && jsonTextarea.style.display !== 'none') {
+        jsonTextarea.value = JSON.stringify(inputs, null, 2);
+    }
+}
+
+function runExecution() {
+    const inputs = document.getElementById('executionInputs').value;
+    let inputsData = {};
+    
+    try {
+        inputsData = JSON.parse(inputs);
+    } catch (e) {
+        document.getElementById('executeResults').innerHTML = `
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                <i class="bi bi-exclamation-circle"></i> Invalid JSON format
+            </div>
+        `;
+        return;
+    }
+    
+    // Disable UI during execution
+    const executeBtn = document.getElementById('executeBtn');
+    executeBtn.disabled = true;
+    executeBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Executing...';
+    
+    // Load current integration for output rendering
+    fetch(`/tools/api/config/${currentToolId}`)
+    .then(response => response.json())
+    .then(configData => {
+        const integration = configData.success ? configData.integration : null;
+        
+        // Execute tool
+        fetch(`/tools/execute/${currentToolId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ inputs: inputsData })
+        })
+        .then(response => response.json())
+        .then(data => {
+            const resultsDiv = document.getElementById('executeResults');
+            
+            // Use simple output rendering
+            if (data.success) {
+                resultsDiv.innerHTML = `
+                    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+                        <i class="bi bi-check-circle"></i> ${data.message}
+                    </div>
+                    <div class="bg-gray-100 p-4 rounded">
+                        <h5 class="font-semibold mb-2">Result:</h5>
+                        <pre class="text-xs overflow-auto">${JSON.stringify(data.outputs, null, 2)}</pre>
+                    </div>
+                `;
+            } else {
+                resultsDiv.innerHTML = `
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                        <i class="bi bi-exclamation-circle"></i> ${data.message}
+                    </div>
+                `;
+            }
+            
+            // Update UI after execution
+            executeBtn.disabled = false;
+            executeBtn.innerHTML = '<i class="bi bi-play"></i> Execute Again';
+            document.getElementById('resetExecuteBtn').style.display = 'inline-block';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('executeResults').innerHTML = `
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                    <i class="bi bi-exclamation-circle"></i> Error executing tool
+                </div>
+            `;
+            // Reset UI on error
+            executeBtn.disabled = false;
+            executeBtn.innerHTML = '<i class="bi bi-play"></i> Execute';
+        });
+    })
+    .catch(error => {
+        console.error('Error loading integration config:', error);
+        // Fallback: Execute tool without enhanced output rendering
+        fetch(`/tools/execute/${currentToolId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ inputs: inputsData })
+        })
+        .then(response => response.json())
+        .then(data => {
+            const resultsDiv = document.getElementById('executeResults');
+            
+            // Simple fallback rendering
+            if (data.success) {
+                resultsDiv.innerHTML = `
+                    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+                        <i class="bi bi-check-circle"></i> ${data.message}
+                    </div>
+                    <div class="bg-gray-100 p-4 rounded">
+                        <h5 class="font-semibold mb-2">Result:</h5>
+                        <pre class="text-xs overflow-auto">${JSON.stringify(data.outputs, null, 2)}</pre>
+                    </div>
+                `;
+            } else {
+                resultsDiv.innerHTML = `
+                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                        <i class="bi bi-exclamation-circle"></i> ${data.message}
+                    </div>
+                `;
+            }
+            
+            // Reset UI
+            executeBtn.disabled = false;
+            executeBtn.innerHTML = '<i class="bi bi-play"></i> Execute Again';
+            document.getElementById('resetExecuteBtn').style.display = 'inline-block';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            executeBtn.disabled = false;
+            executeBtn.innerHTML = '<i class="bi bi-play"></i> Execute';
+        });
+    });
+}
+
+// Reset execution
+function resetExecution() {
+    document.getElementById('executeResults').innerHTML = '';
+    document.getElementById('resetExecuteBtn').style.display = 'none';
+    document.getElementById('executeBtn').innerHTML = '<i class="bi bi-play"></i> Execute';
+}
+
+function closeExecuteModal() {
+    document.getElementById('executeModal').classList.add('hidden');
+    // Reset on close
+    resetExecution();
+}
+
+function confirmDeleteTool(toolId, toolName) {
+    if (confirm(`Are you sure you want to delete "${toolName}"?`)) {
+        fetch(`/tools/delete/${toolId}`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Error deleting tool');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting tool');
+        });
+    }
+}
+
 function closeTestModal() {
     document.getElementById('testModal').classList.add('hidden');
 }
+
+// Dropdown actions for tool cards
+function toggleToolActionsMenu(event, id) {
+    event.preventDefault();
+    event.stopPropagation();
+    closeAllToolActionsMenus();
+    var el = document.getElementById('tool-actions-dropdown-' + id);
+    if (el) {
+        el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'flex' : 'none';
+    }
+}
+function closeAllToolActionsMenus() {
+    document.querySelectorAll('.card-actions-dropdown').forEach(function(el) {
+        el.style.display = 'none';
+    });
+}
+document.addEventListener('click', function(e) {
+    closeAllToolActionsMenus();
+});
+
+// Card click handler
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.clickable-row').forEach(function(card) {
+        card.addEventListener('click', function() {
+            const toolId = this.getAttribute('data-tool-id');
+            window.location.href = `/tools/view/${toolId}`;
+        });
+    });
+});
 </script>
 {% endblock %}

@@ -493,7 +493,160 @@ class IconManager:
         return False
 
 
+class AgentsManager(DataManager):
+    """Agent data management operations"""
+    
+    def __init__(self):
+        super().__init__('agents')
+    
+    def create_agent(self, name: str, category: str = 'General', description: str = '') -> Dict[str, Any]:
+        """Create new agent with foundation structure"""
+        agent = {
+            'id': str(uuid.uuid4()),
+            'name': name,
+            'category': category,
+            'description': description,
+            'status': 'inactive',
+            'assistant_id': None,
+            'assistant_tool_id': None,
+            'tasks': [],
+            'knowledge_base': [],
+            'files': [],
+            'global_variables': {},
+            'system_prompt': '',
+            'metadata': {
+                'icon': 'default',
+                'color': 'blue',
+                'tags': []
+            },
+            'version': '1.0.0',
+            'created_at': datetime.now().isoformat(),
+            'updated_at': datetime.now().isoformat()
+        }
+        
+        if self.save(agent):
+            return agent
+        return None
+    
+    def get_agent_statistics(self, agent_id: str) -> Dict[str, Any]:
+        """Get agent run statistics"""
+        # TODO: Will be implemented in Sprint 19 (AgentRun system)
+        return {
+            'total_runs': 0,
+            'active_runs': 0,
+            'completed_runs': 0,
+            'failed_runs': 0,
+            'last_run': None
+        }
+    
+    def filter_by_category(self, category: str) -> List[Dict[str, Any]]:
+        """Filter agents by category"""
+        all_agents = self.load_all()
+        return [agent for agent in all_agents if agent.get('category', '').lower() == category.lower()]
+    
+    def filter_by_status(self, status: str) -> List[Dict[str, Any]]:
+        """Filter agents by status"""
+        all_agents = self.load_all()
+        return [agent for agent in all_agents if agent.get('status') == status]
+    
+    def add_task(self, agent_id: str, task: Dict[str, Any]) -> bool:
+        """Add task to agent"""
+        agent = self.load(agent_id)
+        if not agent:
+            return False
+        
+        # Ensure task has required fields
+        if 'id' not in task:
+            task['id'] = str(uuid.uuid4())
+        if 'status' not in task:
+            task['status'] = 'pending'
+        if 'created_at' not in task:
+            task['created_at'] = datetime.now().isoformat()
+        
+        task['updated_at'] = datetime.now().isoformat()
+        
+        agent['tasks'].append(task)
+        return self.save(agent)
+    
+    def update_task(self, agent_id: str, task_id: str, task_data: Dict[str, Any]) -> bool:
+        """Update specific task in agent"""
+        agent = self.load(agent_id)
+        if not agent:
+            return False
+        
+        for i, task in enumerate(agent['tasks']):
+            if task.get('id') == task_id:
+                task_data['id'] = task_id
+                task_data['updated_at'] = datetime.now().isoformat()
+                agent['tasks'][i] = {**task, **task_data}
+                return self.save(agent)
+        
+        return False
+    
+    def remove_task(self, agent_id: str, task_id: str) -> bool:
+        """Remove task from agent"""
+        agent = self.load(agent_id)
+        if not agent:
+            return False
+        
+        agent['tasks'] = [task for task in agent['tasks'] if task.get('id') != task_id]
+        return self.save(agent)
+    
+    def reorder_tasks(self, agent_id: str, task_ids: List[str]) -> bool:
+        """Reorder tasks in agent"""
+        agent = self.load(agent_id)
+        if not agent:
+            return False
+        
+        # Create new task order based on provided IDs
+        tasks_dict = {task['id']: task for task in agent['tasks']}
+        agent['tasks'] = [tasks_dict[task_id] for task_id in task_ids if task_id in tasks_dict]
+        
+        return self.save(agent)
+    
+    def add_knowledge_item(self, agent_id: str, knowledge_item: Dict[str, Any]) -> bool:
+        """Add knowledge item to agent"""
+        agent = self.load(agent_id)
+        if not agent:
+            return False
+        
+        if 'id' not in knowledge_item:
+            knowledge_item['id'] = str(uuid.uuid4())
+        if 'created_at' not in knowledge_item:
+            knowledge_item['created_at'] = datetime.now().isoformat()
+        
+        knowledge_item['updated_at'] = datetime.now().isoformat()
+        
+        agent['knowledge_base'].append(knowledge_item)
+        return self.save(agent)
+    
+    def update_knowledge_item(self, agent_id: str, knowledge_id: str, knowledge_data: Dict[str, Any]) -> bool:
+        """Update specific knowledge item in agent"""
+        agent = self.load(agent_id)
+        if not agent:
+            return False
+        
+        for i, item in enumerate(agent['knowledge_base']):
+            if item.get('id') == knowledge_id:
+                knowledge_data['id'] = knowledge_id
+                knowledge_data['updated_at'] = datetime.now().isoformat()
+                agent['knowledge_base'][i] = {**item, **knowledge_data}
+                return self.save(agent)
+        
+        return False
+    
+    def remove_knowledge_item(self, agent_id: str, knowledge_id: str) -> bool:
+        """Remove knowledge item from agent"""
+        agent = self.load(agent_id)
+        if not agent:
+            return False
+        
+        agent['knowledge_base'] = [item for item in agent['knowledge_base'] if item.get('id') != knowledge_id]
+        return self.save(agent)
+
+
 # Global instances
 integrations_manager = IntegrationsManager()
 tools_manager = ToolsManager()
+agents_manager = AgentsManager()
 icon_manager = IconManager()

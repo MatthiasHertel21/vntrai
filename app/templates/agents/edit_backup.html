@@ -1,0 +1,769 @@
+{% extends "base.html" %}
+
+{% block title %}Edit {{ agent.name }} - Agent{% endblock %}
+
+{% block page_header %}
+<div class="page-header max-w-7xl mx-auto w-full">
+    <div class="flex justify-between items-center">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg         <!-- Auto-save indicator -->
+        <div class="text-sm text-gray-500 text-center py-4">
+            Last modified: {{ agent.updated_at|format_datetime if agent.updated_at else 'Never' }}
+        </div>
+    </form>
+</div>stify-center text-white font-bold text-lg">
+                {{ agent.name[0].upper() }}
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Edit {{ agent.name }}</h1>
+                <p class="text-gray-600">Modify agent configuration and capabilities</p>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <a href="{{ url_for('agents.view_agent', agent_id=agent.id) }}" 
+               class="btn btn-outline">
+                <i class="bi bi-eye"></i>
+                View Agent
+            </a>
+            <button type="submit" form="agentEditForm" class="btn btn-primary">
+                <i class="bi bi-check-lg mr-2"></i>
+                Save Changes
+            </button>
+            <a href="{{ url_for('agents.list_agents') }}" 
+               class="btn btn-outline">
+                <i class="bi bi-arrow-left"></i>
+                Back to Agents
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto w-full">
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} mb-4">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" id="agentEditForm" class="space-y-6">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <!-- Two Column Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- Left Column: Basic Information & Configuration -->
+            <div class="space-y-6">
+                <!-- Basic Information -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-medium text-gray-900 border-b border-gray-200 pb-3 mb-4 flex items-center">
+                        <i class="bi bi-info-circle mr-2 text-blue-500"></i>
+                        Basic Information
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
+                                Agent Name <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" 
+                                   id="name" 
+                                   name="name" 
+                                   required
+                                   maxlength="100"
+                                   value="{{ agent.name }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        
+                        <div>
+                            <label for="category" class="block text-sm font-medium text-gray-700 mb-1">
+                                Category
+                            </label>
+                            <select id="category" 
+                                    name="category"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="General" {{ 'selected' if agent.category == 'General' }}>General</option>
+                                <option value="Content" {{ 'selected' if agent.category == 'Content' }}>Content & Writing</option>
+                                <option value="Data" {{ 'selected' if agent.category == 'Data' }}>Data Analysis</option>
+                                <option value="Marketing" {{ 'selected' if agent.category == 'Marketing' }}>Marketing</option>
+                                <option value="Research" {{ 'selected' if agent.category == 'Research' }}>Research</option>
+                                <option value="Support" {{ 'selected' if agent.category == 'Support' }}>Customer Support</option>
+                                <option value="Development" {{ 'selected' if agent.category == 'Development' }}>Development</option>
+                                <option value="Finance" {{ 'selected' if agent.category == 'Finance' }}>Finance</option>
+                                <option value="HR" {{ 'selected' if agent.category == 'HR' }}>Human Resources</option>
+                                <option value="Education" {{ 'selected' if agent.category == 'Education' }}>Education</option>
+                                <option value="Custom" {{ 'selected' if agent.category == 'Custom' }}>Custom</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
+                                Description
+                            </label>
+                            <textarea id="description" 
+                                      name="description" 
+                                      rows="4"
+                                      maxlength="1000"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                      placeholder="Describe what this agent does...">{{ agent.description or '' }}</textarea>
+                        </div>
+                        
+                        <div>
+                            <label for="status" class="block text-sm font-medium text-gray-700 mb-1">
+                                Status
+                            </label>
+                            <select id="status" 
+                                    name="status"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="active" {{ 'selected' if agent.status == 'active' }}>Active</option>
+                                <option value="inactive" {{ 'selected' if agent.status == 'inactive' }}>Inactive</option>
+                                <option value="development" {{ 'selected' if agent.status == 'development' }}>Development</option>
+                                <option value="testing" {{ 'selected' if agent.status == 'testing' }}>Testing</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Assistant Configuration -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-medium text-gray-900 border-b border-gray-200 pb-3 mb-4 flex items-center">
+                        <i class="bi bi-cpu mr-2 text-purple-500"></i>
+                        AI Assistant Configuration
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label for="ai_assistant_tool" class="block text-sm font-medium text-gray-700 mb-1">
+                                AI Assistant Tool <span class="text-red-500">*</span>
+                            </label>
+                            <select id="ai_assistant_tool" 
+                                    name="ai_assistant_tool"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Select AI Assistant Tool...</option>
+                                <option value="openai_chatcompletion" {{ 'selected' if agent.ai_assistant_tool == 'openai_chatcompletion' }}>OpenAI ChatCompletion</option>
+                                <option value="openai_assistant_api" {{ 'selected' if agent.ai_assistant_tool == 'openai_assistant_api' }}>OpenAI Assistant API</option>
+                                <!-- Add more AI assistant tools as they become available -->
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">Select the tool that provides AI assistant functionality</p>
+                        </div>
+                        
+                        <div>
+                            <label for="model" class="block text-sm font-medium text-gray-700 mb-1">
+                                AI Model
+                            </label>
+                            <select id="model" 
+                                    name="model"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="gpt-4-turbo-preview" {{ 'selected' if agent.model == 'gpt-4-turbo-preview' }}>GPT-4 Turbo</option>
+                                <option value="gpt-4" {{ 'selected' if agent.model == 'gpt-4' }}>GPT-4</option>
+                                <option value="gpt-3.5-turbo" {{ 'selected' if agent.model == 'gpt-3.5-turbo' }}>GPT-3.5 Turbo</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label for="instructions" class="block text-sm font-medium text-gray-700 mb-1">
+                                System Instructions
+                            </label>
+                            <textarea id="instructions" 
+                                      name="instructions" 
+                                      rows="4"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                      placeholder="System instructions for the AI assistant...">{{ agent.instructions or '' }}</textarea>
+                            <p class="text-xs text-gray-500 mt-1">Instructions that define how the AI should behave</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File Attachments -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-medium text-gray-900 border-b border-gray-200 pb-3 mb-4 flex items-center">
+                        <i class="bi bi-paperclip mr-2 text-green-500"></i>
+                        File Attachments
+                        <span class="ml-auto text-sm font-normal text-gray-500">{{ (agent.files or [])|length }} files</span>
+                    </h3>
+                    
+                    <div class="space-y-3">
+                        {% if agent.files %}
+                            {% for file in agent.files %}
+                                <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-gray-50">
+                                    <div class="flex items-center">
+                                        <i class="bi bi-file-text mr-2 text-blue-500"></i>
+                                        <span class="text-sm font-medium text-gray-900">{{ file.name }}</span>
+                                        {% if file.size %}
+                                            <span class="ml-2 text-xs text-gray-500">({{ (file.size / 1024) | round(1) }} KB)</span>
+                                        {% endif %}
+                                    </div>
+                                    <button type="button" 
+                                            class="text-red-500 hover:text-red-700 text-sm"
+                                            onclick="removeFile('{{ file.id }}')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-6 text-gray-500">
+                                <i class="bi bi-file-plus text-2xl mb-2"></i>
+                                <p>No files attached</p>
+                                <p class="text-sm">Files will be available to the AI assistant</p>
+                            </div>
+                        {% endif %}
+                        
+                        <div class="mt-4">
+                            <input type="file" 
+                                   id="fileUpload" 
+                                   multiple 
+                                   class="hidden"
+                                   accept=".txt,.md,.pdf,.doc,.docx,.json,.csv">
+                            <button type="button" 
+                                    onclick="document.getElementById('fileUpload').click()"
+                                    class="w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-500 transition-colors">
+                                <i class="bi bi-cloud-upload mr-2"></i>
+                                Upload Files
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Tasks & Knowledge Base -->
+            <div class="space-y-6">
+                <!-- Tasks -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-medium text-gray-900 border-b border-gray-200 pb-3 mb-4 flex items-center">
+                        <i class="bi bi-list-task mr-2 text-orange-500"></i>
+                        Tasks
+                        <span class="ml-auto text-sm font-normal text-gray-500">{{ (agent.tasks or [])|length }} tasks</span>
+                    </h3>
+                    
+                    <div class="space-y-3">
+                        <div id="tasksList">
+                            {% if agent.tasks %}
+                                {% for task in agent.tasks %}
+                                    <div class="task-item p-4 border border-gray-200 rounded-lg bg-gray-50" data-task-id="{{ loop.index0 }}">
+                                        <div class="flex items-start justify-between">
+                                            <div class="flex-1">
+                                                <div class="flex items-center mb-2">
+                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-2">
+                                                        {{ task.type|title }}
+                                                    </span>
+                                                    <h4 class="font-medium text-gray-900">{{ task.name }}</h4>
+                                                </div>
+                                                {% if task.description %}
+                                                    <p class="text-sm text-gray-600 mb-2">{{ task.description }}</p>
+                                                {% endif %}
+                                                {% if task.tool_id %}
+                                                    <p class="text-xs text-gray-500">Tool: {{ task.tool_id }}</p>
+                                                {% endif %}
+                                            </div>
+                                            <div class="flex gap-1 ml-2">
+                                                <button type="button" 
+                                                        class="text-blue-500 hover:text-blue-700 text-sm"
+                                                        onclick="editTask({{ loop.index0 }})">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <button type="button" 
+                                                        class="text-red-500 hover:text-red-700 text-sm"
+                                                        onclick="removeTask({{ loop.index0 }})">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-6 text-gray-500">
+                                    <i class="bi bi-plus-circle text-2xl mb-2"></i>
+                                    <p>No tasks defined</p>
+                                    <p class="text-sm">Add tasks to define what this agent can do</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <button type="button" 
+                                onclick="addTask()"
+                                class="w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-500 transition-colors">
+                            <i class="bi bi-plus mr-2"></i>
+                            Add Task
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Knowledge Base -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-medium text-gray-900 border-b border-gray-200 pb-3 mb-4 flex items-center">
+                        <i class="bi bi-book mr-2 text-indigo-500"></i>
+                        Knowledge Base
+                        <span class="ml-auto text-sm font-normal text-gray-500">{{ (agent.knowledge_base or [])|length }} items</span>
+                    </h3>
+                    
+                    <div class="space-y-3">
+                        <div id="knowledgeList">
+                            {% if agent.knowledge_base %}
+                                {% for item in agent.knowledge_base %}
+                                    <div class="knowledge-item p-4 border border-gray-200 rounded-lg bg-gray-50" data-knowledge-id="{{ loop.index0 }}">
+                                        <div class="flex items-start justify-between">
+                                            <div class="flex-1">
+                                                <div class="flex items-center mb-2">
+                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mr-2">
+                                                        {{ item.type|title }}
+                                                    </span>
+                                                    <h4 class="font-medium text-gray-900">{{ item.title }}</h4>
+                                                </div>
+                                                {% if item.description %}
+                                                    <p class="text-sm text-gray-600 mb-2">{{ item.description }}</p>
+                                                {% endif %}
+                                                {% if item.url %}
+                                                    <p class="text-xs text-blue-500">{{ item.url }}</p>
+                                                {% endif %}
+                                            </div>
+                                            <div class="flex gap-1 ml-2">
+                                                <button type="button" 
+                                                        class="text-blue-500 hover:text-blue-700 text-sm"
+                                                        onclick="editKnowledge({{ loop.index0 }})">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <button type="button" 
+                                                        class="text-red-500 hover:text-red-700 text-sm"
+                                                        onclick="removeKnowledge({{ loop.index0 }})">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-6 text-gray-500">
+                                    <i class="bi bi-book-half text-2xl mb-2"></i>
+                                    <p>No knowledge items</p>
+                                    <p class="text-sm">Add knowledge to help your agent understand context</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <button type="button" 
+                                onclick="addKnowledge()"
+                                class="w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-500 transition-colors">
+                            <i class="bi bi-plus mr-2"></i>
+                            Add Knowledge Item
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Auto-save indicator -->
+        <div class="text-sm text-gray-500 text-center py-4">
+            Last modified: {{ agent.updated_at|format_datetime if agent.updated_at else 'Never' }}
+        </div>
+    </form>
+</div>
+
+<!-- Task Modal -->
+<div id="taskModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="taskModalTitle">Add Task</h3>
+            <button type="button" class="modal-close" onclick="closeTaskModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="taskForm">
+                <input type="hidden" id="taskIndex" value="">
+                
+                <div class="space-y-4">
+                    <div>
+                        <label for="taskType" class="block text-sm font-medium text-gray-700 mb-1">Task Type</label>
+                        <select id="taskType" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="ai">AI Task</option>
+                            <option value="tool">Tool Task</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="taskName" class="block text-sm font-medium text-gray-700 mb-1">Task Name</label>
+                        <input type="text" id="taskName" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    
+                    <div>
+                        <label for="taskDescription" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea id="taskDescription" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+                    
+                    <div id="toolSelect" style="display: none;">
+                        <label for="taskToolId" class="block text-sm font-medium text-gray-700 mb-1">Tool</label>
+                        <select id="taskToolId" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Select a tool...</option>
+                            <!-- Tools will be loaded dynamically -->
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline" onclick="closeTaskModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="saveTask()">Save Task</button>
+        </div>
+    </div>
+</div>
+
+<!-- Knowledge Modal -->
+<div id="knowledgeModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="knowledgeModalTitle">Add Knowledge Item</h3>
+            <button type="button" class="modal-close" onclick="closeKnowledgeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="knowledgeForm">
+                <input type="hidden" id="knowledgeIndex" value="">
+                
+                <div class="space-y-4">
+                    <div>
+                        <label for="knowledgeType" class="block text-sm font-medium text-gray-700 mb-1">Knowledge Type</label>
+                        <select id="knowledgeType" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="text">Text/Notes</option>
+                            <option value="url">URL/Link</option>
+                            <option value="document">Document</option>
+                            <option value="database">Database</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="knowledgeTitle" class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                        <input type="text" id="knowledgeTitle" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    
+                    <div>
+                        <label for="knowledgeDescription" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                        <textarea id="knowledgeDescription" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+                    
+                    <div id="urlField" style="display: none;">
+                        <label for="knowledgeUrl" class="block text-sm font-medium text-gray-700 mb-1">URL</label>
+                        <input type="url" id="knowledgeUrl" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label for="knowledgeContent" class="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                        <textarea id="knowledgeContent" rows="5" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Knowledge content or instructions..."></textarea>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline" onclick="closeKnowledgeModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" onclick="saveKnowledge()">Save Knowledge</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Tasks data
+let tasks = {{ (agent.tasks or []) | tojson }};
+let knowledge = {{ (agent.knowledge_base or []) | tojson }};
+
+// Task functions
+function addTask() {
+    document.getElementById('taskModalTitle').textContent = 'Add Task';
+    document.getElementById('taskIndex').value = '';
+    document.getElementById('taskForm').reset();
+    document.getElementById('taskModal').style.display = 'block';
+    updateTaskTypeFields();
+}
+
+function editTask(index) {
+    const task = tasks[index];
+    document.getElementById('taskModalTitle').textContent = 'Edit Task';
+    document.getElementById('taskIndex').value = index;
+    document.getElementById('taskType').value = task.type || 'ai';
+    document.getElementById('taskName').value = task.name || '';
+    document.getElementById('taskDescription').value = task.description || '';
+    document.getElementById('taskToolId').value = task.tool_id || '';
+    document.getElementById('taskModal').style.display = 'block';
+    updateTaskTypeFields();
+}
+
+function removeTask(index) {
+    if (confirm('Remove this task?')) {
+        tasks.splice(index, 1);
+        renderTasks();
+    }
+}
+
+function saveTask() {
+    const index = document.getElementById('taskIndex').value;
+    const task = {
+        type: document.getElementById('taskType').value,
+        name: document.getElementById('taskName').value,
+        description: document.getElementById('taskDescription').value,
+        tool_id: document.getElementById('taskToolId').value || null
+    };
+    
+    if (!task.name.trim()) {
+        alert('Task name is required');
+        return;
+    }
+    
+    if (index === '') {
+        tasks.push(task);
+    } else {
+        tasks[parseInt(index)] = task;
+    }
+    
+    renderTasks();
+    closeTaskModal();
+}
+
+function closeTaskModal() {
+    document.getElementById('taskModal').style.display = 'none';
+}
+
+function updateTaskTypeFields() {
+    const type = document.getElementById('taskType').value;
+    const toolSelect = document.getElementById('toolSelect');
+    toolSelect.style.display = type === 'tool' ? 'block' : 'none';
+}
+
+function renderTasks() {
+    const container = document.getElementById('tasksList');
+    if (tasks.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-6 text-gray-500">
+                <i class="bi bi-plus-circle text-2xl mb-2"></i>
+                <p>No tasks defined</p>
+                <p class="text-sm">Add tasks to define what this agent can do</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = tasks.map((task, index) => `
+        <div class="task-item p-4 border border-gray-200 rounded-lg bg-gray-50" data-task-id="${index}">
+            <div class="flex items-start justify-between">
+                <div class="flex-1">
+                    <div class="flex items-center mb-2">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-2">
+                            ${(task.type || 'ai').charAt(0).toUpperCase() + (task.type || 'ai').slice(1)}
+                        </span>
+                        <h4 class="font-medium text-gray-900">${task.name}</h4>
+                    </div>
+                    ${task.description ? `<p class="text-sm text-gray-600 mb-2">${task.description}</p>` : ''}
+                    ${task.tool_id ? `<p class="text-xs text-gray-500">Tool: ${task.tool_id}</p>` : ''}
+                </div>
+                <div class="flex gap-1 ml-2">
+                    <button type="button" 
+                            class="text-blue-500 hover:text-blue-700 text-sm"
+                            onclick="editTask(${index})">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button type="button" 
+                            class="text-red-500 hover:text-red-700 text-sm"
+                            onclick="removeTask(${index})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Knowledge functions
+function addKnowledge() {
+    document.getElementById('knowledgeModalTitle').textContent = 'Add Knowledge Item';
+    document.getElementById('knowledgeIndex').value = '';
+    document.getElementById('knowledgeForm').reset();
+    document.getElementById('knowledgeModal').style.display = 'block';
+    updateKnowledgeTypeFields();
+}
+
+function editKnowledge(index) {
+    const item = knowledge[index];
+    document.getElementById('knowledgeModalTitle').textContent = 'Edit Knowledge Item';
+    document.getElementById('knowledgeIndex').value = index;
+    document.getElementById('knowledgeType').value = item.type || 'text';
+    document.getElementById('knowledgeTitle').value = item.title || '';
+    document.getElementById('knowledgeDescription').value = item.description || '';
+    document.getElementById('knowledgeUrl').value = item.url || '';
+    document.getElementById('knowledgeContent').value = item.content || '';
+    document.getElementById('knowledgeModal').style.display = 'block';
+    updateKnowledgeTypeFields();
+}
+
+function removeKnowledge(index) {
+    if (confirm('Remove this knowledge item?')) {
+        knowledge.splice(index, 1);
+        renderKnowledge();
+    }
+}
+
+function saveKnowledge() {
+    const index = document.getElementById('knowledgeIndex').value;
+    const item = {
+        type: document.getElementById('knowledgeType').value,
+        title: document.getElementById('knowledgeTitle').value,
+        description: document.getElementById('knowledgeDescription').value,
+        url: document.getElementById('knowledgeUrl').value || null,
+        content: document.getElementById('knowledgeContent').value
+    };
+    
+    if (!item.title.trim()) {
+        alert('Knowledge title is required');
+        return;
+    }
+    
+    if (index === '') {
+        knowledge.push(item);
+    } else {
+        knowledge[parseInt(index)] = item;
+    }
+    
+    renderKnowledge();
+    closeKnowledgeModal();
+}
+
+function closeKnowledgeModal() {
+    document.getElementById('knowledgeModal').style.display = 'none';
+}
+
+function updateKnowledgeTypeFields() {
+    const type = document.getElementById('knowledgeType').value;
+    const urlField = document.getElementById('urlField');
+    urlField.style.display = type === 'url' ? 'block' : 'none';
+}
+
+function renderKnowledge() {
+    const container = document.getElementById('knowledgeList');
+    if (knowledge.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-6 text-gray-500">
+                <i class="bi bi-book-half text-2xl mb-2"></i>
+                <p>No knowledge items</p>
+                <p class="text-sm">Add knowledge to help your agent understand context</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = knowledge.map((item, index) => `
+        <div class="knowledge-item p-4 border border-gray-200 rounded-lg bg-gray-50" data-knowledge-id="${index}">
+            <div class="flex items-start justify-between">
+                <div class="flex-1">
+                    <div class="flex items-center mb-2">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mr-2">
+                            ${(item.type || 'text').charAt(0).toUpperCase() + (item.type || 'text').slice(1)}
+                        </span>
+                        <h4 class="font-medium text-gray-900">${item.title}</h4>
+                    </div>
+                    ${item.description ? `<p class="text-sm text-gray-600 mb-2">${item.description}</p>` : ''}
+                    ${item.url ? `<p class="text-xs text-blue-500">${item.url}</p>` : ''}
+                </div>
+                <div class="flex gap-1 ml-2">
+                    <button type="button" 
+                            class="text-blue-500 hover:text-blue-700 text-sm"
+                            onclick="editKnowledge(${index})">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button type="button" 
+                            class="text-red-500 hover:text-red-700 text-sm"
+                            onclick="removeKnowledge(${index})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Event listeners
+document.getElementById('taskType').addEventListener('change', updateTaskTypeFields);
+document.getElementById('knowledgeType').addEventListener('change', updateKnowledgeTypeFields);
+
+// Form submission
+document.getElementById('agentEditForm').addEventListener('submit', function(e) {
+    // Add tasks and knowledge data to form
+    const tasksInput = document.createElement('input');
+    tasksInput.type = 'hidden';
+    tasksInput.name = 'tasks';
+    tasksInput.value = JSON.stringify(tasks);
+    this.appendChild(tasksInput);
+    
+    const knowledgeInput = document.createElement('input');
+    knowledgeInput.type = 'hidden';
+    knowledgeInput.name = 'knowledge_base';
+    knowledgeInput.value = JSON.stringify(knowledge);
+    this.appendChild(knowledgeInput);
+});
+
+// Close modals when clicking outside
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+    }
+}
+</script>
+
+<style>
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 5% auto;
+    padding: 0;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #6b7280;
+}
+
+.modal-close:hover {
+    color: #374151;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+</style>
+{% endblock %}

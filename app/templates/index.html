@@ -3,42 +3,7 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<div class="vntr-content-area with-context" style="display: flex; gap: 0; margin: 0; padding: 0;">
-    <!-- Context Area (individuell pro Seite) -->
-    <div class="vntr-context-area" style="width: 300px;">
-        <div style="background: #E7E7E7; padding: 15px; border-bottom: 1px solid rgba(0,0,0,.1);">
-            <h5 style="margin: 0; color: #333; font-weight: 500;">Dashboard Context</h5>
-        </div>
-        <div style="background: #F5F5F5; padding: 15px;">
-            <h6 style="color: #333; margin-bottom: 15px; font-weight: 500;">Quick Stats</h6>
-            <ul style="list-style: none; padding: 0; margin: 0;">
-                <li style="padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,.1);">
-                    <strong>Active Projects:</strong> 12
-                </li>
-                <li style="padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,.1);">
-                    <strong>Pending Tasks:</strong> 28
-                </li>
-                <li style="padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,.1);">
-                    <strong>Completed Today:</strong> 5
-                </li>
-                <li style="padding: 12px 0;">
-                    <strong>System Status:</strong> <span style="color: #28a745;">Healthy</span>
-                </li>
-            </ul>
-        </div>
-        
-        <div style="background: #E7E7E7; padding: 15px; border-bottom: 1px solid rgba(0,0,0,.1);">
-            <h6 style="color: #333; margin: 0; font-weight: 500;">Recent Activity</h6>
-        </div>
-        <div style="background: #F5F5F5; padding: 15px;">
-            <div style="font-size: 0.9em; color: #555;">
-                <p style="margin: 8px 0;">• Project "AI Model" updated</p>
-                <p style="margin: 8px 0;">• New integration added</p>
-                <p style="margin: 8px 0;">• 3 tasks completed</p>
-            </div>
-        </div>
-    </div>
-    
+<div class="vntr-content-area with-context" style="display: flex; gap: 0; margin: 0; padding: 0; min-height: calc(100vh - 64px);">
     <!-- Main Content Area -->
     <div class="vntr-main-content" style="flex: 1; padding: 20px;">
         <div style="text-align: center; padding: 40px 0;">
@@ -71,6 +36,41 @@
                     <h5 style="margin-bottom: 10px;">Collaboration</h5>
                     <p style="color: #6c757d; margin: 0;">Arbeiten Sie effektiv im Team</p>
                 </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Context Area (rechts neben Content) -->
+    <div class="vntr-context-area" style="width: 300px; min-height: calc(100vh - 64px);">
+        <div style="background: #E7E7E7; padding: 15px; border-bottom: 1px solid rgba(0,0,0,.1);">
+            <h5 style="margin: 0; color: #333; font-weight: 500;">Dashboard Context</h5>
+        </div>
+        <div style="background: #F5F5F5; padding: 15px;">
+            <h6 style="color: #333; margin-bottom: 15px; font-weight: 500;">Quick Stats</h6>
+            <ul style="list-style: none; padding: 0; margin: 0;">
+                <li style="padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,.1);">
+                    <strong>Active Projects:</strong> 12
+                </li>
+                <li style="padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,.1);">
+                    <strong>Pending Tasks:</strong> 28
+                </li>
+                <li style="padding: 12px 0; border-bottom: 1px solid rgba(0,0,0,.1);">
+                    <strong>Completed Today:</strong> 5
+                </li>
+                <li style="padding: 12px 0;">
+                    <strong>System Status:</strong> <span style="color: #28a745;">Healthy</span>
+                </li>
+            </ul>
+        </div>
+        
+        <div style="background: #E7E7E7; padding: 15px; border-bottom: 1px solid rgba(0,0,0,.1);">
+            <h6 style="color: #333; margin: 0; font-weight: 500;">Recent Activity</h6>
+        </div>
+        <div style="background: #F5F5F5; padding: 15px;">
+            <div style="font-size: 0.9em; color: #555;">
+                <p style="margin: 8px 0;">• Project "AI Model" updated</p>
+                <p style="margin: 8px 0;">• New integration added</p>
+                <p style="margin: 8px 0;">• 3 tasks completed</p>
             </div>
         </div>
     </div>

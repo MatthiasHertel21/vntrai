@@ -3,7 +3,7 @@
 {% block title %}Integrations{% endblock %}
 
 {% block page_header %}
-<div class="page-header">
+<div class="page-header max-w-4xl mx-auto w-full">
     <div class="flex justify-between items-center">
         <div>
             <h1 class="text-2xl font-bold text-gray-900">Integrations</h1>
@@ -26,7 +26,7 @@
 {% endblock %}
 
 {% block context_area %}
-<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 max-w-4xl mx-auto w-full">
     <!-- Statistics -->
     <div class="grid grid-cols-4 gap-4 mb-6">
         <div class="text-center">
@@ -52,7 +52,7 @@
 {% block content %}
 <div class="space-y-6">
     <!-- Filter Section - Moved to content area for visibility -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 max-w-4xl mx-auto w-full">
         <form method="GET" class="space-y-4" id="filterForm">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
@@ -93,19 +93,40 @@
 
     {% if integrations %}
     <!-- Card Grid Layout -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+    <div class="max-w-4xl mx-auto w-full">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 auto-rows-fr">
         {% for integration in integrations %}
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer clickable-row card-hover" data-integration-id="{{ integration.id }}">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer clickable-row card-hover card-with-actions relative flex flex-col h-full" data-integration-id="{{ integration.id }}">
+            <!-- Gestackte Action-Buttons (Top Right) -->
+            <div class="card-actions-stacked absolute top-4 right-4" style="z-index:20;">
+                <!-- Main Actions Button -->
+                <button class="card-action-btn card-action-btn-toggle" title="Aktionen anzeigen" onclick="event.stopPropagation(); toggleActionsMenu(event, '{{ integration.id }}')" style="background:#f3f4f6; color:#6b7280; width:1.5rem; height:1.5rem; min-width:1.5rem; min-height:1.5rem; max-width:1.5rem; max-height:1.5rem; padding:0.15rem;">
+                    <i class="bi bi-list" style="font-size:1rem;"></i>
+                </button>
+                <!-- Dropdown Stack, hidden by default -->
+                <div class="card-actions-dropdown" id="actions-dropdown-{{ integration.id }}" style="display:none; position:absolute; top:2.5rem; right:0; min-width:8rem; background:white; border:1px solid #e5e7eb; border-radius:0.5rem; box-shadow:0 2px 8px rgba(0,0,0,0.08); flex-direction:column;">
+                    <a href="{{ url_for('integrations.edit_integration', integration_id=integration.id) }}" 
+                       onclick="closeAllActionsMenus(); event.stopPropagation();"
+                       class="card-action-btn primary w-full justify-start" style="border:none; border-radius:0.5rem 0.5rem 0 0;">
+                        <i class="bi bi-pencil mr-2"></i> Edit
+                    </a>
+                    <button onclick="closeAllActionsMenus(); event.stopPropagation(); confirmDelete('{{ integration.id }}', '{{ integration.name }}')" 
+                            class="card-action-btn danger w-full justify-start" style="border:none; border-radius:0 0 0.5rem 0.5rem;">
+                        <i class="bi bi-trash mr-2"></i> Delete
+                    </button>
+                </div>
+            </div>
+            
             <!-- Card Header with Icon and Status -->
-            <div class="p-4 pb-3">
-                <div class="flex items-center justify-between mb-3">
-                    <div class="flex items-center space-x-2">
+            <div class="p-4 pb-3 hover-group flex-grow">
+                <div class="flex items-center justify-between mb-3 pr-8">
+                    <div class="flex items-center space-x-2 min-w-0 flex-1">
                         {% if integration.icon_url %}
-                        <img class="h-10 w-10 rounded-lg object-contain bg-gray-50 border border-gray-200 p-1" 
+                        <img class="h-10 w-10 rounded-lg object-contain bg-gray-50 border border-gray-200 p-1 flex-shrink-0" 
                              src="{{ integration.icon_url }}" 
                              alt="{{ integration.vendor }}">
                         {% else %}
-                        <div class="h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                        <div class="h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
                             <i class="bi bi-gear text-gray-500 text-lg"></i>
                         </div>
                         {% endif %}
@@ -116,7 +137,7 @@
                     </div>
                 </div>
                 
-                <!-- Status and Type Labels -->
+                <!-- Status and Implementation Labels -->
                 {% set status_colors = {
                     'active': 'bg-green-100 text-green-800',
                     'inactive': 'bg-gray-100 text-gray-800',
@@ -127,60 +148,39 @@
                     <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full {{ status_colors.get(integration.status, 'bg-gray-100 text-gray-800') }}">
                         {{ integration.status }}
                     </span>
-                    <span class="inline-flex px-2 py-1 rounded-full bg-blue-100 text-blue-800 font-medium text-xs">
-                        {{ integration.type if integration.type else 'API' }}
-                    </span>
                     {% if integration.implementation %}
-                    <span class="inline-flex px-2 py-1 rounded-full bg-green-100 text-green-800 font-medium text-xs">
+                    <span class="inline-flex px-2 py-1 rounded-full bg-green-100 text-green-800 font-medium text-xs" 
+                          title="This integration has executable functionality - it can perform real actions like API calls, data processing, etc.">
                         <i class="bi bi-code mr-1"></i>impl
                     </span>
                     {% endif %}
                 </div>
                 
                 <!-- Description -->
-                <p class="text-xs text-gray-600 line-clamp-2">
+                <p class="text-xs text-gray-600 line-clamp-2 overflow-hidden">
                     {{ integration.description if integration.description else 'No description available' }}
                 </p>
             </div>
             
-            <!-- Card Footer with Actions and Info -->
-            <div class="px-4 py-3 border-t border-gray-100 bg-gray-50 rounded-b-lg">
+            <!-- Card Footer with Tool Count and Statistics -->
+            <div class="px-4 py-3 border-t border-gray-100 bg-gray-50 rounded-b-lg mt-auto">
                 <div class="flex justify-between items-center">
-                    <!-- Status Info -->
-                    <div class="text-xs text-gray-500">
+                    <!-- Statistics - Clickable for Toggle -->
+                    <button onclick="event.stopPropagation(); toggleCardDetails('{{ integration.id }}')" 
+                            class="text-xs text-gray-500 hover:text-gray-700 transition-colors flex items-center">
+                        <i class="bi bi-bar-chart mr-1"></i>
                         {{ integration.tool_count if integration.tool_count else 0 }} tools
-                    </div>
+                    </button>
                     
-                    <!-- Actions -->
-                    <div class="flex space-x-1">
-                        <!-- View Button -->
-                        <button onclick="location.href='{{ url_for('integrations.view_integration', integration_id=integration.id) }}'" 
-                                class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors" title="View">
-                            <i class="bi bi-eye"></i>
-                        </button>
-                        
-                        <!-- Edit Button -->
-                        <button onclick="location.href='{{ url_for('integrations.edit_integration', integration_id=integration.id) }}'" 
-                                class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors" title="Edit">
-                            <i class="bi bi-pencil"></i>
-                        </button>
-                        
-                        <!-- Test Button -->
-                        <button onclick="testIntegration('{{ integration.id }}')" 
-                                class="bg-yellow-600 hover:bg-yellow-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors" title="Test">
-                            <i class="bi bi-play"></i>
-                        </button>
-                        
-                        <!-- Delete Button -->
-                        <button onclick="confirmDelete('{{ integration.id }}', '{{ integration.name }}')" 
-                                class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-medium transition-colors" title="Delete">
-                            <i class="bi bi-trash"></i>
-                        </button>
+                    <!-- Status Indicator -->
+                    <div class="text-xs text-gray-400 truncate ml-2">
+                        Updated {{ integration.updated_at[:10] if integration.updated_at else 'Unknown' }}
                     </div>
                 </div>
             </div>
         </div>
         {% endfor %}
+      </div>
     </div>
     {% else %}
     <!-- Empty State -->
@@ -205,6 +205,7 @@
     </div>
     {% endif %}
 </div>
+{% endblock %}
 
 <!-- Delete Confirmation Modal -->
 <div id="deleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
@@ -234,7 +235,41 @@
     </div>
 </div>
 
+{% block extra_js %}
 <script>
+// Toggle the actions dropdown for a specific card
+function toggleActionsMenu(event, id) {
+    event.preventDefault();
+    event.stopPropagation();
+    closeAllActionsMenus();
+    var el = document.getElementById('actions-dropdown-' + id);
+    if (el) {
+        el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'flex' : 'none';
+    }
+}
+
+// Close all open action menus
+function closeAllActionsMenus() {
+    document.querySelectorAll('.card-actions-dropdown').forEach(function(el) {
+        el.style.display = 'none';
+    });
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(e) {
+    closeAllActionsMenus();
+});
+
+// Card click handler
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.clickable-row').forEach(function(card) {
+        card.addEventListener('click', function() {
+            const integrationId = this.getAttribute('data-integration-id');
+            window.location.href = `/integrations/view/${integrationId}`;
+        });
+    });
+});
+
 function confirmDelete(integrationId, integrationName) {
     document.getElementById('deleteIntegrationName').textContent = integrationName;
     document.getElementById('deleteForm').action = `/integrations/delete/${integrationId}`;
@@ -245,32 +280,9 @@ function hideDeleteModal() {
     document.getElementById('deleteModal').classList.add('hidden');
 }
 
-function testIntegration(integrationId) {
-    // Show a simple test message for now
-    alert('Integration test feature coming soon!');
-    
-    // TODO: Implement actual integration testing
-    /*
-    fetch(`/integrations/test/${integrationId}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({})
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            alert('Integration test successful!');
-        } else {
-            alert('Integration test failed: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error testing integration');
-    });
-    */
+function toggleCardDetails(integrationId) {
+    // Placeholder for card details toggle functionality
+    console.log('Toggle details for integration:', integrationId);
 }
 
 // Hide modal when clicking outside

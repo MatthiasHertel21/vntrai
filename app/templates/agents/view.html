@@ -1,0 +1,401 @@
+{% extends "base.html" %}
+
+{% block title %}{{ agent.name }} - Agent Details{% endblock %}
+
+{% block page_header %}
+<div class="page-header max-w-6xl mx-auto w-full">
+    <div class="flex justify-between items-center">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
+                {{ agent.name[0].upper() }}
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">{{ agent.name }}</h1>
+                <p class="text-gray-600">{{ agent.description or 'No description provided' }}</p>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <a href="{{ url_for('agents.edit_agent', agent_id=agent.id) }}" 
+               class="btn btn-outline">
+                <i class="bi bi-pencil"></i>
+                Edit
+            </a>
+            <a href="{{ url_for('agents.duplicate_agent', agent_id=agent.id) }}" 
+               class="btn btn-outline"
+               onclick="return confirm('Duplicate this agent?')">
+                <i class="bi bi-files"></i>
+                Duplicate
+            </a>
+            <button class="btn btn-primary" onclick="runAgent()">
+                <i class="bi bi-play-fill"></i>
+                Run Agent
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block context_area %}
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 max-w-6xl mx-auto w-full">
+    <!-- Agent Status & Info -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="text-center">
+            <div class="text-2xl font-bold text-blue-600">{{ agent.status|title }}</div>
+            <div class="text-sm text-gray-500">Status</div>
+        </div>
+        <div class="text-center">
+            <div class="text-2xl font-bold text-green-600">{{ agent.tasks|length or 0 }}</div>
+            <div class="text-sm text-gray-500">Tasks</div>
+        </div>
+        <div class="text-center">
+            <div class="text-2xl font-bold text-purple-600">{{ agent.knowledge_base|length or 0 }}</div>
+            <div class="text-sm text-gray-500">Knowledge Items</div>
+        </div>
+    </div>
+
+    <!-- Agent Information -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Basic Information -->
+        <div class="space-y-6">
+            <h3 class="text-lg font-semibold text-gray-900 border-b pb-2">Basic Information</h3>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                    <div class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md">
+                        {{ agent.category or 'General' }}
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Version</label>
+                    <div class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md">
+                        {{ agent.version or '1.0.0' }}
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Created</label>
+                    <div class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md">
+                        {{ moment(agent.created_at).format('MMMM Do YYYY, h:mm a') if agent.created_at else 'Unknown' }}
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Last Updated</label>
+                    <div class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md">
+                        {{ moment(agent.updated_at).format('MMMM Do YYYY, h:mm a') if agent.updated_at else 'Unknown' }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Assistant Connection -->
+            {% if agent.assistant_tool_id %}
+            <div>
+                <h4 class="text-md font-medium text-gray-900 mb-3">Assistant Connection</h4>
+                <div class="px-3 py-2 bg-green-50 border border-green-200 rounded-md flex items-center gap-2">
+                    <i class="bi bi-check-circle text-green-600"></i>
+                    <span class="text-green-800">Connected to Assistant Tool</span>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- System Prompt -->
+        <div class="space-y-6">
+            <h3 class="text-lg font-semibold text-gray-900 border-b pb-2">System Configuration</h3>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">System Prompt</label>
+                <div class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md min-h-[120px]">
+                    {% if agent.system_prompt %}
+                        <pre class="whitespace-pre-wrap text-sm">{{ agent.system_prompt }}</pre>
+                    {% else %}
+                        <span class="text-gray-500 italic">No system prompt defined</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Global Variables -->
+            {% if agent.global_variables %}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Global Variables</label>
+                <div class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-md">
+                    <pre class="text-sm">{{ agent.global_variables|tojson(indent=2) }}</pre>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-8">
+    <!-- Tasks Section -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-semibold text-gray-900">Tasks</h2>
+            <a href="{{ url_for('agents.edit_agent', agent_id=agent.id) }}#tasks" 
+               class="btn btn-outline btn-sm">
+                <i class="bi bi-plus-lg"></i>
+                Add Task
+            </a>
+        </div>
+
+        {% if agent.tasks %}
+        <div class="space-y-4">
+            {% for task in agent.tasks %}
+            <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                        <h3 class="font-medium text-gray-900">{{ task.name or 'Untitled Task' }}</h3>
+                        {% if task.description %}
+                        <p class="text-sm text-gray-600 mt-1">{{ task.description }}</p>
+                        {% endif %}
+                        <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                            <span>Type: {{ task.type or 'Unknown' }}</span>
+                            <span>Status: {{ task.status or 'Pending' }}</span>
+                            {% if task.tool_id %}
+                            <span>Tool: {{ task.tool_id[:8] }}...</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        {% if task.status == 'pending' %}
+                        <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">Pending</span>
+                        {% elif task.status == 'running' %}
+                        <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">Running</span>
+                        {% elif task.status == 'completed' %}
+                        <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Completed</span>
+                        {% elif task.status == 'failed' %}
+                        <span class="px-2 py-1 bg-red-100 text-red-800 text-xs rounded-full">Failed</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <i class="bi bi-list-task text-4xl text-gray-300 mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">No Tasks Defined</h3>
+            <p class="text-gray-500 mb-4">Add tasks to define what this agent can do.</p>
+            <a href="{{ url_for('agents.edit_agent', agent_id=agent.id) }}#tasks" 
+               class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i>
+                Add First Task
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Knowledge Base Section -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-semibold text-gray-900">Knowledge Base</h2>
+            <a href="{{ url_for('agents.edit_agent', agent_id=agent.id) }}#knowledge" 
+               class="btn btn-outline btn-sm">
+                <i class="bi bi-plus-lg"></i>
+                Add Knowledge
+            </a>
+        </div>
+
+        {% if agent.knowledge_base %}
+        <div class="space-y-4">
+            {% for item in agent.knowledge_base %}
+            <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                        <h3 class="font-medium text-gray-900">{{ item.title or 'Untitled Knowledge' }}</h3>
+                        {% if item.description %}
+                        <p class="text-sm text-gray-600 mt-1">{{ item.description }}</p>
+                        {% endif %}
+                        {% if item.content %}
+                        <div class="mt-2 p-3 bg-gray-50 rounded text-sm">
+                            {{ item.content[:200] }}{% if item.content|length > 200 %}...{% endif %}
+                        </div>
+                        {% endif %}
+                        <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                            <span>Type: {{ item.type or 'Text' }}</span>
+                            {% if item.source %}
+                            <span>Source: {{ item.source }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <i class="bi bi-book text-4xl text-gray-300 mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">No Knowledge Base</h3>
+            <p class="text-gray-500 mb-4">Add knowledge items to provide context for this agent.</p>
+            <a href="{{ url_for('agents.edit_agent', agent_id=agent.id) }}#knowledge" 
+               class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i>
+                Add First Knowledge
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Files Section -->
+    {% if agent.files %}
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-6">Files</h2>
+        
+        <div class="space-y-3">
+            {% for file in agent.files %}
+            <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                <div class="flex items-center gap-3">
+                    <i class="bi bi-file-earmark text-gray-400"></i>
+                    <div>
+                        <div class="font-medium text-gray-900">{{ file.filename or 'Unknown File' }}</div>
+                        <div class="text-sm text-gray-500">
+                            {% if file.size %}Size: {{ file.size | filesizeformat }}{% endif %}
+                            {% if file.uploaded_at %}• Uploaded: {{ moment(file.uploaded_at).fromNow() }}{% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    {% if file.download_url %}
+                    <a href="{{ file.download_url }}" class="btn btn-outline btn-sm">
+                        <i class="bi bi-download"></i>
+                        Download
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Run Statistics -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-6">Run Statistics</h2>
+        
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="text-center p-4 bg-gray-50 rounded-lg">
+                <div class="text-2xl font-bold text-blue-600">{{ agent.total_runs or 0 }}</div>
+                <div class="text-sm text-gray-500">Total Runs</div>
+            </div>
+            <div class="text-center p-4 bg-gray-50 rounded-lg">
+                <div class="text-2xl font-bold text-green-600">{{ agent.completed_runs or 0 }}</div>
+                <div class="text-sm text-gray-500">Completed</div>
+            </div>
+            <div class="text-center p-4 bg-gray-50 rounded-lg">
+                <div class="text-2xl font-bold text-yellow-600">{{ agent.active_runs or 0 }}</div>
+                <div class="text-sm text-gray-500">Active</div>
+            </div>
+            <div class="text-center p-4 bg-gray-50 rounded-lg">
+                <div class="text-2xl font-bold text-red-600">{{ agent.failed_runs or 0 }}</div>
+                <div class="text-sm text-gray-500">Failed</div>
+            </div>
+        </div>
+
+        {% if agent.last_run %}
+        <div class="mt-6 p-4 border border-gray-200 rounded-lg">
+            <h3 class="font-medium text-gray-900 mb-2">Last Run</h3>
+            <div class="text-sm text-gray-600">
+                <div>Started: {{ moment(agent.last_run.started_at).format('MMMM Do YYYY, h:mm a') }}</div>
+                {% if agent.last_run.completed_at %}
+                <div>Completed: {{ moment(agent.last_run.completed_at).format('MMMM Do YYYY, h:mm a') }}</div>
+                {% endif %}
+                <div>Status: {{ agent.last_run.status or 'Unknown' }}</div>
+            </div>
+        </div>
+        {% else %}
+        <div class="mt-6 text-center py-6 bg-gray-50 rounded-lg">
+            <p class="text-gray-500">No runs yet</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Run Agent Modal -->
+<div class="modal fade" id="runAgentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Run {{ agent.name }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info mb-4">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Agent execution system will be implemented in Sprint 18-19. This is a preview of the run interface.
+                </div>
+                
+                <div class="mb-4">
+                    <h6 class="mb-3">Agent Tasks ({{ agent.tasks|length }})</h6>
+                    {% if agent.tasks %}
+                    <div class="space-y-2">
+                        {% for task in agent.tasks %}
+                        <div class="p-3 border border-gray-200 rounded">
+                            <div class="font-medium">{{ task.name or 'Untitled Task' }}</div>
+                            <div class="text-sm text-gray-600">{{ task.description or 'No description' }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-gray-500">No tasks defined. Add tasks to enable agent execution.</p>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" disabled>
+                    <i class="bi bi-play-fill me-1"></i>
+                    Run Agent (Coming Soon)
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function runAgent() {
+    // For now, show the modal with preview
+    const modal = new bootstrap.Modal(document.getElementById('runAgentModal'));
+    modal.show();
+}
+
+// Add moment.js helper for date formatting
+function moment(date) {
+    if (!date) return { format: () => 'Unknown', fromNow: () => 'Unknown' };
+    const d = new Date(date);
+    return {
+        format: (format) => {
+            if (format === 'MMMM Do YYYY, h:mm a') {
+                return d.toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true
+                });
+            }
+            return d.toLocaleDateString();
+        },
+        fromNow: () => {
+            const now = new Date();
+            const diff = now - d;
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            if (days === 0) return 'Today';
+            if (days === 1) return 'Yesterday';
+            if (days < 7) return `${days} days ago`;
+            return d.toLocaleDateString();
+        }
+    };
+}
+
+// Make moment available globally for template use
+window.moment = moment;
+</script>
+{% endblock %}

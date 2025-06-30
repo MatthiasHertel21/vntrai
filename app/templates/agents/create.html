@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Create Agent{% endblock %}
+
+{% block page_header %}
+<div class="page-header max-w-4xl mx-auto w-full">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Create Agent</h1>
+            <p class="text-gray-600">Create a new AI agent to automate tasks</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{{ url_for('agents.list_agents') }}" class="btn btn-outline">
+                <i class="bi bi-arrow-left"></i>
+                Back to Agents
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto w-full">
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <form method="POST" class="space-y-6">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <!-- Basic Information -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">Basic Information</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
+                            Agent Name <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" 
+                               id="name" 
+                               name="name" 
+                               required
+                               maxlength="100"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="e.g., Content Creator Assistant">
+                        <p class="text-xs text-gray-500 mt-1">Choose a descriptive name for your agent</p>
+                    </div>
+                    
+                    <div>
+                        <label for="category" class="block text-sm font-medium text-gray-700 mb-1">
+                            Category
+                        </label>
+                        <select id="category" 
+                                name="category"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="General">General</option>
+                            <option value="Content">Content & Writing</option>
+                            <option value="Data">Data Analysis</option>
+                            <option value="Marketing">Marketing</option>
+                            <option value="Research">Research</option>
+                            <option value="Support">Customer Support</option>
+                            <option value="Development">Development</option>
+                            <option value="Finance">Finance</option>
+                            <option value="HR">Human Resources</option>
+                            <option value="Education">Education</option>
+                            <option value="Custom">Custom</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Categorize your agent for better organization</p>
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
+                        Description
+                    </label>
+                    <textarea id="description" 
+                              name="description" 
+                              rows="3"
+                              maxlength="1000"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              placeholder="Describe what this agent does and its primary purpose..."></textarea>
+                    <p class="text-xs text-gray-500 mt-1">Provide a clear description of the agent's purpose and capabilities</p>
+                </div>
+            </div>
+
+            <!-- Agent Features Preview -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">What You Can Configure</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                        <div class="flex items-center mb-2">
+                            <i class="bi bi-cpu text-blue-500 mr-2"></i>
+                            <h4 class="font-medium text-gray-900">AI Assistant</h4>
+                        </div>
+                        <p class="text-sm text-gray-600">Connect to OpenAI Assistant for AI-powered task execution</p>
+                    </div>
+                    
+                    <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                        <div class="flex items-center mb-2">
+                            <i class="bi bi-list-task text-green-500 mr-2"></i>
+                            <h4 class="font-medium text-gray-900">Tasks</h4>
+                        </div>
+                        <p class="text-sm text-gray-600">Define AI tasks and tool tasks for automated workflows</p>
+                    </div>
+                    
+                    <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                        <div class="flex items-center mb-2">
+                            <i class="bi bi-brain text-purple-500 mr-2"></i>
+                            <h4 class="font-medium text-gray-900">Knowledge Base</h4>
+                        </div>
+                        <p class="text-sm text-gray-600">Build a knowledge base for context and learning</p>
+                    </div>
+                    
+                    <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                        <div class="flex items-center mb-2">
+                            <i class="bi bi-file-earmark text-orange-500 mr-2"></i>
+                            <h4 class="font-medium text-gray-900">File Management</h4>
+                        </div>
+                        <p class="text-sm text-gray-600">Upload and manage files for agent use</p>
+                    </div>
+                    
+                    <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                        <div class="flex items-center mb-2">
+                            <i class="bi bi-code-square text-red-500 mr-2"></i>
+                            <h4 class="font-medium text-gray-900">Variables</h4>
+                        </div>
+                        <p class="text-sm text-gray-600">Set global variables for reusable context</p>
+                    </div>
+                    
+                    <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                        <div class="flex items-center mb-2">
+                            <i class="bi bi-play-circle text-indigo-500 mr-2"></i>
+                            <h4 class="font-medium text-gray-900">Execution</h4>
+                        </div>
+                        <p class="text-sm text-gray-600">Run agent sessions and track results</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                <a href="{{ url_for('agents.list_agents') }}" class="btn btn-outline">
+                    Cancel
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-plus-lg mr-2"></i>
+                    Create Agent
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Character counter for description
+const descriptionField = document.getElementById('description');
+if (descriptionField) {
+    const maxLength = 1000;
+    
+    // Create character counter
+    const counter = document.createElement('div');
+    counter.className = 'text-xs text-gray-400 mt-1 text-right';
+    counter.textContent = `0 / ${maxLength}`;
+    descriptionField.parentNode.insertBefore(counter, descriptionField.nextSibling.nextSibling);
+    
+    // Update counter on input
+    descriptionField.addEventListener('input', function() {
+        const currentLength = this.value.length;
+        counter.textContent = `${currentLength} / ${maxLength}`;
+        
+        if (currentLength > maxLength * 0.9) {
+            counter.className = 'text-xs text-orange-500 mt-1 text-right';
+        } else {
+            counter.className = 'text-xs text-gray-400 mt-1 text-right';
+        }
+    });
+}
+
+// Custom category input
+const categorySelect = document.getElementById('category');
+if (categorySelect) {
+    categorySelect.addEventListener('change', function() {
+        if (this.value === 'Custom') {
+            const customInput = document.createElement('input');
+            customInput.type = 'text';
+            customInput.name = 'category';
+            customInput.className = this.className;
+            customInput.placeholder = 'Enter custom category...';
+            customInput.maxLength = 50;
+            
+            this.parentNode.replaceChild(customInput, this);
+            customInput.focus();
+        }
+    });
+}
+</script>
+{% endblock %}

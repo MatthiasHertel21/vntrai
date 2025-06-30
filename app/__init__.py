@@ -58,11 +58,13 @@ def create_app(config_class=Config):
     from app.routes.integrations import integrations_bp
     from app.routes.tools import tools_bp
     from app.routes.test import test_bp
+    from app.routes.agents import agents_bp
     
     app.register_blueprint(main.bp)
     app.register_blueprint(integrations_bp)
     app.register_blueprint(tools_bp)
     app.register_blueprint(test_bp)
+    app.register_blueprint(agents_bp, url_prefix='/agents')
     
     # Logging setup
     if not app.debug:

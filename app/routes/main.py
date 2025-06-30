@@ -19,8 +19,9 @@ def flows():
 
 @bp.route('/agents')
 def agents():
-    """Agents Seite."""
-    return render_template('agents.html')
+    """Leitet zur neuen Agents-Verwaltung weiter"""
+    from flask import redirect, url_for
+    return redirect(url_for('agents.list_agents'))
 
 @bp.route('/prompts')
 def prompts():
