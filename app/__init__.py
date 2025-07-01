@@ -44,6 +44,20 @@ def create_app(config_class=Config):
         except (ValueError, TypeError):
             return str(value)
     
+    @app.template_filter('format_timestamp')
+    def format_timestamp_filter(value):
+        """Formatiert einen Unix-Timestamp."""
+        if not value:
+            return ""
+        try:
+            if isinstance(value, (int, float)):
+                dt = datetime.fromtimestamp(value)
+                return dt.strftime("%d.%m.%Y %H:%M")
+            else:
+                return str(value)
+        except (ValueError, TypeError):
+            return str(value)
+    
     # Error handlers
     @app.errorhandler(404)
     def not_found_error(error):
@@ -59,12 +73,16 @@ def create_app(config_class=Config):
     from app.routes.tools import tools_bp
     from app.routes.test import test_bp
     from app.routes.agents import agents_bp
+    from app.routes.tasks import tasks_bp
+    from app.routes.assistants import assistants_bp
     
     app.register_blueprint(main.bp)
     app.register_blueprint(integrations_bp)
     app.register_blueprint(tools_bp)
     app.register_blueprint(test_bp)
     app.register_blueprint(agents_bp, url_prefix='/agents')
+    app.register_blueprint(tasks_bp, url_prefix='/tasks')
+    app.register_blueprint(assistants_bp, url_prefix='/assistants')
     
     # Logging setup
     if not app.debug:

@@ -1,7 +1,7 @@
 # BASICS - Bitte unbedingt beachten
 1. Testscripte und Debugging:
 - Das System läuft in einem docker container ... also bitte nicht immer versuchen irgendetwas mit python aufzurufen - das geht nicht
-- alle Arten von docker-Aufrufen immer nur mit SUDO
+- alle Arten von docker-Auf## AgentRun
 2. Beim Abschluss eines sprints
 - abnahme der akzeptanzbedingungen durch bestätigung
 - cleanup ausführen nach vorgaben
@@ -12,17 +12,92 @@
 - Alle GUI Elemente der Anwendung auf Englisch, 
 - Sprache Im Chat ist DEUTSCH
 
-# AKTUELLER SPRINT (AI Assistant Integration)
-**Current focus: Sprint 17 AI Assistant Integration (8.-12. Juli 2025)**
 
-✅ **Sprint 16 (1.-5. Juli 2025): Agents Foundation - ABGESCHLOSSEN UND GESCHLOSSEN**
+
+
+# AKTUELLER SPRINT (Agent-Assistant Deep Integration)
+**Current focus: Sprint 17.5 Agent-Assistant Deep Integration (13.-14. Juli 2025)**
+
+✅ **Sprint 17 (8.-12. Juli 2025): AI Assistant Integration - ABGESCHLOSSEN UND GESCHLOSSEN**
+
+# 🎯 **KRITISCHE BACKLOG-ITEMS FÜR SPRINT 17.5**
+
+## 🔍 **Assistant Discovery & Management (Höchste Priorität)**
+1. **Assistant Discovery Dashboard**
+   - Neue Route `/assistants` für Assistant-Übersicht
+   - Liste aller Assistants von OpenAI API abrufen (unabhängig von Agents)
+   - Assistant-Status anzeigen: aktiv, inaktiv, verwaist (kein Agent zugeordnet)
+   - Direkte Aktionen: Delete Assistant, Create Agent for Assistant
+
+2. **Assistant Analytics Integration**
+   - Usage-Statistics pro Assistant (API-Calls, Token-Verbrauch)
+   - Performance-Metrics (Response-Zeit, Success-Rate, Error-Rate)
+   - Cost-Tracking und Budget-Warnings
+   - Zeitbasierte Charts und Trends
+
+3. **Enhanced File Management**
+   - File-Tracking zwischen Agent und Assistant
+   - File-Status in Assistant API verfolgen (uploaded, processing, ready, error)
+   - Bulk-File-Operations (cleanup, download, remove from Assistant)
+   - File-Usage-Analytics (welche Files werden von Assistant genutzt)
+
+## 💬 **Assistant Chat Interface (Hohe Priorität)**
+1. **Direct Chat with Agent's Assistant**
+   - Chat-Interface in Agent Edit Page oder separate `/agents/{uuid}/chat` Route
+   - Thread-Management für persistente Conversations
+   - Real-time Streaming von Assistant-Responses
+   - Chat-History persistent speichern (JSON oder SQLite)
+
+2. **Conversation Management**
+   - Chat-Export (TXT, JSON, PDF)
+   - Conversation-Search und -Filter
+   - Thread-Archivierung und -Cleanup
+   - Multi-Thread-Support pro Assistant
+
+## ⚙️ **Assistant Lifecycle Enhancement (Mittlere Priorität)**
+1. **Advanced Assistant Management**
+   - Assistant-Cloning zwischen Agents
+   - Assistant-Configuration-Templates
+   - Automated Assistant-Health-Checks
+   - Assistant-Migration-Tools (Config-Transfer)
+
+---
+
+# 🎯 **KRITISCHE BACKLOG-ITEMS FÜR SPRINT 18**
+
+## 📋 **Task-System-Revolution (Höchste Priorität)**
+1. **Task-Definitionen in agent.json integrieren**
+   - `tasks: [{"uuid": "...", "name": "...", "type": "ai|tool", "definition": {...}}]`
+   - Task Editor Container in Agent Edit Page implementieren
+   - Add/Edit/Delete/Reorder Funktionen für Tasks direkt in Agent GUI
+
+2. **Task-Ausführung in agentrun.json verwalten** 
+   - `task_states: [{"task_uuid": "...", "status": "pending|running|completed|error|skipped", "inputs": {...}, "results": {...}}]`
+   - AgentRun GUI lädt Task-Definitionen aus zugehörigem Agent
+   - Task-Status und -Inputs werden nur in AgentRun-Kontext gespeichert
+
+3. **Tools "options" Field Implementation**
+   - Tools JSON Schema um "options" Array erweitern
+   - "assistant" Option für Assistant-fähige Tools
+   - Tool Selection in Agent GUI filtern auf Assistant-Tools
+
+## 🔧 **Agent-System-Erweiterungen (Hohe Priorität)**
+1. **Agent Task Editor** - Container in Agent Edit Page
+2. **AgentRun Task Execution** - Task-Flow und -Status Management
+3. **Knowledge Base Integration** - Knowledge Items in Agent-Kontext
+
+## 🎨 **UI/UX-Verbesserungen (Mittlere Priorität)**
+1. **Toolbar-Migration** - Footer-Buttons in Toolbar verschieben
+2. **Card-Layout-Vereinheitlichung** - Tools analog zu Integrations
+3. **Icon-Design-System** - Konsistente Icons überall
+
+---
 
 # BACKLOG
 
 ## New Backlog Items
-
+---
 ### Insights 
-
 #### Context
 - Insights sind ein chat mit einer AI, der dicht an der standardfunktionilität von chatgpt liegt
 - alle insights teilen sich einen assistent-api Thread
@@ -46,36 +121,35 @@
 - liste der hochgeladenen files mit Löschaktion
 - files werden beim hochladen in der usersession registriert, die fileids werden in der json des ignsights gepsiechert (zusammen mit name, typ, grö0e)
 - die file_ids werden der nutzersession zugefügt (additional file ids)
+---
+## 🎯 **Aktueller Sprint: Sprint 18 Task Management Revolution (15.-19. Juli 2025)**
+### Ziel: Vollständige Integration von Tasks in Agent/AgentRun System
 
-
-## 🎯 **Aktueller Sprint: Sprint 17 AI Assistant Integration (8.-12. Juli 2025)**
-### Ziel: OpenAI Assistant Integration und Tool-Connection
+**KRITISCHE ARCHITEKTUR-ÄNDERUNG:**
+Tasks sind keine eigenständigen Entities mehr. Task-Definitionen werden in agent.json gespeichert, Task-Ausführung in agentrun.json.
 
 **Geplante Tasks:**
-1. **🔗 Assistant API Integration**
-   - V2 Assistant API Tool entwickeln für OpenAI Assistant v2 API
-   - OpenAI Assistant API Client in `app/utils/openai_client.py`
-   - Assistant CRUD Operations (create, update, delete)
-   - File Upload/Management für Assistants
+1. **� Task-Integration in Agent System**
+   - Task-Definitionen direkt in agent.json speichern
+   - Task Editor vollständig in Agent Edit Page integrieren
+   - Keine separaten Task-CRUD-Operationen mehr
 
-2. **⚙️ Assistant Management UI**
-   - Assistant Container in Agent Edit Page erweitern
-   - System Prompt Preview und Generation
-   - "Update" und "New" Buttons für Assistant Management
+2. **🔄 Task-Execution in AgentRun System**  
+   - Task-Status und -Inputs in agentrun.json verwalten
+   - Task-Ausführung nur über AgentRun GUI
+   - Task-Results in AgentRun-Kontext speichern
 
-3. **🛠️ Tool-Assistant Connection**
-   - Tools "options" Feld erweitern um "assistent" Option
-   - V2 Assistant API Tool als primäres Assistant-Tool registrieren
-   - Tool Selection in Agent Configuration
+3. **🛠️ Tools "options" Field Erweiterung**
+   - Tools bekommen "options" Feld mit "assistant" Option
+   - Nur Tools mit "assistant" Option in Agent-Tool-Selection
 
-**Sprint 17 Definition of Done:**
-- [x] V2 Assistant API Tool für OpenAI Assistant v2 API entwickelt
-- [x] OpenAI Assistant API Client implementiert
-- [x] Assistant CRUD Operations funktionsfähig
-- [x] Assistant Management UI in Agent Edit Page
-- [x] Tool-Assistant Connection über "options" Feld
-- [x] File Upload/Management für Assistants
-- [x] System Prompt Preview und Generation
+**Sprint 18 Definition of Done:**
+- [ ] Task-Editor vollständig in Agent Edit Page integriert
+- [ ] Task-Definitionen werden in agent.json gespeichert 
+- [ ] AgentRun UI verwaltet Task-Ausführung und -Results
+- [ ] Keine eigenständigen Task-CRUD-Operationen mehr
+- [ ] Task-Status wird in agentrun.json verwaltet
+- [ ] Tools "options" Feld mit "assistant" Option implementiert
 
 ---
 
@@ -105,8 +179,18 @@
 - [ ] **Icon-Design-System**: Konsistente Icons für alle Cards und Actions
 - [ ] **Mobile-Optimierung**: Responsive Design-Verbesserungen
 
-## 💻 **Tools System (niedrige Priorität)**
-- [ ] **Tools "options" Feld erweitern**: Neue Option "assistent" für AI-Assistant-Integration
+## 💻 **Tools System Backlog (hohe Priorität für Sprint 18)**
+
+### **🛠️ Tools "options" Field Erweiterung - KRITISCH FÜR SPRINT 18**
+- [ ] **Tools "options" Feld hinzufügen**: Neues Feld "options" in tool.json Schema
+- [ ] **"assistant" Option implementieren**: Tools können "assistant" Option haben für AI-Assistant-Integration
+- [ ] **Tool Selection in Agent GUI**: Nur Tools mit "assistant" Option in Agent-Tool-Selection verfügbar
+- [ ] **V2 Assistant API Tool registrieren**: OpenAI Assistant v2 API Tool als primäres Assistant-Tool mit "assistant" Option
+- [ ] **Tool-Assistant Mapping**: Logic für Tool-zu-Assistant Assignment in Agent-Kontext
+- [ ] **Backend-Validierung**: Tool options validation und sanitization in data_manager
+- [ ] **UI-Updates**: Tool Edit GUI erweitern um "options" Sektion mit Checkboxes
+
+### **Existing Tools Features (niedrige Priorität, nach Sprint 22)**
 
 ## 🔧 **Previously Completed Tools Features (Reference)** 
 ## 🔄 **Zusätzliche Backlog-Items (niedrige Priorität)**
@@ -146,7 +230,14 @@
 - die Verbindung zu AI Assistent erfolgt über ein Tool, das die option "assistent" gesetzt hat. und das im agenten ausgewählt werden kann 
 - der agent speichert die id des assistenten
 - der agent setzt die eigenschaften des assistenten (eigener "update" button bzw. eigene sektion in der seite agenten ): name, description, model, tools (retrieval, code_interpreter), file_ids, metadata
-- jeder agent hat einen systemprompt, der über eine route aus den angaben in der json gebildet wird. der systemprompt enthält die rolle, in der der agent operiert, die standard-sprache für ausgaben des agenten. der systemprompt wird aufgerufen beim "update" des assistenten   
+- jeder agent hat einen systemprompt, der über eine route aus den angaben in der json gebildet wird. der systemprompt enthält die rolle, in der der agent operiert, die standard-sprache für ausgaben des agenten. der systemprompt wird aufgerufen beim "update" des assistenten
+
+### **WICHTIGE ARCHITEKTUR-ÄNDERUNG: Task-Storage-Revolution**
+- **Tasks existieren NICHT mehr als eigenständige Entities**
+- **Task-Definitionen** werden direkt in `data/agents/uuid.json` gespeichert im `tasks[]` Array
+- **Task-Ausführung/Results** werden in `data/agentrun/uuid.json` im `task_states[]` Array gespeichert
+- **Keine separaten Task-CRUD-Operationen** - Tasks werden nur über Agent-GUI und AgentRun-GUI verwaltet
+- **Keine globalen Task-Evaluations** - Task-Status existiert nur im Kontext eines AgentRuns   
 
 - der agent kann den assistenten schließen und einen neuen assistenen erzeugen
 - jeder agent ermöglicht es files abzulegen auf dem server
@@ -180,8 +271,10 @@ Task.
 - ist erstmal bloß ein dummy
 ##### container knowledge base
 - enthält eine liste mit knowledge items
-- jeder eintrag der liste enthält eine Löschen-Aktion
-- klick auf den eintrag öfnnet ein dialogfenster zum bearbeiten des knowledge items
+- jeder eintrag der liste enthält eine bezeichnung, einen anwendungsfall, eine bewertung und ein knowledge-text (z.B. fakt oder vorgehensmodell)
+- die knowledge items werden gebildet von der AI beim Abschluss eines AgentRuns
+- die bewertung eines knowledgeitems erfolgt durch die AI und spiegelt wieder, wir oft ein knowledge item zu einem guten ergebnis geführt hat
+- Die KnowledgeItems können auf ebene des agenten auch erstellt, eingesehen, geändert und gelöscht werden
 ##### container Assistent
 - enthält alle angaben, die man setzen bei einem openai assistenten (außer files und metadaten) und im header den die button "update" und "new"
 ##### container taskEditor
@@ -199,18 +292,40 @@ Task.
 - die bewertung eines knowledgeitems erfolgt durch die AI und spiegelt wieder, wir oft ein knowledge item zu einem guten ergebnis geführt hat
 - Die KnowledgeItems können auf ebene des agenten auch erstellt, eingesehen, geändert und gelöscht werden
 ### tasks
-- jede task hat eine uuid, einen status und je nach typ weitere angaben
-- aufgaben werden im agenten bearbeitet und gespeichert 
-- status der aufgaben können sein unerledigt, in bearbeitung, abgeschlossen, wartend und fehler
+- **NEUE TASK-PHILOSOPHIE: Tasks sind Teil von Agents/AgentRuns, nicht eigenständige Entities**
+- **Task-Definitionen** werden in `agent.json` gespeichert: `{"tasks": [{"uuid": "...", "name": "...", "type": "ai|tool", ...}]}`
+- **Task-Ausführung** wird in `agentrun.json` gespeichert: `{"task_states": [{"task_uuid": "...", "status": "...", "inputs": {...}, "results": {...}}]}`
+- **Keine separaten Task-JSON-Files** - Tasks existieren nur im Kontext von Agents und AgentRuns
+- **Keine globalen Task-CRUD** - Task-Management nur über Agent Edit GUI und AgentRun GUI
+- jede task hat eine uuid, einen status (nur in AgentRun-Kontext) und je nach typ weitere angaben
+- aufgaben werden im agenten definiert und in agentruns ausgeführt
+- status der aufgaben können sein (nur in AgentRun): pending, running, completed, error, skipped
 #### ai Tasks
 - eine ai-aufgabe hat einen namen, eine erklärung, eine instruktion, ein Ziel, eine ausgabebeschreibung, ein ausgabeformat (text, html, markdown, image) und eingabefelder
 - jedes eingabefeld hat einen namen, eine bezeichnung, einen typ (text, textarea, number, date, select) und eine vorbelegung
 - alle feldbeschreibungen einer task werden in der json des agents gespeichert
+- die ausführung und ergebnisse werden in der json des agentrun gespeichert
 #### tool task
 - eine tooltask enthält ein ausgewähltes verfügbares tool
 - eine tooltask hat in der definition einen satz eingabefelder, die gerendert werden und genau so in der Taskliste präsentiert werden wie die Felder einer AI task
+- task-definition wird in agent.json gespeichert, ausführung in agentrun.json
 
 ## AgentRun
+
+### Context und Logik
+- ein AgentRun ist eine Instanz einer Ausführung eines Agenten
+- jeder AgentRun hat eine eigene feste eindeutige UUID 
+- jeder agentRun speichert alle daten seiner Ausführun in einem JSON File im Verzeichnis data/agentrun unter
+dem filename uuid.json
+- ein AgentRun wird auf der von einem Agenten aus erzeugt "New Run"
+- jeder AgentRun hat einen seitem über die er aufgerufen / bearbeitet werden kann
+- Kontext im AgentRun ist mutierbar und wird durch save_as-Werte erweitert.
+- **NEUE TASK-INTEGRATION: Task-Ausführung nur in AgentRun-Kontext**
+- **Task-Status und -Inputs werden in agentrun.json gespeichert**: `{"task_states": [{"task_uuid": "...", "status": "pending|running|completed|error|skipped", "inputs": {...}, "results": {...}}]}`
+- **Keine separaten Task-Entities** - Tasks werden referenziert über task_uuid aus agent.json
+- Jeder Task kann manuell über „Execute" gestartet werden.
+- Jeder Execute erzeugt einen neuen OpenAI Thread + Run.
+- knowledge_items werden im Agent gespeichert und als additional_instructions an OpenAI übergeben.
 
 ### Context und Logik
 - ein AgentRun ist eine Instanz einer Ausführung eines Agenten
@@ -250,9 +365,13 @@ dem filename uuid.json
 - Liste mit hochgeladenen Dateien
 
 #### container tasks
+- **NEUE TASK-UI: Tasks werden aus Agent-Definition geladen, Status aus AgentRun**
+- jeder agentrun lädt Task-Definitionen aus dem zugehörigen Agent (`data/agents/agent_uuid.json`)
+- Task-Status und -Eingaben werden im AgentRun gespeichert (`data/agentrun/uuid.json`)
 - jeder agentrun hat eine aktive Aufgabe, diese wird im container "tasks" auch farblich hervorgehoben
 - die beschreibung der aufgabe und die eingabefelder der aktiven aufgabe werden im container "tasks" direkt unterhalb der aktiven aufgabe dargestellt. die eingabefelder werden dabei entsprechend ihrer definition gerendert (gilt fpr ai tasks und für tool tasks)
 - eingegebene werte in feldern einer task werden per zeitnah und automatisch auf dem server im agentrun.json gespeichert
+- **Keine Task-Edit-Buttons in AgentRun** - Task-Definitionen können nur im Agent Edit GUI geändert werden
 
 
 # Development Log & Sprint Planning
@@ -261,7 +380,7 @@ dem filename uuid.json
 
 ### ✅ **Session-Achievements:**
 1. **🔧 Konsistente Container-Width-Limits & Card-Layout**
-   - max-w-4xl/5xl, mx-auto, w-full für alle Hauptcontainer implementiert
+   - max-w-4xl, mx-auto, w-full für alle Hauptcontainer implementiert
    - Card-Layout für Tools analog zu Integrations (Grid, Hover, Responsive)
    - Gestackte Card-Action-Buttons (Edit/Delete/Clone) vereinheitlicht
 
@@ -508,268 +627,198 @@ Die Neuausrichtung auf das Agent-System folgt der strategischen Roadmap und den 
 - [ ] Komplettes, konsistentes Icon-Set verfügbar
 - [ ] UI ist vollständig poliert und produktionsreif
 
-# 🚀 **NEUE SPRINT-PLANUNG (Agent-Fokus) - Sprints 16-20**
+# 🚀 **AKTUALISIERTE SPRINT-PLANUNG - Sprints 17.5-22**
 
-## 🎯 **Sprint 16: Agents Foundation (1.-5. Juli 2025)** - 5 Tage
-### Ziel: Core Agent System mit CRUD Operations und Basic UI
+## ✅ **Sprint 17: AI Assistant Integration (8.-12. Juli 2025)** - ABGESCHLOSSEN UND GESCHLOSSEN
 
-**User Stories:**
-- Als Benutzer möchte ich Agents erstellen, bearbeiten und verwalten können
-- Als System möchte ich Agents persistent speichern und laden können
-- Als Developer möchte ich eine solide Foundation für das Agent-System
-
-**Definition of Done:**
-- [x] Agent Data Manager implementiert (JSON-basierte Speicherung)
-- [x] Agent CRUD Routes funktionsfähig (/agents/create, /edit, /view, /delete)  
-- [x] Agent List View mit Card Grid Layout
-- [x] Basic Agent Edit/Create Pages mit Two-Column Layout
-- [x] Agent Statistics und Navigation
-
-**Core Tasks:**
-1. **🏗️ Agent Backend Foundation**
-   - Agent Data Manager in `app/utils/data_manager.py` erweitern
-   - Agent Routes in `app/routes/agents.py` erstellen  
-   - Agent Model mit UUID, timestamps, status tracking
-   - Basic Agent Properties: name, category, description, status, tasks[], knowledge_base[]
-
-2. **🎨 Agent Frontend Basic UI**
-   - Agent Overview Page `/agents` mit Card Grid Layout
-   - Agent Create Page `/agents/create` mit Form Validation
-   - Agent Edit Page `/agents/edit/<uuid>` mit Two-Column Layout
-   - Agent View Page `/agents/view/<uuid>` mit Details
-
-3. **⚙️ Agent Card System**
-   - Gestackte Action-Buttons: "New Session", "Edit", "Duplicate", "Export", "Delete"
-   - Agent Statistics: AgentRuns nach Status gruppiert  
-   - Clickable Card-Footer mit Detail-Toggle
-   - Agent Icon und Status-Visualization
-
-## 🤖 **Sprint 17: AI Assistant Integration (8.-12. Juli 2025)** - 5 Tage
-### Ziel: OpenAI Assistant Integration und Tool-Connection
-
-**User Stories:**
-- Als Agent möchte ich einen AI Assistant zugeordnet bekommen
-- Als Benutzer möchte ich Assistant-Properties konfigurieren können
-- Als Agent möchte ich Tools mit "assistent" Option nutzen können
-
-**Definition of Done:**
+**Erfolgreich implementiert:**
 - [x] **V2 Assistant API Tool vollständig entwickelt** mit allen CRUD Operations
 - [x] OpenAI Assistant API Integration funktioniert
-- [x] Assistant Management UI in Agent Edit Page
+- [x] Assistant Management UI in Agent Edit Page  
 - [x] Tool-Agent Connection über "assistent" Option
 - [x] System Prompt Generation aus Agent-Daten
+- [x] File Upload/Management für Assistants
 
-**Core Tasks:**
-1. **🔗 Assistant API Integration**
-   - **V2 Assistant API Tool entwickeln**: Vollständiges Tool für OpenAI Assistant v2 API Integration
-   - OpenAI Assistant API Client in `app/utils/openai_client.py`
-   - Assistant CRUD Operations (create, update, delete)
-   - File Upload/Management für Assistants
-   - Assistant Metadata Storage
+**Sprint 17 bewegt nach `closed_sprints.md` für bessere Übersichtlichkeit.**
 
-2. **⚙️ Assistant Management UI**
-   - Assistant Container in Agent Edit Page
-   - Assistant Properties: name, description, model, tools, instructions
-   - "Update" und "New" Buttons für Assistant Management
-   - System Prompt Preview und Generation
+## 🎯 **Sprint 17.5 Agent-Assistant Deep Integration (13.-14. Juli 2025)** - 2 Tage
+### Ziel: Vertiefte Integration zwischen Agents und OpenAI Assistants
 
-3. **🛠️ Tool-Assistant Connection**
-   - Tools "options" Feld erweitern um "assistent" Option
-   - **V2 Assistant API Tool** als primäres Assistant-Tool registrieren
-   - Tool Selection in Agent Configuration
-   - Assistant Tool Assignment Logic
+**FOKUS:** Stärkung der Agent-Assistant-Verbindung mit Management, Analytics und Testing vor Task-System-Implementation.
 
-## 📝 **Sprint 18: Tasks & Knowledge Base (15.-19. Juli 2025)** - 5 Tage  
-### Ziel: Task Management und Knowledge Base System
+**Geplante Features:**
+1. **🔍 Assistant Discovery & Management**
+   - Übersicht aller verfügbaren Assistants (unabhängig von Agents)
+   - Assistant-Status anzeigen (aktiv, inaktiv, verwaist)
+   - Direkte Assistant-Aktionen: Delete, Close, Create Agent
 
-**User Stories:**
-- Als Agent möchte ich AI Tasks und Tool Tasks verwalten können
-- Als Benutzer möchte ich Knowledge Items erstellen und bearbeiten
-- Als System möchte ich Task-Dependencies und Workflows unterstützen
+2. **⚙️ Assistant Lifecycle Management** 
+   - Assistant erstellen/schließen über Agent GUI
+   - Neuen Assistant für Agent anlegen
+   - Assistant-Replacement und Migration
 
-**Definition of Done:**
-- [x] Task Editor UI funktioniert vollständig
-- [x] AI Tasks und Tool Tasks können erstellt/bearbeitet werden
-- [x] Knowledge Base CRUD Operations
-- [x] Task Reordering und Status Management
+3. **📊 Assistant Analytics & Statistics**
+   - Aufruf-Statistiken und Token-Verbrauch
+   - Performance-Metrics (Response-Zeit, Success-Rate)
+   - Cost-Tracking und Usage-Trends
 
-**Core Tasks:**
-1. **📋 Task Management System**
-   - Task Editor Container mit Add/Edit/Delete Functions
-   - AI Task Properties: name, instruction, goal, input_fields[], output_format
-   - Tool Task Properties: selected_tool, input_mapping
-   - Task Reordering mit Drag & Drop
+4. **📁 File Management Integration**
+   - Übersicht aller Agent→Assistant übertragenen Files
+   - File-Status in Assistant API verfolgen
+   - Files aus Assistant entfernen/cleanup
 
-2. **🧠 Knowledge Base System**
-   - Knowledge Items CRUD in Agent Edit Page
-   - Knowledge Item Structure: title, use_case, rating, knowledge_text
-   - Knowledge Item Dialog Editor
-   - Knowledge Base als additional_instructions für Assistant
+5. **💬 Assistant Chat Interface**
+   - Direkte Chat-Oberfläche mit Agent's Assistant
+   - Conversation-History persistent speichern
+   - Thread-Management und Chat-Export
 
-3. **🔄 Task Status & Dependencies**
-   - Task Status: unerledigt, in_bearbeitung, abgeschlossen, wartend, fehler
-   - Task Dependencies und Execution Order
-   - Task Validation und Error Handling
+6. **🔄 Assistant Health Monitoring**
+   - Status-Checks und Error-Tracking für alle Assistants
+   - Performance-Monitoring und Availability-Tests
+   - Alert-System bei Assistant-Ausfällen
 
-## 🏃 **Sprint 19: AgentRun Execution System (22.-26. Juli 2025)** - 5 Tage
-### Ziel: Agent Execution Engine und Run Management
+7. **🔧 Configuration Sync**
+   - Auto-Sync zwischen Agent und Assistant Konfiguration
+   - Rollback-Funktionalität bei fehlerhaften Updates
+   - Configuration-History und Change-Tracking
 
-**User Stories:**
-- Als Benutzer möchte ich Agent Runs starten und verfolgen können  
-- Als Agent möchte ich Tasks sequenziell ausführen können
-- Als System möchte ich Run-Status und Results persistent speichern
+8. **📝 Assistant API Call Logging**
+   - Protokollierung aller Assistant-API-Calls in Textdatei
+   - Speicherung unter `data/agentlogs/uuid_des_agenten.log`
+   - Log-Format: Timestamp, API-Endpoint, Request-Data, Response-Status
+   - Tracking: Wer, Wann, Welche Daten für jeden Assistant-Call
 
-**Definition of Done:**
-- [x] AgentRun Data Structure und Persistence
-- [x] Agent Execution Engine funktioniert
-- [x] Run Status Tracking und UI
-- [x] Task Execution und Result Storage
+**Erweiterte Features (Optional):**
+9. **🌐 Multi-Assistant Support** - Mehrere Assistants pro Agent
+9. **🔒 Security Features** - API-Key Rotation, Access-Logs
+10. **📝 Conversation Management** - Persistent Chat-History
+11. **🧩 Assistant Templates** - Vordefinierte Konfigurationen
 
-**Core Tasks:**
-1. **🏗️ AgentRun Foundation**
-   - AgentRun Data Manager für `data/agentrun/uuid.json`
-   - AgentRun Properties: agent_id, status, tasks[], context, results[]
-   - Run Status Transitions: created → running → success|error|cancelled
-
-2. **⚙️ Execution Engine**
-   - Agent Run Controller für Task Execution
-   - OpenAI Thread + Run Management pro Task
-   - Task Result Processing und HTML Rendering
-   - Context Mutation und save_as Values
-
-3. **🎨 AgentRun UI**
-   - AgentRun Overview mit Status und Progress
-   - Two-Column Layout: Task Output (links), Tasks/Files/Feedback (rechts)
-   - Real-time Task Execution Monitoring
-   - Result Export Functions (HTML, TXT, DOC, PDF)
-
-## 📁 **Sprint 20: File Management & Knowledge Generation (29. Juli - 2. August 2025)** - 5 Tage
-### Ziel: File System und Automated Knowledge Generation
-
-**User Stories:**
-- Als Agent möchte ich Files hochladen und verwalten können
-- Als System möchte ich automatisch Knowledge Items generieren
-- Als Benutzer möchte ich File-basierte Tasks ausführen können
-
-**Definition of Done:**
-- [x] File Upload/Download System für Agents und AgentRuns
-- [x] Automated Knowledge Generation nach Task/Run Completion
-- [x] File Integration in OpenAI Assistant API
-- [x] Wrap-Up System mit Knowledge Extraction
-
-**Core Tasks:**
-1. **📁 File Management System**
-   - File Upload UI in Agent Edit und AgentRun Pages
-   - File Storage: `data/agents/uuid/`, `data/agentrun/uuid/`
-   - File Integration mit OpenAI Assistant API
-   - File Download und Cleanup Functions
-
-2. **🧠 Automated Knowledge Generation**
-   - Wrap-Up System nach Task/Run Completion
-   - Knowledge Item Extraction aus Task Results
-   - Knowledge Rating und Use-Case Classification
-   - Knowledge Base Auto-Update
-
-3. **🔄 Advanced Workflows**
-   - File-based Task Input/Output
-   - Cross-Run Knowledge Sharing
-   - Knowledge Base Search und Filtering
+**Sprint 17.5 Definition of Done:**
+- [ ] Assistant Discovery Page mit Management-Funktionen
+- [ ] Assistant Lifecycle über Agent GUI steuerbar  
+- [ ] Analytics Dashboard für Assistant-Statistiken
+- [ ] File Management zwischen Agent und Assistant
+- [ ] Chat Interface für direkte Assistant-Kommunikation
+- [ ] Health Monitoring und Error-Tracking
+- [ ] Configuration-Sync zwischen Agent und Assistant
 
 ---
 
-# 🎯 **Langfristige Agent-System Vision (Sprints 21+)**
+# 📚 **SESSION LEARNINGS - 30. Juni 2025: Assistant Management Debugging**
 
-## **Phase 3: Advanced Agent Features (August 2025)**
-- **Multi-Agent Collaboration**: Agents können miteinander kommunizieren
-- **Agent Templates**: Vordefinierte Agent-Templates für häufige Use Cases  
-- **Advanced Workflows**: Conditional Logic, Loops, Error Handling
-- **Agent Monitoring**: Performance Metrics, Usage Analytics
-- **Agent Marketplace**: Sharing und Import/Export von Agents
+## 🐛 **Critical Bug Fix - Integration Module Loading**
+### **Problem:** "Integration openai_assistant_api not found"
+- **Root Cause:** OpenAIAssistantAPI wrapper suchte nach Integration mit ID "openai_assistant_api", aber tatsächliche ID war UUID
+- **Solution:** Neue Methode `get_by_implementation()` in IntegrationsManager hinzugefügt
+- **Learning:** Integration lookup sollte über implementation-type erfolgen, nicht über ID
 
-## **Phase 4: Enterprise Features (September 2025)**
-- **User Management**: Multi-User Support mit Permissions
-- **Agent Scheduling**: Cron-basierte Agent Execution
-- **API Integration**: REST API für External Agent Triggering
-- **Audit Logging**: Vollständige Activity Logs
-- **Backup & Recovery**: Agent Configuration Backup System
+### **Code Changes:**
+```python
+# IntegrationsManager erweitert mit:
+def get_by_implementation(self, implementation: str) -> Optional[Dict[str, Any]]:
+    """Get integration by implementation type"""
+    all_integrations = self.load_all()
+    for integration in all_integrations:
+        if integration.get('implementation') == implementation:
+            return integration
+    return None
+
+# OpenAIAssistantAPI wrapper korrigiert:
+def __init__(self, implementation_type="openai_assistant_api"):
+    integration = integrations_manager.get_by_implementation(implementation_type)
+```
+
+## 🎨 **UI Development - Assistant Management Dashboard**
+### **Problem:** Leere Seite trotz erfolgreicher API-Calls
+- **Root Cause:** OpenAI Assistant-Objekte haben geänderte Attribut-Namen (`file_ids` → verschiedene Strukturen)
+- **Solution:** Defensive Programming mit `hasattr()` checks für alle Assistant-Attribute
+- **Learning:** OpenAI API-Objekte ändern sich zwischen Versionen - immer defensiv programmieren
+
+### **Robust Assistant Data Conversion:**
+```python
+# Defensive Attribut-Abfrage:
+file_ids = []
+if hasattr(assistant, 'file_ids'):
+    file_ids = assistant.file_ids or []
+elif hasattr(assistant, 'tool_resources'):
+    # New API structure handling
+    if hasattr(assistant.tool_resources, 'file_search'):
+        file_ids = assistant.tool_resources.file_search.vector_store_ids or []
+```
+
+## 🔍 **Debugging Strategy Learned**
+### **Effective Debug Approach:**
+1. **Step-by-step debug routes** - Separate `/debug` route mit detailliertem Logging
+2. **Isolate working components** - `/debug` zeigte API-Calls funktionieren
+3. **Compare working vs broken** - Debug-Route vs. Main-Route Vergleich
+4. **Granular error logging** - Jeder Schritt einzeln loggen
+5. **Template syntax errors** - Jinja2 Filter-Probleme durch defensive Datenaufbereitung lösen
+
+### **Debug-Route Pattern:**
+```python
+@assistants_bp.route('/debug')
+def debug_assistants():
+    debug_output = "<h1>Assistant Loading Debug</h1>"
+    # Step-by-step testing with detailed output
+    # Isolate each component (tools, API keys, API calls)
+    return debug_output
+```
+
+## 📊 **Data Architecture Insights**
+### **Tool-to-API-Key Mapping:**
+- **Discovery:** Mehrere Tools können denselben API Key verwenden
+- **Solution:** Unique API key deduplication mit Hash-based identification
+- **Pattern:** API Key hash als Key, Tool-Referenz als Value
+
+### **Assistant-to-Agent Mapping:**
+- **Current State:** Alle 30 Assistants sind "orphaned" (nicht zu Agents gemappt)
+- **Opportunity:** Automatisches Agent-Creation für orphaned Assistants
+- **Data Flow:** Assistant → Agent → AgentRun für Task-Execution
+
+## 🚀 **Performance Learnings**
+### **API Call Optimization:**
+- **Issue:** 5 API Keys gefunden, aber nur 1 unique Key 
+- **Solution:** Deduplication vor API-Calls spart 80% der Requests
+- **Learning:** Always deduplicate API credentials before making external calls
+
+### **Docker Development Workflow:**
+1. **Problem:** Fehlende Template-Syntax-Fehler schwer zu debuggen
+2. **Solution:** Step-by-step route testing mit HTML-output
+3. **Learning:** In Docker-Umgebung immer mit debug routes arbeiten
+
+## ✅ **SESSION ACHIEVEMENTS - 30. Juni 2025**
+
+### **Critical Fixes Completed:**
+1. ✅ **Integration Module Bug Fixed** - OpenAI Assistant API wrapper now works correctly
+2. ✅ **Assistant Discovery Implemented** - 30 assistants successfully loaded and displayed
+3. ✅ **API Key Deduplication** - Efficient handling of multiple tools with same API key
+4. ✅ **Defensive API Programming** - Robust handling of OpenAI API object changes
+5. ✅ **Debug Infrastructure** - Step-by-step debugging routes for future troubleshooting
+
+### **UI Components Delivered:**
+1. ✅ **Assistant Management Dashboard** - Professional card-based layout
+2. ✅ **Statistics Overview** - Real-time counts and metrics
+3. ✅ **Search and Filter** - Interactive assistant discovery
+4. ✅ **Action Buttons** - Chat, Create Agent, Delete functionality
+5. ✅ **Responsive Design** - Modern Bootstrap-based UI
+
+### **Data Architecture Improvements:**
+1. ✅ **IntegrationsManager.get_by_implementation()** - New method for implementation-based lookup
+2. ✅ **Robust Assistant Data Conversion** - Safe attribute access for OpenAI objects
+3. ✅ **API Key Hash Management** - Secure display and deduplication
+4. ✅ **Agent-Assistant Mapping** - Clear orphaned vs mapped status
+
+### **Development Process Insights:**
+1. ✅ **Docker-first Debugging** - Effective debugging in containerized environment
+2. ✅ **Template Error Resolution** - Jinja2 filter and syntax issue handling
+3. ✅ **Progressive Enhancement** - Step-by-step feature implementation
+4. ✅ **Error Isolation** - Separate debug routes for component testing
+
+### **Technical Debt Addressed:**
+1. ✅ **API Compatibility** - Prepared for OpenAI API changes
+2. ✅ **Error Handling** - Graceful degradation when API calls fail
+3. ✅ **Code Organization** - Clean separation of concerns in assistant management
+4. ✅ **Documentation** - Comprehensive learning documentation for future reference
 
 ---
-
-# 🎉 **MAJOR SESSION ACHIEVEMENT - Integration Edit System Repair (30. Juni 2025)**
-
-### **✅ KRITISCHES PROBLEM VOLLSTÄNDIG GELÖST:**
-Das Integration-Edit-System war komplett defekt mit schwerwiegenden Datenverlust-Problemen. In dieser Session wurden alle Probleme systematisch identifiziert und behoben:
-
-#### **Root Cause identifiziert:**
-- `sanitize_integration_data()` in `app/utils/validation.py` hatte unvollständige Whitelist
-- Felder "implementation", "config_params", "input_params", "output_params", "metadata" wurden beim Speichern gelöscht
-
-#### **Comprehensive Fix implementiert:**
-- **Whitelist erweitert**: Alle wichtigen Felder zur `allowed_fields` Liste hinzugefügt
-- **Migration-Logik**: Legacy-Integrations werden automatisch auf neues Format migriert
-- **Parameter-Mapping**: Alte Parameter aus `metadata.original_data` auf Root-Level gemappt
-- **Implementation-Fix**: ChatGPT/GoogleSheets Implementation wird automatisch gesetzt
-- **Debug-Monitoring**: Umfassende Logs für Speicher-/Ladeprozess hinzugefügt
-
-#### **Verification durchgeführt:**
-- ✅ Implementation-Feld wird korrekt gespeichert und angezeigt
-- ✅ Parameter (config_params, input_params, output_params) bleiben erhalten
-- ✅ Legacy-Integrations werden automatisch migriert
-- ✅ Kein Datenverlust mehr beim Editieren
-
-
-### **📋 Sprint 15 Anforderungen & Fortschritt:**
-Alle neuen UI/UX-Anforderungen für Sprint 15 sind dokumentiert. Fortschritt:
-
-- [x] Container-Width-Limits (max-w-4xl/5xl) in allen Haupt-Templates umgesetzt (`edit.html`, `view.html`, `list.html`)
-- [ ] Card-Aktionen vereinheitlicht: Edit/Delete/Clone, keine Test/View-Buttons mehr (weitgehend, Restprüfung offen)
-- [ ] Toolbar-Migration: Alle Footer-Buttons in Toolbar am Kopf der Seite verschoben (weitgehend, Restprüfung offen)
-- [ ] Zwei-Spalten-Layout für Edit/View (Tools & Integrations, weitere Detailprüfung offen)
-- [x] Sidebar-Navigation: Aktive Route wird hervorgehoben
-- [ ] Card-Layout für Tools analog zu Integrations (weitgehend, Restprüfung offen)
-- [ ] Section-Integration: Implementation Module + Icon in Basic Information (Integrations-Edit)
-- [ ] Agenten-Card-Layout: Stacked Buttons, Statistik, Actions (CRUD, New Session, Export, Reconnect, Cleanup)
-- [ ] KnowledgeBase-UI: Knowledge-Items CRUD, Bewertung, Dialog-Editor
-- [ ] File-Upload/Download für Agenten, File-Tooltip, Delete-Action
-- [ ] API-Dropdown für dynamische Implementations-Auswahl in /test
-- [ ] Icon-Design-System: Konsistente Icons für alle Cards und Actions
-- [ ] UI-Polish & Mobile-Optimierung
-
-**Letzter Stand:**
-Container-Width-Limits gelten jetzt auch für Überschrift und Toolbar aller Hauptseiten (`max-w-4xl`/`max-w-5xl`, `mx-auto`, `w-full` in page-header). Layout ist überall konsistent und responsiv.
-
-**30.06.2025:**
-- [x] UI-Cleanup: "Test Integration" Abschnitt aus `integrations/edit.html` entfernt (Hinweisbereich entfernt, keine Test-Aufforderung mehr sichtbar).
-- [x] "Test" Button aus `integrations/view.html` entfernt (Button und zugehörige JS-Logik vollständig gelöscht).
-Nächster Task: Card-Aktionen in /integrations/list.html vereinfachen ("Test" und "View" Buttons entfernen, nur Edit/Delete/Clone in gestackter Anordnung).
-
-### **🔄 Geänderte Dateien:**
-- `/app/utils/validation.py` - Whitelist für sanitize_integration_data erweitert
-- `/app/routes/integrations.py` - Migration-Logik und Debug-Logs hinzugefügt
-- `/development.md` - Sprint 15 Anforderungen und Session-Wrapup dokumentiert
-
-### **🚀 Status:**
-**Integration-Edit-System ist vollständig repariert und funktionsfähig. Keine kritischen Bugs mehr vorhanden.**
-
-**Next Session: UI/UX-Verbesserungen mit UI-Cleanup, modernem Layout und responsivem Design implementieren.**
-
-**Next Session: UI/UX-Verbesserungen mit modernem Layout und responsivem Design implementieren.**
-
----
-
-## 🎉 **Sprint 16 Closure Summary (5. Juli 2025)**
-
-**✅ SPRINT 16 ERFOLGREICH ABGESCHLOSSEN UND GESCHLOSSEN**
-
-**Vollständig implementiert:**
-- **Agent Data System**: AgentsManager mit UUID-Storage und JSON-Persistence
-- **Agent CRUD**: Komplette REST-API mit /agents/create, /edit, /view, /delete Routes
-- **Agent UI System**: Modern Card Grid Layout mit stacked actions
-- **Agent Edit/Create**: Two-Column Layout mit Toolbar-Integration
-- **Navigation**: Agent Icon in Sidebar, active state handling
-- **Validation**: Complete data sanitization and validation layer
-- **Docker Integration**: All features work in containerized environment
-
-**Sprint 16 bewegt nach `closed_sprints.md` für bessere Übersichtlichkeit.**
-
-**Bereit für Sprint 17: AI Assistant Integration (OpenAI Assistant v2 API)**

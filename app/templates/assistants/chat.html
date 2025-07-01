@@ -1,0 +1,362 @@
+{% extends "base.html" %}
+
+{% block title %}Chat with {{ assistant.name }} - Assistant{% endblock %}
+
+{% block page_header %}
+<div class="page-header max-w-7xl mx-auto w-full">
+    <div class="flex justify-between items-center">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
+                <i class="bi bi-chat"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Chat with {{ assistant.name }}</h1>
+                <p class="text-gray-600">Direct conversation with AI assistant</p>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            {% if agent %}
+                <a href="{{ url_for('agents.edit_agent', agent_id=agent.id) }}" 
+                   class="btn btn-outline">
+                    <i class="bi bi-pencil"></i>
+                    Edit Agent
+                </a>
+            {% endif %}
+            <a href="{{ url_for('assistants.list_assistants') }}" 
+               class="btn btn-primary">
+                <i class="bi bi-arrow-left"></i>
+                Back to Assistants
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto w-full">
+    <!-- Assistant Information -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 p-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <h4 class="font-semibold text-gray-900 mb-2">Assistant Details</h4>
+                <div class="space-y-1 text-sm">
+                    <p><span class="text-gray-600">ID:</span> {{ assistant.id[:16] }}...</p>
+                    <p><span class="text-gray-600">Model:</span> {{ assistant.model }}</p>
+                    <p><span class="text-gray-600">Tools:</span> {{ assistant.tools|length }} enabled</p>
+                </div>
+            </div>
+            {% if agent %}
+                <div>
+                    <h4 class="font-semibold text-gray-900 mb-2">Connected Agent</h4>
+                    <div class="space-y-1 text-sm">
+                        <p><span class="text-gray-600">Name:</span> {{ agent.name }}</p>
+                        <p><span class="text-gray-600">Category:</span> {{ agent.category }}</p>
+                        <p><span class="text-gray-600">Status:</span> {{ agent.status|title }}</p>
+                    </div>
+                </div>
+            {% endif %}
+            <div>
+                <h4 class="font-semibold text-gray-900 mb-2">Chat Options</h4>
+                <div class="space-y-2">
+                    <button onclick="clearChat()" class="btn btn-outline btn-sm w-full">
+                        <i class="bi bi-trash mr-2"></i>Clear Chat
+                    </button>
+                    <button onclick="exportChat()" class="btn btn-outline btn-sm w-full">
+                        <i class="bi bi-download mr-2"></i>Export Chat
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Interface -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- Chat Area -->
+        <div class="lg:col-span-3">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 h-96 flex flex-col">
+                <!-- Chat Header -->
+                <div class="p-4 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 mr-3">
+                                <i class="bi bi-cpu"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-gray-900">{{ assistant.name }}</h4>
+                                <p class="text-xs text-gray-500">AI Assistant</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                <div class="w-1.5 h-1.5 bg-green-400 rounded-full mr-1.5"></div>
+                                Online
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Chat Messages -->
+                <div class="flex-1 p-4 overflow-y-auto" id="chatMessages">
+                    <!-- Welcome Message -->
+                    <div class="flex items-start mb-4">
+                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 mr-3 flex-shrink-0">
+                            <i class="bi bi-cpu"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="bg-gray-100 rounded-lg p-3">
+                                <p class="text-sm text-gray-800">
+                                    Hello! I'm {{ assistant.name }}. 
+                                    {% if assistant.description %}
+                                        {{ assistant.description }}
+                                    {% else %}
+                                        How can I help you today?
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Just now</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Chat Input -->
+                <div class="p-4 border-t border-gray-200">
+                    <div class="flex gap-2">
+                        <input type="text" 
+                               id="messageInput"
+                               placeholder="Type your message..."
+                               class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                               onkeypress="handleKeyPress(event)">
+                        <button onclick="sendMessage()" 
+                                id="sendButton"
+                                class="btn btn-primary">
+                            <i class="bi bi-send"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Chat Info Sidebar -->
+        <div class="space-y-6">
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <h4 class="font-semibold text-gray-900 mb-3">Quick Actions</h4>
+                <div class="space-y-2">
+                    <button onclick="sendQuickMessage('Help me understand your capabilities')"
+                            class="w-full text-left p-2 text-sm bg-gray-50 rounded hover:bg-gray-100 transition-colors">
+                        <i class="bi bi-question-circle mr-2 text-blue-500"></i>
+                        Ask about capabilities
+                    </button>
+                    <button onclick="sendQuickMessage('What tasks can you help me with?')"
+                            class="w-full text-left p-2 text-sm bg-gray-50 rounded hover:bg-gray-100 transition-colors">
+                        <i class="bi bi-list-task mr-2 text-green-500"></i>
+                        Available tasks
+                    </button>
+                    <button onclick="sendQuickMessage('Show me an example of what you can do')"
+                            class="w-full text-left p-2 text-sm bg-gray-50 rounded hover:bg-gray-100 transition-colors">
+                        <i class="bi bi-lightbulb mr-2 text-yellow-500"></i>
+                        Request example
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Instructions -->
+            {% if assistant.instructions %}
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                    <h4 class="font-semibold text-gray-900 mb-3">System Instructions</h4>
+                    <div class="text-sm text-gray-600 bg-gray-50 p-3 rounded">
+                        {{ assistant.instructions[:200] }}{% if assistant.instructions|length > 200 %}...{% endif %}
+                    </div>
+                </div>
+            {% endif %}
+            
+            <!-- Tools -->
+            {% if assistant.tools %}
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                    <h4 class="font-semibold text-gray-900 mb-3">Available Tools</h4>
+                    <div class="space-y-2">
+                        {% for tool in assistant.tools %}
+                            <div class="flex items-center p-2 bg-gray-50 rounded">
+                                <i class="bi bi-tool mr-2 text-gray-500"></i>
+                                <span class="text-sm text-gray-700">{{ tool.type|title }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let messageCount = 0;
+
+function handleKeyPress(event) {
+    if (event.key === 'Enter') {
+        sendMessage();
+    }
+}
+
+function sendQuickMessage(message) {
+    document.getElementById('messageInput').value = message;
+    sendMessage();
+}
+
+async function sendMessage() {
+    const input = document.getElementById('messageInput');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    // Clear input
+    input.value = '';
+    
+    // Disable send button
+    const sendButton = document.getElementById('sendButton');
+    sendButton.disabled = true;
+    sendButton.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+    
+    // Add user message to chat
+    addMessageToChat(message, 'user');
+    
+    try {
+        // Send to assistant
+        const response = await fetch(`/assistants/api/chat/{{ assistant.id }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ message: message })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Add assistant response
+            addMessageToChat(data.data.message, 'assistant');
+        } else {
+            addMessageToChat('Sorry, I encountered an error: ' + data.message, 'assistant', true);
+        }
+        
+    } catch (error) {
+        addMessageToChat('Connection error: ' + error.message, 'assistant', true);
+    } finally {
+        // Re-enable send button
+        sendButton.disabled = false;
+        sendButton.innerHTML = '<i class="bi bi-send"></i>';
+    }
+}
+
+function addMessageToChat(message, sender, isError = false) {
+    const chatMessages = document.getElementById('chatMessages');
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'flex items-start mb-4';
+    
+    if (sender === 'user') {
+        messageDiv.innerHTML = `
+            <div class="flex-1 flex justify-end">
+                <div class="max-w-xs lg:max-w-md">
+                    <div class="bg-blue-500 text-white rounded-lg p-3">
+                        <p class="text-sm">${escapeHtml(message)}</p>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1 text-right">Just now</p>
+                </div>
+            </div>
+            <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 ml-3 flex-shrink-0">
+                <i class="bi bi-person"></i>
+            </div>
+        `;
+    } else {
+        messageDiv.innerHTML = `
+            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 mr-3 flex-shrink-0">
+                <i class="bi bi-cpu"></i>
+            </div>
+            <div class="flex-1">
+                <div class="max-w-xs lg:max-w-md">
+                    <div class="bg-gray-100 rounded-lg p-3 ${isError ? 'border border-red-200 bg-red-50' : ''}">
+                        <p class="text-sm ${isError ? 'text-red-800' : 'text-gray-800'}">${escapeHtml(message)}</p>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Just now</p>
+                </div>
+            </div>
+        `;
+    }
+    
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    messageCount++;
+}
+
+function clearChat() {
+    if (confirm('Clear all chat messages?')) {
+        const chatMessages = document.getElementById('chatMessages');
+        // Keep only the welcome message
+        const welcomeMessage = chatMessages.firstElementChild;
+        chatMessages.innerHTML = '';
+        chatMessages.appendChild(welcomeMessage);
+        messageCount = 0;
+        showNotification('Chat cleared', true);
+    }
+}
+
+function exportChat() {
+    const messages = document.querySelectorAll('#chatMessages .flex');
+    let chatText = `Chat with {{ assistant.name }}\n`;
+    chatText += `Date: ${new Date().toLocaleString()}\n\n`;
+    
+    messages.forEach(msg => {
+        const text = msg.querySelector('p').textContent;
+        const isUser = msg.querySelector('.bg-blue-500');
+        chatText += `${isUser ? 'You' : '{{ assistant.name }}'}: ${text}\n\n`;
+    });
+    
+    const blob = new Blob([chatText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `chat_${new Date().toISOString().split('T')[0]}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    showNotification('Chat exported', true);
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function showNotification(message, success) {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
+        success ? 'bg-green-100 border border-green-400 text-green-700' : 'bg-red-100 border border-red-400 text-red-700'
+    }`;
+    
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="bi ${success ? 'bi-check-circle' : 'bi-exclamation-circle'} mr-2"></i>
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-gray-500 hover:text-gray-700">
+                <i class="bi bi-x"></i>
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+// Focus input on load
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('messageInput').focus();
+});
+</script>
+{% endblock %}

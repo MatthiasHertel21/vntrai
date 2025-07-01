@@ -216,6 +216,14 @@ class IntegrationsManager(DataManager):
         """Filter integrations by type"""
         all_integrations = self.load_all()
         return [item for item in all_integrations if item.get('type') == integration_type]
+    
+    def get_by_implementation(self, implementation: str) -> Optional[Dict[str, Any]]:
+        """Get integration by implementation type"""
+        all_integrations = self.load_all()
+        for integration in all_integrations:
+            if integration.get('implementation') == implementation:
+                return integration
+        return None
 
 
 class ToolsManager(DataManager):
@@ -652,126 +660,17 @@ class ToolsManager(DataManager):
                 'error': f'Error chatting with assistant: {str(e)}'
             }
     
-    async def update_tool_assistant(self, tool_id: str, agent_id: str, config: Dict[str, Any]) -> Dict[str, Any]:
-        """Update an existing assistant via tool"""
-        try:
-            tool = self.get_by_id(tool_id)
-            if not tool:
-                return {'success': False, 'error': 'Tool not found'}
-            
-            assistant_options = self.get_assistant_options(tool_id)
-            if not assistant_options.get('enabled', False):
-                return {'success': False, 'error': 'Assistant not enabled for this tool'}
-            
-            assistant_id = assistant_options.get('assistant_id')
-            if not assistant_id:
-                return {'success': False, 'error': 'No assistant configured for this tool'}
-            
-            if not self.implementation_manager:
-                return {'success': False, 'error': 'Implementation module system not available'}
-            
-            # Get tool's configuration for API key
-            tool_config = tool.get('config', {})
-            
-            # Map tool config to implementation config format
-            impl_config = self._map_tool_config_to_implementation(tool_config, 'openai_assistant_api')
-            
-            # Get OpenAI Assistant API implementation
-            openai_assistant_module = self.implementation_manager.get_implementation('openai_assistant_api', impl_config)
-            if not openai_assistant_module:
-                return {'success': False, 'error': 'OpenAI Assistant API implementation not found or configuration invalid'}
-            
-            # Update assistant with new configuration
-            update_params = {
-                'action': 'update',
-                'assistant_id': assistant_id,
-                'name': config.get('name', f'Agent Assistant {agent_id}'),
-                'description': config.get('description', 'AI Assistant for Agent'),
-                'model': config.get('model', 'gpt-4-turbo-preview'),
-                'instructions': config.get('instructions', 'You are a helpful AI assistant.')
-            }
-            
-            update_result = await openai_assistant_module.execute_async(update_params)
-            
-            if update_result.get('success'):
-                # Update assistant options in tool
-                assistant_options['last_updated'] = datetime.now().isoformat()
-                tool['options']['assistant'] = assistant_options
-                self.save(tool)
-                
-                return {
-                    'success': True,
-                    'message': 'Assistant updated successfully',
-                    'assistant_id': assistant_id
-                }
-            else:
-                return update_result
-            
-        except Exception as e:
-            return {
-                'success': False,
-                'error': f'Error updating assistant: {str(e)}'
-            }
+    def _map_tool_config_to_implementation(self, config: Dict[str, Any], implementation_name: str) -> Dict[str, Any]:
+        """Map tool configuration to implementation configuration format"""
+        impl_config = config.copy()
+        
+        # Mapping für OpenAI Assistant API
+        if implementation_name == 'openai_assistant_api':
+            if 'openai_api_key' in config and 'api_key' not in config:
+                impl_config['api_key'] = config['openai_api_key']
+        
+        return impl_config
 
-    async def create_tool_assistant(self, tool_id: str, agent_id: str, config: Dict[str, Any]) -> Dict[str, Any]:
-        """Create a new assistant via tool"""
-        try:
-            tool = self.get_by_id(tool_id)
-            if not tool:
-                return {'success': False, 'error': 'Tool not found'}
-            
-            assistant_options = self.get_assistant_options(tool_id)
-            if not assistant_options.get('enabled', False):
-                return {'success': False, 'error': 'Assistant not enabled for this tool'}
-            
-            if not self.implementation_manager:
-                return {'success': False, 'error': 'Implementation module system not available'}
-            
-            # Get tool's configuration for API key
-            tool_config = tool.get('config', {})
-            
-            # Map tool config to implementation config format
-            impl_config = self._map_tool_config_to_implementation(tool_config, 'openai_assistant_api')
-            
-            # Get OpenAI Assistant API implementation
-            openai_assistant_module = self.implementation_manager.get_implementation('openai_assistant_api', impl_config)
-            if not openai_assistant_module:
-                return {'success': False, 'error': 'OpenAI Assistant API implementation not found or configuration invalid'}
-            
-            # Create new assistant
-            create_params = {
-                'action': 'create',
-                'name': config.get('name', f'Agent Assistant {agent_id}'),
-                'description': config.get('description', 'AI Assistant for Agent'),
-                'model': config.get('model', 'gpt-4-turbo-preview'),
-                'instructions': config.get('instructions', 'You are a helpful AI assistant.')
-            }
-            
-            create_result = await openai_assistant_module.execute_async(create_params)
-            
-            if create_result.get('success'):
-                new_assistant_id = create_result.get('assistant_id')
-                
-                # Update assistant options in tool
-                assistant_options['assistant_id'] = new_assistant_id
-                assistant_options['created_at'] = datetime.now().isoformat()
-                assistant_options['agent_id'] = agent_id
-                tool['options']['assistant'] = assistant_options
-                self.save(tool)
-                
-                return {
-                    'success': True,
-                    'message': 'New assistant created successfully',
-                    'assistant_id': new_assistant_id
-                }
-            else:
-                return create_result
-            
-        except Exception as e:
-            return {
-                'success': False,
-                'error': f'Error creating assistant: {str(e)}'
-            }
 
 class IconManager:
     """Manager for vendor icons"""

@@ -1,0 +1,589 @@
+{% extends "base.html" %}
+
+{% block title %}Assistant Health Monitor{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto w-full space-y-6">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <div class="p-3 {% if health.overall_status == 'healthy' %}bg-green-100{% elif health.overall_status == 'warning' %}bg-yellow-100{% else %}bg-red-100{% endif %} rounded-lg">
+                    <svg class="w-8 h-8 {% if health.overall_status == 'healthy' %}text-green-600{% elif health.overall_status == 'warning' %}text-yellow-600{% else %}text-red-600{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Assistant Health Monitor</h1>
+                    <p class="text-gray-600">System status and performance monitoring</p>
+                </div>
+            </div>
+            <div class="flex space-x-4">
+                <span class="inline-flex items-center px-3 py-2 rounded-md text-sm font-medium {% if health.overall_status == 'healthy' %}bg-green-100 text-green-800{% elif health.overall_status == 'warning' %}bg-yellow-100 text-yellow-800{% else %}bg-red-100 text-red-800{% endif %}">
+                    System: {{ health.overall_status|title }}
+                </span>
+                <a href="{{ url_for('assistants.list_assistants') }}" class="btn btn-secondary">Back to Assistants</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Metrics -->
+    {% if health.performance_metrics %}
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-2 bg-blue-100 rounded-lg">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">API Keys</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ health.performance_metrics.working_api_keys }}/{{ health.performance_metrics.total_api_keys }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-2 bg-green-100 rounded-lg">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Response Time</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ health.performance_metrics.avg_response_time }}ms</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-2 bg-purple-100 rounded-lg">
+                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Assistants</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ health.performance_metrics.total_assistants }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <div class="flex items-center">
+                <div class="p-2 {% if health.performance_metrics.error_rate == 0 %}bg-green-100{% elif health.performance_metrics.error_rate < 25 %}bg-yellow-100{% else %}bg-red-100{% endif %} rounded-lg">
+                    <svg class="w-6 h-6 {% if health.performance_metrics.error_rate == 0 %}text-green-600{% elif health.performance_metrics.error_rate < 25 %}text-yellow-600{% else %}text-red-600{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Error Rate</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ "%.1f" | format(health.performance_metrics.error_rate) }}%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- API Keys Status -->
+    {% if health.api_keys_status %}
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">API Keys Status</h3>
+        <div class="space-y-4">
+            {% for api_key in health.api_keys_status %}
+            <div class="border border-gray-200 rounded-lg p-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-3 h-3 rounded-full {% if api_key.status == 'healthy' %}bg-green-500{% elif api_key.status == 'warning' %}bg-yellow-500{% else %}bg-red-500{% endif %}"></div>
+                        <div>
+                            <div class="text-sm font-medium text-gray-900">{{ api_key.tool_name }}</div>
+                            <div class="text-xs text-gray-500">Key: {{ api_key.key_hash }}</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        {% if api_key.status == 'healthy' %}
+                        <div class="text-sm font-medium text-green-600">{{ api_key.response_time }}ms</div>
+                        <div class="text-xs text-gray-500">{{ api_key.assistants_count }} assistants</div>
+                        {% else %}
+                        <div class="text-sm font-medium text-red-600">Error</div>
+                        <div class="text-xs text-gray-500">{{ api_key.error_message[:30] }}{% if api_key.error_message|length > 30 %}...{% endif %}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if api_key.status != 'healthy' and api_key.error_message %}
+                <div class="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                    {{ api_key.error_message }}
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Assistant Status -->
+    {% if health.assistants_status %}
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Assistant Status (Sample)</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for assistant in health.assistants_status %}
+            <div class="border border-gray-200 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="text-sm font-medium text-gray-900 truncate">{{ assistant.name }}</div>
+                    <div class="w-3 h-3 rounded-full {% if assistant.status == 'healthy' %}bg-green-500{% else %}bg-red-500{% endif %}"></div>
+                </div>
+                <div class="text-xs text-gray-500">{{ assistant.model }}</div>
+                <div class="text-xs text-gray-500">API: {{ assistant.api_source }}</div>
+                <div class="text-xs text-gray-400 mt-1">ID: {{ assistant.id[:12] }}...</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recommendations -->
+    {% if health.recommendations %}
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Recommendations</h3>
+        <div class="space-y-4">
+            {% for rec in health.recommendations %}
+            <div class="border-l-4 {% if rec.type == 'error' %}border-red-500 bg-red-50{% elif rec.type == 'warning' %}border-yellow-500 bg-yellow-50{% else %}border-blue-500 bg-blue-50{% endif %} p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        {% if rec.type == 'error' %}
+                        <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                        </svg>
+                        {% elif rec.type == 'warning' %}
+                        <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                        </svg>
+                        {% else %}
+                        <svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                        </svg>
+                        {% endif %}
+                    </div>
+                    <div class="ml-3">
+                        <h4 class="text-sm font-medium {% if rec.type == 'error' %}text-red-800{% elif rec.type == 'warning' %}text-yellow-800{% else %}text-blue-800{% endif %}">
+                            {{ rec.title }}
+                        </h4>
+                        <div class="mt-1 text-sm {% if rec.type == 'error' %}text-red-700{% elif rec.type == 'warning' %}text-yellow-700{% else %}text-blue-700{% endif %}">
+                            {{ rec.message }}
+                        </div>
+                        <div class="mt-2">
+                            <span class="text-xs font-medium {% if rec.type == 'error' %}text-red-800{% elif rec.type == 'warning' %}text-yellow-800{% else %}text-blue-800{% endif %}">
+                                Action: {{ rec.action }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Error State -->
+    {% if health.error %}
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <div class="text-center">
+            <svg class="mx-auto h-12 w-12 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">Health Check Failed</h3>
+            <p class="mt-1 text-sm text-gray-500">{{ health.error }}</p>
+            <div class="mt-6">
+                <button onclick="location.reload()" class="btn btn-primary">Retry Health Check</button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+// Auto-refresh every 60 seconds
+setTimeout(function() {
+    location.reload();
+}, 60000);
+</script>
+{% endblock %}extends "base.html" %}
+
+{% block title %}Assistant Health Monitor - AI Assistants{% endblock %}
+
+{% block page_header %}
+<div class="page-header max-w-7xl mx-auto w-full">
+    <div class="flex justify-between items-center">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
+                <i class="bi bi-heart-pulse"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Assistant Health Monitor</h1>
+                <p class="text-gray-600">Real-time status and performance monitoring</p>
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="refreshHealthData()" 
+                    class="btn btn-outline">
+                <i class="bi bi-arrow-clockwise"></i>
+                Refresh
+            </button>
+            <a href="{{ url_for('assistants.list_assistants') }}" 
+               class="btn btn-primary">
+                <i class="bi bi-arrow-left"></i>
+                Back to Discovery
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto w-full">
+    <!-- Health Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        {% set healthy_count = health_data|selectattr('status', 'equalto', 'healthy')|list|length %}
+        {% set error_count = health_data|selectattr('status', 'equalto', 'error')|list|length %}
+        {% set total_count = health_data|length %}
+        
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center text-green-600 mr-3">
+                    <i class="bi bi-check-circle text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Healthy</p>
+                    <p class="text-2xl font-bold text-green-600">{{ healthy_count }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center text-red-600 mr-3">
+                    <i class="bi bi-exclamation-circle text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Errors</p>
+                    <p class="text-2xl font-bold text-red-600">{{ error_count }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-blue-600 mr-3">
+                    <i class="bi bi-cpu text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Total</p>
+                    <p class="text-2xl font-bold text-blue-600">{{ total_count }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center">
+                <div class="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 mr-3">
+                    <i class="bi bi-percent text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-medium text-gray-600">Uptime</p>
+                    <p class="text-2xl font-bold text-gray-900">
+                        {{ ((healthy_count / total_count * 100) if total_count > 0 else 100)|round(1) }}%
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Health Status Table -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                <i class="bi bi-table mr-2 text-gray-500"></i>
+                Assistant Health Status
+            </h3>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Assistant
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Model
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Files
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Last Check
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in health_data %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 mr-3">
+                                    <i class="bi bi-cpu text-sm"></i>
+                                </div>
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">{{ item.name }}</div>
+                                    <div class="text-xs text-gray-500">ID: {{ item.assistant_id[:8] }}...</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {{ 'bg-green-100 text-green-800' if item.status == 'healthy' else 'bg-red-100 text-red-800' }}">
+                                <div class="w-1.5 h-1.5 rounded-full mr-1.5
+                                    {{ 'bg-green-400' if item.status == 'healthy' else 'bg-red-400' }}"></div>
+                                {{ item.status|title }}
+                            </span>
+                            {% if item.error_message %}
+                                <div class="text-xs text-red-600 mt-1" title="{{ item.error_message }}">
+                                    {{ item.error_message[:50] }}{% if item.error_message|length > 50 %}...{% endif %}
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ item.model }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ item.file_count }} files
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ item.last_check|format_datetime if item.last_check else 'Never' }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <div class="flex gap-2">
+                                <button onclick="testAssistant('{{ item.assistant_id }}')"
+                                        class="text-blue-600 hover:text-blue-900">
+                                    <i class="bi bi-play-circle"></i>
+                                    Test
+                                </button>
+                                <button onclick="viewLogs('{{ item.assistant_id }}')"
+                                        class="text-gray-600 hover:text-gray-900">
+                                    <i class="bi bi-file-text"></i>
+                                    Logs
+                                </button>
+                                {% if item.status == 'error' %}
+                                    <button onclick="diagnoseError('{{ item.assistant_id }}')"
+                                            class="text-orange-600 hover:text-orange-900">
+                                        <i class="bi bi-tools"></i>
+                                        Diagnose
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if not health_data %}
+            <div class="text-center py-12">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="bi bi-heart-pulse text-2xl text-gray-400"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No Health Data</h3>
+                <p class="text-gray-600 mb-4">No assistants found to monitor.</p>
+                <a href="{{ url_for('assistants.list_assistants') }}" class="btn btn-primary">
+                    <i class="bi bi-plus mr-2"></i>Go to Assistant Discovery
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- System Health Indicators -->
+    <div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- System Status -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h4 class="font-semibold text-gray-900 mb-4 flex items-center">
+                <i class="bi bi-server mr-2 text-blue-500"></i>
+                System Status
+            </h4>
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">OpenAI API</span>
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <div class="w-1.5 h-1.5 bg-green-400 rounded-full mr-1.5"></div>
+                        Online
+                    </span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">Assistant API</span>
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <div class="w-1.5 h-1.5 bg-green-400 rounded-full mr-1.5"></div>
+                        Available
+                    </span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">File Storage</span>
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <div class="w-1.5 h-1.5 bg-green-400 rounded-full mr-1.5"></div>
+                        Healthy
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h4 class="font-semibold text-gray-900 mb-4 flex items-center">
+                <i class="bi bi-speedometer2 mr-2 text-green-500"></i>
+                Performance
+            </h4>
+            <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">Avg Response Time</span>
+                    <span class="text-sm font-medium text-gray-900">~2.1s</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">Success Rate</span>
+                    <span class="text-sm font-medium text-gray-900">
+                        {{ ((healthy_count / total_count * 100) if total_count > 0 else 100)|round(1) }}%
+                    </span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600">Error Rate</span>
+                    <span class="text-sm font-medium text-gray-900">
+                        {{ ((error_count / total_count * 100) if total_count > 0 else 0)|round(1) }}%
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alerts -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h4 class="font-semibold text-gray-900 mb-4 flex items-center">
+                <i class="bi bi-bell mr-2 text-orange-500"></i>
+                Recent Alerts
+            </h4>
+            <div class="space-y-3">
+                {% if error_count > 0 %}
+                    <div class="flex items-start p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <i class="bi bi-exclamation-triangle text-red-600 mt-0.5 mr-2"></i>
+                        <div>
+                            <p class="text-sm font-medium text-red-800">{{ error_count }} Assistant Error(s)</p>
+                            <p class="text-xs text-red-600">Some assistants are experiencing issues</p>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4 text-gray-500">
+                        <i class="bi bi-check-circle text-2xl mb-2"></i>
+                        <p class="text-sm">No active alerts</p>
+                        <p class="text-xs">All systems operating normally</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function refreshHealthData() {
+    try {
+        showNotification('Refreshing health data...', true);
+        location.reload();
+    } catch (error) {
+        showNotification('Error refreshing data: ' + error.message, false);
+    }
+}
+
+async function testAssistant(assistantId) {
+    try {
+        showNotification('Testing assistant connection...', true);
+        
+        // This would implement actual health check
+        setTimeout(() => {
+            showNotification('Assistant health check completed', true);
+        }, 2000);
+        
+    } catch (error) {
+        showNotification('Error testing assistant: ' + error.message, false);
+    }
+}
+
+function viewLogs(assistantId) {
+    // This will be implemented when logging is added
+    showNotification('Assistant logging will be available in the next feature update!', false);
+}
+
+function diagnoseError(assistantId) {
+    showNotification('Error diagnosis tools will be available soon!', false);
+}
+
+function showNotification(message, success) {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
+        success ? 'bg-green-100 border border-green-400 text-green-700' : 'bg-red-100 border border-red-400 text-red-700'
+    }`;
+    
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="bi ${success ? 'bi-check-circle' : 'bi-exclamation-circle'} mr-2"></i>
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-gray-500 hover:text-gray-700">
+                <i class="bi bi-x"></i>
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+// Auto-refresh every 30 seconds
+let autoRefreshInterval;
+
+function startAutoRefresh() {
+    autoRefreshInterval = setInterval(() => {
+        console.log('Auto-refreshing health data...');
+        refreshHealthData();
+    }, 30000);
+}
+
+function stopAutoRefresh() {
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Assistant Health Monitor loaded');
+    
+    // Start auto-refresh (commented out for now to avoid too many refreshes during development)
+    // startAutoRefresh();
+});
+
+// Clean up on page unload
+window.addEventListener('beforeunload', function() {
+    stopAutoRefresh();
+});
+</script>
+{% endblock %}

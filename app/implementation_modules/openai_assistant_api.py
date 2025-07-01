@@ -291,9 +291,23 @@ class OpenAIAssistantAPIImplementation(BaseImplementation):
             'errors': errors
         }
 
+    def _ensure_headers(self):
+        """Ensure headers are properly set with current API key."""
+        if not hasattr(self, 'headers') or not self.api_key:
+            self.headers = {
+                'Authorization': f'Bearer {self.api_key}',
+                'Content-Type': 'application/json',
+                'OpenAI-Beta': 'assistants=v2'
+            }
+            if self.organization:
+                self.headers['OpenAI-Organization'] = self.organization
+
     async def execute_async(self, input_params: Dict[str, Any]) -> Dict[str, Any]:
         """Execute the implementation asynchronously."""
         try:
+            # Ensure headers are set with current API key
+            self._ensure_headers()
+            
             action = input_params.get('action', 'test')
             
             if action == 'test':
@@ -329,8 +343,26 @@ class OpenAIAssistantAPIImplementation(BaseImplementation):
                 'timestamp': datetime.now().isoformat()
             }
 
-    def execute(self, input_params: Dict[str, Any]) -> Dict[str, Any]:
+    def execute(self, config_params: Dict[str, Any], input_params: Dict[str, Any], output_params: Dict[str, Any]) -> Dict[str, Any]:
         """Execute the implementation synchronously."""
+        # Set configuration
+        self.config_params = config_params
+        
+        # Configure API settings
+        self.api_key = config_params.get('api_key') or config_params.get('openai_api_key')
+        if not self.api_key:
+            return {
+                'success': False,
+                'error': 'API key is required',
+                'timestamp': datetime.now().isoformat()
+            }
+        
+        self.headers = {
+            'Authorization': f'Bearer {self.api_key}',
+            'Content-Type': 'application/json',
+            'OpenAI-Beta': 'assistants=v2'
+        }
+        
         return asyncio.run(self.execute_async(input_params))
 
     async def _test_connection(self) -> Dict[str, Any]:

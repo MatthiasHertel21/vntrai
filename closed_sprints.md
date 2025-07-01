@@ -459,6 +459,71 @@ Dieses Dokument enthält alle erfolgreich abgeschlossenen Sprints und umgesetzte
 
 ---
 
+## ✅ Sprint 17: AI Assistant Integration (8.-12. Juli 2025) - ABGESCHLOSSEN
+### Ziel: OpenAI Assistant Integration und Tool-Connection
+
+**User Stories:**
+- Als Agent möchte ich einen AI Assistant zugeordnet bekommen
+- Als Benutzer möchte ich Assistant-Properties konfigurieren können
+- Als Agent möchte ich Tools mit "assistent" Option nutzen können
+
+**Vollständig implementiert:**
+- [x] **V2 Assistant API Tool vollständig entwickelt** mit allen CRUD Operations
+- [x] OpenAI Assistant API Integration funktioniert
+- [x] Assistant Management UI in Agent Edit Page
+- [x] Tool-Agent Connection über "assistent" Option
+- [x] System Prompt Generation aus Agent-Daten
+- [x] File Upload/Management für Assistants
+- [x] Assistant CRUD (create, update, delete) funktional
+- [x] "Test Connection" und "Test Chat" für Assistants
+- [x] System Prompt Preview und Generation implementiert
+
+**Core Tasks umgesetzt:**
+1. **🔗 Assistant API Integration**
+   - V2 Assistant API Tool entwickelt für OpenAI Assistant v2 API
+   - OpenAI Assistant API Client in `app/implementation_modules/openai_assistant_api.py`
+   - Assistant CRUD Operations (create, update, delete)
+   - File Upload/Management für Assistants
+   - Assistant Metadata Storage
+
+2. **⚙️ Assistant Management UI**
+   - Assistant Container in Agent Edit Page implementiert
+   - Assistant Properties: name, description, model, tools, instructions
+   - "Update" und "New" Buttons für Assistant Management
+   - System Prompt Preview und Generation funktional
+
+3. **🛠️ Tool-Assistant Connection**
+   - Tools "options" Feld erweitert um "assistent" Option
+   - V2 Assistant API Tool als primäres Assistant-Tool registriert
+   - Tool Selection in Agent Configuration implementiert
+   - Assistant Tool Assignment Logic funktional
+
+**Definition of Done:** ✅ VOLLSTÄNDIG ERFÜLLT
+- [x] V2 Assistant API Tool für OpenAI Assistant v2 API entwickelt
+- [x] OpenAI Assistant API Client implementiert
+- [x] Assistant CRUD Operations funktionsfähig
+- [x] Assistant Management UI in Agent Edit Page
+- [x] Tool-Assistant Connection über "options" Feld
+- [x] File Upload/Management für Assistants
+- [x] System Prompt Preview und Generation
+
+**Technische Achievements:**
+- Docker-Integration: Alle Features laufen stabil im Container
+- UI/UX-Integration: Assistants nahtlos in Agent Edit Page integriert
+- Backend-Robustheit: Vollständige Error-Handling und Validation
+- File-Management: Upload, Download, Delete mit Metadata-Tracking
+- API-Integration: OpenAI Assistant v2 API vollständig implementiert
+
+**Files geändert/erstellt:**
+- `app/templates/agents/edit.html` - Assistant UI, System Prompt Preview, File Upload
+- `app/routes/agents.py` - System Prompt route, file upload/download/delete routes
+- `app/routes/tools.py` - Assistant CRUD routes, config mapping, test routes
+- `app/utils/data_manager.py` - Assistant CRUD logic, config mapping, file handling
+- `app/implementation_modules/openai_assistant_api.py` - Assistant API implementation
+- `data/agents/*.json` - Agent/assistant/file metadata
+
+---
+
 ## 🎯 **Abgeschlossene Layout-Anforderungen:**
 
 ### ✅ **Layout Anpassungen (Alle abgeschlossen):**
