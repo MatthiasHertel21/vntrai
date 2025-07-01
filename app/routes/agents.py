@@ -3,11 +3,12 @@ Agent Routes für vntrai Agent System
 Handles CRUD operations for AI agents
 """
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, make_response
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, make_response, current_app
 from app.utils.data_manager import agents_manager, tools_manager
 from app.utils.validation import DataValidator
 import uuid
 import os
+from datetime import datetime
 import json
 from datetime import datetime
 from datetime import datetime
@@ -179,7 +180,13 @@ def edit_agent(agent_id):
         if 'name' in request.form:
             agent['name'] = request.form.get('name', '').strip()
         if 'category' in request.form:
-            agent['category'] = request.form.get('category', 'General').strip()
+            category = request.form.get('category', 'General').strip()
+            # Handle custom categories
+            if category == '__NEW__':
+                category = 'General'  # Fallback if somehow __NEW__ is submitted
+            elif request.form.get('custom_category', '').strip():
+                category = request.form.get('custom_category', '').strip()
+            agent['category'] = category
         if 'description' in request.form:
             agent['description'] = request.form.get('description', '').strip()
         if 'status' in request.form:
@@ -678,17 +685,38 @@ def api_get_agent_tasks(agent_id):
 def api_create_agent_task(agent_id):
     """API endpoint to create agent task (Sprint 18)"""
     try:
-        data = request.get_json()
+        # Validate agent exists first
+        agent = agents_manager.load(agent_id)
+        if not agent:
+            return jsonify({'success': False, 'error': 'Agent not found'}), 404
+        
+        # Parse JSON data with better error handling
+        try:
+            data = request.get_json(force=True)
+        except Exception as e:
+            current_app.logger.error(f"JSON parsing error: {str(e)}")
+            return jsonify({'success': False, 'error': f'Invalid JSON data: {str(e)}'}), 400
+            
         if not data:
+            current_app.logger.error("No data provided in request")
             return jsonify({'success': False, 'error': 'No data provided'}), 400
+        
+        current_app.logger.info(f"Creating task with data: {data}")
+        
+        # Validate required fields
+        if not data.get('name', '').strip():
+            return jsonify({'success': False, 'error': 'Task name is required'}), 400
+            
+        if data.get('type') not in ['ai', 'tool']:
+            return jsonify({'success': False, 'error': 'Task type must be "ai" or "tool"'}), 400
         
         # Create task definition with Sprint 18 structure
         task_def = {
             'uuid': str(uuid.uuid4()),
-            'name': data.get('name', 'New Task'),
+            'name': data.get('name', 'New Task').strip(),
             'type': data.get('type', 'ai'),
-            'description': data.get('description', ''),
-            'order': data.get('order', 1),
+            'description': data.get('description', '').strip(),
+            'order': data.get('order', len(agent.get('tasks', [])) + 1),
             'created_at': datetime.now().isoformat(),
             'updated_at': datetime.now().isoformat()
         }
@@ -709,19 +737,32 @@ def api_create_agent_task(agent_id):
                 'output_mapping': data.get('output_mapping', {})
             }
         
-        success = agents_manager.add_task_definition(agent_id, task_def)
+        # Add task to agent's tasks list directly
+        if 'tasks' not in agent:
+            agent['tasks'] = []
+        
+        agent['tasks'].append(task_def)
+        agent['updated_at'] = datetime.now().isoformat()
+        
+        # Save agent with new task
+        success = agents_manager.save(agent)
         
         if success:
+            current_app.logger.info(f"Task created successfully: {task_def['uuid']}")
             return jsonify({
                 'success': True,
                 'task': task_def,
                 'message': 'Task created successfully'
             })
         else:
-            return jsonify({'success': False, 'error': 'Failed to create task'}), 500
+            current_app.logger.error("Failed to save agent with new task")
+            return jsonify({'success': False, 'error': 'Failed to save task'}), 500
     
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        current_app.logger.error(f"Error creating task: {str(e)}")
+        import traceback
+        current_app.logger.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({'success': False, 'error': f'Internal server error: {str(e)}'}), 500
 
 @agents_bp.route('/api/<agent_id>/tasks/<task_uuid>', methods=['PUT'])
 def api_update_agent_task(agent_id, task_uuid):
@@ -802,29 +843,229 @@ def api_get_assistant_enabled_tools():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@agents_bp.route('/task-editor/<agent_id>')
-def task_editor(agent_id):
-    """Sprint 18: Dedicated Task Editor for Agent"""
+@agents_bp.errorhandler(404)
+def agents_not_found(error):
+    """Custom 404 handler for agents blueprint"""
+    return render_template('errors/404.html'), 404
+
+@agents_bp.errorhandler(500)
+def agents_internal_error(error):
+    """Custom 500 handler for agents blueprint"""
+    return render_template('errors/500.html'), 500
+
+# Debug route for task creation troubleshooting
+@agents_bp.route('/api/<agent_id>/tasks/debug', methods=['POST'])
+def debug_create_agent_task(agent_id):
+    """Debug endpoint for task creation issues"""
+    try:
+        # Log all request details
+        current_app.logger.info(f"Debug task creation for agent: {agent_id}")
+        current_app.logger.info(f"Request method: {request.method}")
+        current_app.logger.info(f"Request headers: {dict(request.headers)}")
+        current_app.logger.info(f"Request content type: {request.content_type}")
+        current_app.logger.info(f"Request data: {request.get_data()}")
+        
+        # Simple response for debugging
+        return jsonify({
+            'success': True,
+            'debug': True,
+            'agent_id': agent_id,
+            'method': request.method,
+            'content_type': request.content_type,
+            'has_data': bool(request.get_data()),
+            'message': 'Debug endpoint reached successfully'
+        }), 200
+        
+    except Exception as e:
+        current_app.logger.error(f"Debug endpoint error: {str(e)}")
+        return jsonify({
+            'success': False,
+            'debug': True,
+            'error': str(e)
+        }), 500
+
+# Task reordering endpoints
+@agents_bp.route('/api/<agent_id>/tasks/<task_uuid>/move-up', methods=['POST'])
+def move_task_up(agent_id, task_uuid):
+    """Move a task up in the order"""
     try:
         agent = agents_manager.load(agent_id)
         if not agent:
-            flash('Agent not found', 'error')
-            return redirect(url_for('agents.list_agents'))
+            return jsonify({'success': False, 'error': 'Agent not found'}), 404
         
-        # Get available tools for task configuration
-        available_tools = tools_manager.load_all()
-        assistant_tools = [tool for tool in available_tools 
-                          if tools_manager.is_assistant_enabled(tool.get('id', ''))]
+        tasks = agent.get('tasks', [])
+        if not tasks:
+            return jsonify({'success': False, 'error': 'No tasks found'}), 400
         
-        # Get task definitions
-        tasks = agents_manager.get_task_definitions(agent_id)
+        # Find the task index
+        task_index = None
+        for i, task in enumerate(tasks):
+            if task.get('uuid') == task_uuid:
+                task_index = i
+                break
         
-        return render_template('agents/task_editor.html',
-                             agent=agent,
-                             tasks=tasks,
-                             available_tools=available_tools,
-                             assistant_tools=assistant_tools)
-    
+        if task_index is None:
+            return jsonify({'success': False, 'error': 'Task not found'}), 404
+        
+        if task_index == 0:
+            return jsonify({'success': False, 'error': 'Task is already at the top'}), 400
+        
+        # Swap tasks
+        tasks[task_index], tasks[task_index - 1] = tasks[task_index - 1], tasks[task_index]
+        
+        # Update order numbers
+        for i, task in enumerate(tasks):
+            task['order'] = i + 1
+        
+        # Save agent
+        agent['tasks'] = tasks
+        agents_manager.save(agent)
+        
+        return jsonify({'success': True, 'message': 'Task moved up successfully'})
+        
     except Exception as e:
-        flash(f'Error loading task editor: {str(e)}', 'error')
-        return redirect(url_for('agents.edit_agent', agent_id=agent_id))
+        current_app.logger.error(f"Error moving task up: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@agents_bp.route('/api/<agent_id>/tasks/<task_uuid>/move-down', methods=['POST'])
+def move_task_down(agent_id, task_uuid):
+    """Move a task down in the order"""
+    try:
+        agent = agents_manager.load(agent_id)
+        if not agent:
+            return jsonify({'success': False, 'error': 'Agent not found'}), 404
+        
+        tasks = agent.get('tasks', [])
+        if not tasks:
+            return jsonify({'success': False, 'error': 'No tasks found'}), 400
+        
+        # Find the task index
+        task_index = None
+        for i, task in enumerate(tasks):
+            if task.get('uuid') == task_uuid:
+                task_index = i
+                break
+        
+        if task_index is None:
+            return jsonify({'success': False, 'error': 'Task not found'}), 404
+        
+        if task_index == len(tasks) - 1:
+            return jsonify({'success': False, 'error': 'Task is already at the bottom'}), 400
+        
+        # Swap tasks
+        tasks[task_index], tasks[task_index + 1] = tasks[task_index + 1], tasks[task_index]
+        
+        # Update order numbers
+        for i, task in enumerate(tasks):
+            task['order'] = i + 1
+        
+        # Save agent
+        agent['tasks'] = tasks
+        agents_manager.save(agent)
+        
+        return jsonify({'success': True, 'message': 'Task moved down successfully'})
+        
+    except Exception as e:
+        current_app.logger.error(f"Error moving task down: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# Task CRUD endpoints
+@agents_bp.route('/api/<agent_id>/tasks/<task_uuid>', methods=['PUT'])
+def update_task(agent_id, task_uuid):
+    """Update a specific task"""
+    try:
+        agent = agents_manager.load(agent_id)
+        if not agent:
+            return jsonify({'success': False, 'error': 'Agent not found'}), 404
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'No data provided'}), 400
+        
+        tasks = agent.get('tasks', [])
+        if not tasks:
+            return jsonify({'success': False, 'error': 'No tasks found'}), 404
+        
+        # Find the task to update
+        task_index = None
+        for i, task in enumerate(tasks):
+            if task.get('uuid') == task_uuid:
+                task_index = i
+                break
+        
+        if task_index is None:
+            return jsonify({'success': False, 'error': 'Task not found'}), 404
+        
+        # Update task fields
+        task = tasks[task_index]
+        if 'name' in data:
+            task['name'] = data['name']
+        if 'description' in data:
+            task['description'] = data['description']
+        if 'type' in data:
+            task['type'] = data['type']
+        if 'ai_config' in data:
+            task['ai_config'] = data['ai_config']
+        if 'tool_config' in data:
+            task['tool_config'] = data['tool_config']
+        
+        # Update modified timestamp
+        task['modified_at'] = datetime.utcnow().isoformat()
+        
+        # Save agent
+        agent['tasks'] = tasks
+        agents_manager.save(agent)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Task updated successfully',
+            'task': task
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error updating task: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@agents_bp.route('/api/<agent_id>/tasks/<task_uuid>', methods=['DELETE'])
+def delete_task(agent_id, task_uuid):
+    """Delete a specific task"""
+    try:
+        agent = agents_manager.load(agent_id)
+        if not agent:
+            return jsonify({'success': False, 'error': 'Agent not found'}), 404
+        
+        tasks = agent.get('tasks', [])
+        if not tasks:
+            return jsonify({'success': False, 'error': 'No tasks found'}), 404
+        
+        # Find and remove the task
+        task_index = None
+        for i, task in enumerate(tasks):
+            if task.get('uuid') == task_uuid:
+                task_index = i
+                break
+        
+        if task_index is None:
+            return jsonify({'success': False, 'error': 'Task not found'}), 404
+        
+        # Remove the task
+        removed_task = tasks.pop(task_index)
+        
+        # Reorder remaining tasks
+        for i, task in enumerate(tasks):
+            task['order'] = i + 1
+        
+        # Save agent
+        agent['tasks'] = tasks
+        agents_manager.save(agent)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Task deleted successfully',
+            'deleted_task': removed_task,
+            'remaining_count': len(tasks)
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error deleting task: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500

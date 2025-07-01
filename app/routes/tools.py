@@ -779,8 +779,11 @@ def test_assistant_connection(tool_id):
             if not impl:
                 return jsonify({'success': False, 'message': 'OpenAI Assistant API implementation not found or configuration invalid'}), 500
             
-            # Test connection
-            test_result = impl.execute({'action': 'test'})
+            # Test connection with proper parameters
+            input_params = {'action': 'test', 'test_connection': True}
+            output_params = {'status': 'text', 'message': 'text'}
+            
+            test_result = impl.execute(input_params, output_params)
             
             return jsonify({
                 'success': test_result.get('success', False),

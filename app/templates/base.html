@@ -65,27 +65,27 @@
                 
                 <!-- Section 3: Platform -->
                 <li class="vntr-nav-item">
-                    <a href="{{ url_for('agents.list_agents') }}" class="vntr-nav-link {% if request.endpoint.startswith('agents.') %}active{% endif %}" title="Agents">
+                    <a href="{{ url_for('agents.list_agents') }}" class="vntr-nav-link {% if request.endpoint and request.endpoint.startswith('agents.') %}active{% endif %}" title="Agents">
                         <img src="{{ url_for('static', filename='icons/Agent - black.png') }}" 
                              class="vntr-nav-icon" alt="Agents">
                         <span>Agents</span>
                     </a>
                 </li>
                 <li class="vntr-nav-item">
-                    <a href="{{ url_for('assistants.list_assistants') }}" class="vntr-nav-link {% if request.endpoint.startswith('assistants.') %}active{% endif %}" title="AI Assistants">
+                    <a href="{{ url_for('assistants.list_assistants') }}" class="vntr-nav-link {% if request.endpoint and request.endpoint.startswith('assistants.') %}active{% endif %}" title="AI Assistants">
                         <i class="bi bi-cpu vntr-nav-icon" style="font-size: 20px; color: #374151;"></i>
                         <span>AI Assistants</span>
                     </a>
                 </li>
                 <li class="vntr-nav-item">
-                    <a href="{{ url_for('tools.list_tools') }}" class="vntr-nav-link {% if request.endpoint.startswith('tools.') %}active{% endif %}" title="Tools">
+                    <a href="{{ url_for('tools.list_tools') }}" class="vntr-nav-link {% if request.endpoint and request.endpoint.startswith('tools.') %}active{% endif %}" title="Tools">
                         <img src="{{ url_for('static', filename='icons/Tools - black.png') }}" 
                              class="vntr-nav-icon" alt="Tools">
                         <span>Tools</span>
                     </a>
                 </li>
                 <li class="vntr-nav-item">
-                    <a href="{{ url_for('integrations.list_integrations') }}" class="vntr-nav-link {% if request.endpoint.startswith('integrations.') %}active{% endif %}" title="Integrations">
+                    <a href="{{ url_for('integrations.list_integrations') }}" class="vntr-nav-link {% if request.endpoint and request.endpoint.startswith('integrations.') %}active{% endif %}" title="Integrations">
                         <img src="{{ url_for('static', filename='icons/Integrations - white.svg') }}" 
                              class="vntr-nav-icon" alt="Integrations">
                         <span>Integrations</span>

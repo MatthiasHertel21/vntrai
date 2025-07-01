@@ -7,10 +7,10 @@
     <div class="flex justify-between items-center">
         <div class="flex items-center gap-4">
             <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
-                {{ agent.name[0].upper() }}
+                <i class="bi bi-robot"></i>
             </div>
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">Edit {{ agent.name }}</h1>
+                <h1 class="text-2xl font-bold text-gray-900" title="Agent ID: {{ agent.id }}&#10;UUID: {{ agent.uuid }}&#10;Created: {{ agent.created_at if agent.created_at else 'Unknown' }}">Edit {{ agent.name }}</h1>
                 <p class="text-gray-600">Modify agent configuration and capabilities</p>
             </div>
         </div>
@@ -20,15 +20,15 @@
                 <i class="bi bi-eye"></i>
                 View Agent
             </a>
-            <button type="submit" form="agentEditForm" class="btn btn-primary">
-                <i class="bi bi-check-lg mr-2"></i>
-                Save Changes
-            </button>
             <a href="{{ url_for('agents.list_agents') }}" 
                class="btn btn-outline">
                 <i class="bi bi-arrow-left"></i>
                 Back to Agents
             </a>
+            <button type="submit" form="agentEditForm" class="btn btn-primary ml-auto">
+                <i class="bi bi-check-lg mr-2"></i>
+                Save Changes
+            </button>
         </div>
     </div>
 </div>
@@ -56,13 +56,13 @@
             <!-- Left Column: Basic Information & AI Assistant -->
             <div class="space-y-6">
                 <!-- Basic Information -->
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 class="text-lg font-medium text-gray-900 border-b border-gray-200 pb-3 mb-4 flex items-center">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                    <h3 class="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2 mb-3 flex items-center">
                         <i class="bi bi-info-circle mr-2 text-blue-500"></i>
                         Basic Information
                     </h3>
                     
-                    <div class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
                             <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
                                 Agent Name <span class="text-red-500">*</span>
@@ -74,35 +74,6 @@
                                    maxlength="100"
                                    value="{{ agent.name }}"
                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-                        
-                        <div>
-                            <label for="category" class="block text-sm font-medium text-gray-700 mb-1">
-                                Category
-                            </label>
-                            <select id="category" 
-                                    name="category"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="General" {{ 'selected' if agent.category == 'General' }}>General</option>
-                                <option value="Content" {{ 'selected' if agent.category == 'Content' }}>Content & Writing</option>
-                                <option value="Data" {{ 'selected' if agent.category == 'Data' }}>Data Analysis</option>
-                                <option value="Marketing" {{ 'selected' if agent.category == 'Marketing' }}>Marketing</option>
-                                <option value="Research" {{ 'selected' if agent.category == 'Research' }}>Research</option>
-                                <option value="Support" {{ 'selected' if agent.category == 'Support' }}>Customer Support</option>
-                                <option value="Development" {{ 'selected' if agent.category == 'Development' }}>Development</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
-                                Description
-                            </label>
-                            <textarea id="description" 
-                                      name="description" 
-                                      rows="4"
-                                      maxlength="1000"
-                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                      placeholder="Describe what this agent does...">{{ agent.description or '' }}</textarea>
                         </div>
                         
                         <div>
@@ -119,11 +90,62 @@
                             </select>
                         </div>
                         
-                        <div>
+                        <div class="md:col-span-2">
+                            <label for="category" class="block text-sm font-medium text-gray-700 mb-1">
+                                Category
+                            </label>
+                            <div class="relative">
+                                <div class="flex gap-2">
+                                    <select id="category" 
+                                            name="category"
+                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="General" {{ 'selected' if agent.category == 'General' }}>General</option>
+                                        <option value="Content" {{ 'selected' if agent.category == 'Content' }}>Content & Writing</option>
+                                        <option value="Data" {{ 'selected' if agent.category == 'Data' }}>Data Analysis</option>
+                                        <option value="Marketing" {{ 'selected' if agent.category == 'Marketing' }}>Marketing</option>
+                                        <option value="Research" {{ 'selected' if agent.category == 'Research' }}>Research</option>
+                                        <option value="Support" {{ 'selected' if agent.category == 'Support' }}>Customer Support</option>
+                                        <option value="Development" {{ 'selected' if agent.category == 'Development' }}>Development</option>
+                                        <option value="Finance" {{ 'selected' if agent.category == 'Finance' }}>Finance</option>
+                                        <option value="Education" {{ 'selected' if agent.category == 'Education' }}>Education</option>
+                                        <option value="Healthcare" {{ 'selected' if agent.category == 'Healthcare' }}>Healthcare</option>
+                                        <!-- Custom categories will be dynamically added here -->
+                                        <option value="__NEW__">➕ Add New Category...</option>
+                                    </select>
+                                    <button type="button" 
+                                            id="addCategoryBtn"
+                                            onclick="showAddCategoryModal()"
+                                            class="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                            title="Add new category">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                </div>
+                                
+                                <!-- Hidden input for custom category -->
+                                <input type="hidden" 
+                                       id="customCategory" 
+                                       name="custom_category"
+                                       value="{{ agent.category if agent.category not in ['General', 'Content', 'Data', 'Marketing', 'Research', 'Support', 'Development', 'Finance', 'Education', 'Healthcare'] else '' }}">
+                            </div>
+                        </div>
+                        
+                        <div class="md:col-span-2">
+                            <label for="description" class="block text-sm font-medium text-gray-700 mb-1">
+                                Description
+                            </label>
+                            <textarea id="description" 
+                                      name="description" 
+                                      rows="3"
+                                      maxlength="1000"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                      placeholder="Describe what this agent does...">{{ agent.description or '' }}</textarea>
+                        </div>
+                        
+                        <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-gray-700 mb-2">
                                 Use as
                             </label>
-                            <div class="space-y-2">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
                                 <label class="flex items-center">
                                     <input type="checkbox" 
                                            name="use_as_agent" 
@@ -132,7 +154,7 @@
                                            class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                                     <span class="ml-2 text-sm text-gray-600">
                                         <i class="bi bi-person-gear mr-1 text-blue-500"></i>
-                                        Agent - Available for task execution and automation
+                                        Agent
                                     </span>
                                 </label>
                                 <label class="flex items-center">
@@ -143,9 +165,8 @@
                                            class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
                                     <span class="ml-2 text-sm text-gray-600">
                                         <i class="bi bi-lightbulb mr-1 text-purple-500"></i>
-                                        Insight - Available for interactive conversations and analysis
+                                        Insight
                                     </span>
-                                </label>
                                 </label>
                             </div>
                         </div>
@@ -154,15 +175,34 @@
 
                 <!-- AI Assistant Configuration -->
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 class="text-lg font-medium text-gray-900 border-b border-gray-200 pb-3 mb-4 flex items-center">
-                        <i class="bi bi-cpu mr-2 text-purple-500"></i>
-                        AI Assistant Configuration
-                    </h3>
+                    <div class="flex justify-between items-start border-b border-gray-200 pb-3 mb-4">
+                        <h3 class="text-lg font-medium text-gray-900 flex items-center">
+                            <i class="bi bi-cpu mr-2 text-purple-500"></i>
+                            AI Assistant Configuration
+                            <span id="assistantStatus" class="ml-2 px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600">
+                                Not Configured
+                            </span>
+                        </h3>
+                        <div class="flex flex-col space-y-1">
+                            <button type="button" onclick="testAssistantConnection()" 
+                                    class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 disabled:opacity-50 text-center"
+                                    id="testConnectionBtn" disabled>
+                                Test Connection
+                            </button>
+                            <button type="button" onclick="chatWithAssistant()" 
+                                    class="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 disabled:opacity-50 text-center"
+                                    id="testChatBtn" disabled>
+                                Test Chat
+                            </button>
+                        </div>
+                    </div>
                     
                     <div class="space-y-4">
                         <div>
-                            <label for="ai_assistant_tool" class="block text-sm font-medium text-gray-700 mb-1">
+                            <label for="ai_assistant_tool" class="block text-sm font-medium text-gray-700 mb-1" 
+                                   title="AI Assistant Tool Configuration&#10;Selected tool: {{ agent.ai_assistant_tool or 'None' }}&#10;Assistant ID: {{ agent.assistant_id or 'Not set' }}&#10;Tools with assistant functionality enabled">
                                 AI Assistant Tool <span class="text-red-500">*</span>
+                                <i class="bi bi-info-circle text-gray-400 ml-1" title="Click for configuration details"></i>
                             </label>
                             <select id="ai_assistant_tool" 
                                     name="ai_assistant_tool"
@@ -187,26 +227,6 @@
                                 No assistant-enabled tools available. <a href="{{ url_for('tools.list_tools') }}" class="text-blue-600 hover:text-blue-800">Configure tools</a> first.
                                 {% endif %}
                             </p>
-                        </div>
-                        
-                        <!-- Assistant Configuration Panel -->
-                        <div id="assistant_config_details" class="hidden">
-                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-2">
-                                <h4 class="text-sm font-medium text-blue-900 mb-2">Assistant Tool Configuration</h4>
-                                <div id="assistant_tool_details" class="text-sm text-blue-800">
-                                    <!-- Dynamically populated -->
-                                </div>
-                                <div class="mt-2">
-                                    <button type="button" onclick="testAssistantConnection()" 
-                                            class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700">
-                                        Test Connection
-                                    </button>
-                                    <button type="button" onclick="chatWithAssistant()" 
-                                            class="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 ml-1">
-                                        Test Chat
-                                    </button>
-                                </div>
-                            </div>
                         </div>
                         
                         <div>
@@ -250,59 +270,60 @@
                             </span>
                         </div>
                         <div class="flex gap-2">
-                            <button type="button" onclick="openTaskEditor()" class="btn btn-sm btn-primary">
-                                <i class="bi bi-gear mr-1"></i>
-                                Manage Tasks
-                            </button>
-                            <button type="button" onclick="addNewTask()" class="btn btn-sm btn-outline">
+                            <button type="button" onclick="addNewTask()" class="btn btn-sm btn-outline w-8 h-8 p-0 flex items-center justify-center" title="Add Task">
                                 <i class="bi bi-plus"></i>
-                                Add Task
                             </button>
                         </div>
                     </div>
                     
                     <!-- Sprint 18: Task List Display -->
-                    <div id="tasksPreview" class="space-y-3">
+                    <div id="tasksPreview" class="space-y-2">
                         {% if agent.tasks %}
                             {% for task in agent.tasks %}
-                                <div class="p-3 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
-                                    <div class="flex items-center justify-between">
-                                        <div class="flex items-center flex-1">
-                                            <div class="flex items-center">
-                                                {% if task.type == 'ai' %}
-                                                    <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                                                        <i class="bi bi-robot text-blue-600 text-sm"></i>
-                                                    </div>
-                                                {% elif task.type == 'tool' %}
-                                                    <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
-                                                        <i class="bi bi-tools text-purple-600 text-sm"></i>
-                                                    </div>
-                                                {% else %}
-                                                    <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
-                                                        <i class="bi bi-question text-gray-600 text-sm"></i>
-                                                    </div>
-                                                {% endif %}
-                                                
-                                                <div>
-                                                    <div class="flex items-center">
-                                                        <h4 class="font-medium text-gray-900 text-sm">{{ task.name }}</h4>
-                                                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium 
-                                                                     {% if task.type == 'ai' %}bg-blue-100 text-blue-800{% elif task.type == 'tool' %}bg-purple-100 text-purple-800{% else %}bg-gray-100 text-gray-800{% endif %}">
-                                                            {{ task.type|title }}
-                                                        </span>
-                                                    </div>
-                                                    {% if task.description %}
-                                                        <p class="text-xs text-gray-600 mt-1">{{ task.description[:80] }}{% if task.description|length > 80 %}...{% endif %}</p>
-                                                    {% endif %}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="flex items-center gap-1">
-                                            <span class="text-xs text-gray-500">#{{ task.order or loop.index }}</span>
-                                            <button type="button" onclick="editTask('{{ task.uuid }}')" class="p-1 text-blue-500 hover:text-blue-700">
-                                                <i class="bi bi-pencil text-xs"></i>
+                                <div class="p-3 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                                     onclick="editTask('{{ task.uuid }}')">
+                                    <div class="flex items-center">
+                                        <!-- Move buttons at the beginning -->
+                                        <div class="flex flex-col mr-3">
+                                            <button type="button" onclick="event.stopPropagation(); moveTaskUp('{{ task.uuid }}')" 
+                                                    class="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                                                    {% if loop.first %}disabled{% endif %}
+                                                    title="Move task up">
+                                                <i class="bi bi-chevron-up text-xs"></i>
                                             </button>
-                                            <button type="button" onclick="deleteTask('{{ task.uuid }}')" class="p-1 text-red-500 hover:text-red-700">
+                                            <button type="button" onclick="event.stopPropagation(); moveTaskDown('{{ task.uuid }}')" 
+                                                    class="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                                                    {% if loop.last %}disabled{% endif %}
+                                                    title="Move task down">
+                                                <i class="bi bi-chevron-down text-xs"></i>
+                                            </button>
+                                        </div>
+                                        
+                                        <!-- Task icon -->
+                                        {% if task.type == 'ai' %}
+                                            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                                                <i class="bi bi-robot text-blue-600 text-sm"></i>
+                                            </div>
+                                        {% elif task.type == 'tool' %}
+                                            <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                                                <i class="bi bi-tools text-purple-600 text-sm"></i>
+                                            </div>
+                                        {% else %}
+                                            <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
+                                                <i class="bi bi-question text-gray-600 text-sm"></i>
+                                            </div>
+                                        {% endif %}
+                                        
+                                        <!-- Task name only -->
+                                        <div class="flex-1">
+                                            <h4 class="font-medium text-gray-900 text-sm">{{ task.name }}</h4>
+                                        </div>
+                                        
+                                        <!-- Delete button only -->
+                                        <div class="flex items-center">
+                                            <button type="button" onclick="event.stopPropagation(); deleteTask('{{ task.uuid }}')" 
+                                                    class="p-1 text-red-500 hover:text-red-700"
+                                                    title="Delete task">
                                                 <i class="bi bi-trash text-xs"></i>
                                             </button>
                                         </div>
@@ -406,6 +427,245 @@
 
 {% block extra_js %}
 <script>
+// ===========================
+// CATEGORY MANAGEMENT
+// ===========================
+
+// Handle category selection changes
+document.addEventListener('DOMContentLoaded', function() {
+    const categorySelect = document.getElementById('category');
+    const customCategoryInput = document.getElementById('customCategory');
+    
+    // Load saved custom categories from localStorage
+    loadCustomCategories();
+    
+    // Initialize category selection
+    initializeCategorySelection();
+    
+    // Add event listener for category changes
+    categorySelect.addEventListener('change', handleCategoryChange);
+    
+    function loadCustomCategories() {
+        const savedCategories = JSON.parse(localStorage.getItem('agentCategories') || '[]');
+        const defaultCategories = ['General', 'Content', 'Data', 'Marketing', 'Research', 'Support', 'Development', 'Finance', 'Education', 'Healthcare'];
+        
+        // Add saved custom categories to the select
+        savedCategories.forEach(category => {
+            if (!defaultCategories.includes(category)) {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category;
+                // Insert before the "Add New Category" option
+                const addNewOption = categorySelect.querySelector('option[value="__NEW__"]');
+                categorySelect.insertBefore(option, addNewOption);
+            }
+        });
+    }
+    
+    function initializeCategorySelection() {
+        const currentCategory = '{{ agent.category }}';
+        const customCategory = customCategoryInput.value;
+        
+        if (customCategory && customCategory.trim()) {
+            // If there's a custom category, select it or add it
+            const existingOption = categorySelect.querySelector(`option[value="${customCategory}"]`);
+            if (!existingOption) {
+                addCustomCategoryOption(customCategory);
+            }
+            categorySelect.value = customCategory;
+        }
+    }
+    
+    function handleCategoryChange() {
+        if (categorySelect.value === '__NEW__') {
+            showAddCategoryModal();
+        } else {
+            customCategoryInput.value = '';
+        }
+    }
+    
+    function addCustomCategoryOption(categoryName) {
+        const option = document.createElement('option');
+        option.value = categoryName;
+        option.textContent = categoryName;
+        option.selected = true;
+        
+        // Insert before the "Add New Category" option
+        const addNewOption = categorySelect.querySelector('option[value="__NEW__"]');
+        categorySelect.insertBefore(option, addNewOption);
+        
+        // Save to localStorage
+        const savedCategories = JSON.parse(localStorage.getItem('agentCategories') || '[]');
+        if (!savedCategories.includes(categoryName)) {
+            savedCategories.push(categoryName);
+            localStorage.setItem('agentCategories', JSON.stringify(savedCategories));
+        }
+    }
+    
+    // Handle form submission
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (categorySelect.value === '__NEW__') {
+                e.preventDefault();
+                showAddCategoryModal();
+                return false;
+            }
+            
+            // Set the custom category value for backend processing
+            if (categorySelect.value && !['General', 'Content', 'Data', 'Marketing', 'Research', 'Support', 'Development', 'Finance', 'Education', 'Healthcare'].includes(categorySelect.value)) {
+                customCategoryInput.value = categorySelect.value;
+            }
+        });
+    }
+});
+
+// ===========================
+// CATEGORY MANAGEMENT FUNCTIONS
+// ===========================
+
+// Show modal for adding new category
+function showAddCategoryModal() {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Add New Category</h3>
+                <form id="addCategoryForm">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Category Name</label>
+                            <input type="text" id="newCategoryName" required 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="Enter category name">
+                        </div>
+                    </div>
+                    <div class="flex gap-3 mt-6">
+                        <button type="submit" class="btn btn-primary flex-1">
+                            <i class="bi bi-plus mr-1"></i>
+                            Add Category
+                        </button>
+                        <button type="button" onclick="closeAddCategoryModal(); resetCategorySelect();" 
+                                class="btn btn-outline flex-1">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Handle form submission
+    document.getElementById('addCategoryForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const categoryName = document.getElementById('newCategoryName').value.trim();
+        
+        if (categoryName) {
+            addNewCategoryToSelect(categoryName);
+            closeAddCategoryModal();
+            showNotification(`Category "${categoryName}" added successfully!`, true);
+        }
+    });
+    
+    // Focus on input
+    document.getElementById('newCategoryName').focus();
+}
+
+// Close add category modal
+function closeAddCategoryModal() {
+    const modal = document.querySelector('.fixed.inset-0');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// Reset category select when modal is cancelled
+function resetCategorySelect() {
+    const categorySelect = document.getElementById('category');
+    const currentCategory = '{{ agent.category }}';
+    categorySelect.value = currentCategory || 'General';
+}
+
+// Add new category to select dropdown
+function addNewCategoryToSelect(categoryName) {
+    const categorySelect = document.getElementById('category');
+    const customCategoryInput = document.getElementById('customCategory');
+    
+    // Check if option already exists
+    const existingOption = categorySelect.querySelector(`option[value="${categoryName}"]`);
+    if (existingOption) {
+        categorySelect.value = categoryName;
+        return;
+    }
+    
+    const option = document.createElement('option');
+    option.value = categoryName;
+    option.textContent = categoryName;
+    option.selected = true;
+    
+    // Insert before the "Add New Category" option
+    const addNewOption = categorySelect.querySelector('option[value="__NEW__"]');
+    categorySelect.insertBefore(option, addNewOption);
+    
+    // Save to localStorage
+    const savedCategories = JSON.parse(localStorage.getItem('agentCategories') || '[]');
+    if (!savedCategories.includes(categoryName)) {
+        savedCategories.push(categoryName);
+        localStorage.setItem('agentCategories', JSON.stringify(savedCategories));
+    }
+    
+    // Set custom category input for backend
+    customCategoryInput.value = categoryName;
+}
+
+// ===========================
+// GLOBAL VARIABLES & INITIALIZATION
+// ===========================
+
+// Sprint 18: Agent and task data
+window.agentData = {{ agent | tojson | safe }};
+const assistantTools = {{ assistant_tools | tojson | safe if assistant_tools else '[]' }};
+
+// ===========================
+// UTILITIES
+// ===========================
+
+function showNotification(message, isSuccess = true) {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full ${
+        isSuccess ? 'bg-green-100 border border-green-400 text-green-700' : 'bg-red-100 border border-red-400 text-red-700'
+    }`;
+    
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="${isSuccess ? 'bi bi-check-circle' : 'bi bi-exclamation-triangle'} mr-2"></i>
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-gray-500 hover:text-gray-700">
+                <i class="bi bi-x"></i>
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+    }, 100);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.classList.add('translate-x-full');
+            setTimeout(() => notification.remove(), 300);
+        }
+    }, 5000);
+}
+
 // Simple auto-save functionality
 let saveTimeout;
 function scheduleAutoSave() {
@@ -416,8 +676,7 @@ function scheduleAutoSave() {
     }, 2000);
 }
 
-// Assistant tool configuration
-const assistantTools = {{ assistant_tools | tojson if assistant_tools else '[]' }};
+// Assistant tool configuration (using existing assistantTools variable)
 
 function onAssistantToolChange(value) {
     const detailsPanel = document.getElementById('assistant_config_details');
@@ -447,6 +706,30 @@ function onAssistantToolChange(value) {
         detailsPanel.classList.add('hidden');
     }
 }
+
+// Enable/disable test buttons based on assistant tool selection
+function updateTestButtonsState() {
+    const assistantTool = document.getElementById('ai_assistant_tool').value;
+    const testConnectionBtn = document.getElementById('testConnectionBtn');
+    const testChatBtn = document.getElementById('testChatBtn');
+    
+    if (assistantTool && assistantTool !== '') {
+        testConnectionBtn.disabled = false;
+        testChatBtn.disabled = false;
+    } else {
+        testConnectionBtn.disabled = true;
+        testChatBtn.disabled = true;
+    }
+}
+
+// Update button states when assistant tool changes
+document.addEventListener('DOMContentLoaded', function() {
+    const assistantToolSelect = document.getElementById('ai_assistant_tool');
+    if (assistantToolSelect) {
+        assistantToolSelect.addEventListener('change', updateTestButtonsState);
+        updateTestButtonsState(); // Initial state
+    }
+});
 
 function testAssistantConnection() {
     const selectedTool = document.getElementById('ai_assistant_tool').value;
@@ -518,33 +801,6 @@ function chatWithAssistant() {
     }
 }
 
-function showNotification(message, success) {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
-        success ? 'bg-green-100 border border-green-400 text-green-700' : 'bg-red-100 border border-red-400 text-red-700'
-    }`;
-    
-    notification.innerHTML = `
-        <div class="flex items-center">
-            <i class="bi ${success ? 'bi-check-circle' : 'bi-exclamation-circle'} mr-2"></i>
-            <span>${message}</span>
-            <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-gray-500 hover:text-gray-700">
-                <i class="bi bi-x"></i>
-            </button>
-        </div>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-        if (notification.parentElement) {
-            notification.remove();
-        }
-    }, 5000);
-}
-
 // ===========================
 // SPRINT 18: TASK MANAGEMENT REVOLUTION
 // ===========================
@@ -585,12 +841,6 @@ function updateTaskCount() {
     if (taskCountElement) {
         taskCountElement.textContent = agentTasks.length;
     }
-}
-
-// Sprint 18: Open dedicated Task Editor
-function openTaskEditor() {
-    const agentUuid = '{{ agent.uuid }}';
-    window.open(`/agents/${agentUuid}/task-editor`, '_blank');
 }
 
 // Sprint 18: Add new task with modal
@@ -660,16 +910,53 @@ function addNewTask() {
 // Sprint 18: Create task via API
 async function createTask(taskData) {
     try {
-        const response = await fetch(`/api/task_management/agent/{{ agent.uuid }}/tasks`, {
+        const agentId = '{{ agent.id }}';
+        console.log('Creating task with data:', taskData);
+        console.log('Agent ID:', agentId);
+        
+        // Validate agentId
+        if (!agentId || agentId === '') {
+            throw new Error('Agent ID is empty or undefined');
+        }
+        
+        const url = `/agents/api/${agentId}/tasks`;
+        console.log('API URL:', url);
+        
+        const requestData = {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': '{{ csrf_token() }}'
             },
             body: JSON.stringify(taskData)
-        });
+        };
+        
+        console.log('Request data:', requestData);
+        
+        const response = await fetch(url, requestData);
+        
+        console.log('Response status:', response.status);
+        console.log('Response headers:', [...response.headers.entries()]);
+        
+        // Check if response is actually JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const responseText = await response.text();
+            console.error('Expected JSON but got:', contentType);
+            console.error('Response text:', responseText);
+            
+            // Show more specific error message
+            if (responseText.includes('404')) {
+                throw new Error('API endpoint not found. Check if the server is running.');
+            } else if (responseText.includes('500')) {
+                throw new Error('Internal server error. Check server logs for details.');
+            } else {
+                throw new Error(`Server returned HTML instead of JSON. Content-Type: ${contentType}`);
+            }
+        }
         
         const result = await response.json();
+        console.log('Response data:', result);
         
         if (result.success) {
             showNotification('Task created successfully', true);
@@ -686,9 +973,138 @@ async function createTask(taskData) {
 
 // Sprint 18: Edit task
 function editTask(taskUuid) {
-    // For now, open task editor focused on this task
-    const agentUuid = '{{ agent.uuid }}';
-    window.open(`/agents/${agentUuid}/task-editor?task=${taskUuid}`, '_blank');
+    console.log('Opening edit modal for task:', taskUuid);
+    
+    // Get task data from server first
+    const agentId = '{{ agent.id }}';
+    
+    // Find task from current agent data
+    let task = null;
+    {% if agent.tasks %}
+        const serverTasks = {{ agent.tasks | tojson | safe }};
+        task = serverTasks.find(t => t.uuid === taskUuid);
+    {% endif %}
+    
+    if (!task) {
+        console.error('Task not found with UUID:', taskUuid);
+        showNotification('Task not found', false);
+        return;
+    }
+    
+    console.log('Found task:', task);
+    
+    // Create edit modal
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4">
+            <div class="p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Edit Task</h3>
+                <form id="editTaskForm">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Task Name</label>
+                            <input type="text" id="editTaskName" name="name" required 
+                                   value="${(task.name || '').replace(/"/g, '&quot;')}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="Enter task name">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Task Type</label>
+                            <select id="editTaskType" name="type" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                <option value="ai" ${task.type === 'ai' ? 'selected' : ''}>AI Task</option>
+                                <option value="tool" ${task.type === 'tool' ? 'selected' : ''}>Tool Task</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <textarea id="editTaskDescription" name="description" rows="3"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                      placeholder="Describe what this task does...">${(task.description || '').replace(/"/g, '&quot;')}</textarea>
+                        </div>
+                    </div>
+                    <div class="flex gap-3 mt-6">
+                        <button type="submit" class="btn btn-primary flex-1">
+                            <i class="bi bi-check mr-1"></i>
+                            Update Task
+                        </button>
+                        <button type="button" onclick="closeEditTaskModal()" 
+                                class="btn btn-outline flex-1">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Handle form submission
+    document.getElementById('editTaskForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        console.log('Submitting task update for:', taskUuid);
+        await updateTask(taskUuid, {
+            name: document.getElementById('editTaskName').value,
+            type: document.getElementById('editTaskType').value,
+            description: document.getElementById('editTaskDescription').value
+        });
+        closeEditTaskModal();
+    });
+    
+    // Focus on name input
+    document.getElementById('editTaskName').focus();
+}
+
+// Close edit task modal
+function closeEditTaskModal() {
+    const modal = document.querySelector('.fixed.inset-0');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// Sprint 18: Update task via API
+async function updateTask(taskUuid, taskData) {
+    try {
+        const agentId = '{{ agent.id }}';
+        console.log('Updating task:', taskUuid, 'with data:', taskData);
+        
+        const response = await fetch(`/agents/api/${agentId}/tasks/${taskUuid}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify(taskData)
+        });
+        
+        console.log('Update response status:', response.status);
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const responseText = await response.text();
+            console.error('Expected JSON but got:', contentType);
+            console.error('Response text:', responseText);
+            throw new Error('Server returned HTML instead of JSON. Check server logs.');
+        }
+        
+        const result = await response.json();
+        console.log('Update result:', result);
+        
+        if (response.ok && result.success) {
+            showNotification('Task updated successfully!', true);
+            // Reload the page to show updates
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            throw new Error(result.error || result.message || 'Failed to update task');
+        }
+    } catch (error) {
+        console.error('Error updating task:', error);
+        showNotification(`Error updating task: ${error.message}`, false);
+    }
 }
 
 // Sprint 18: Delete task
@@ -698,7 +1114,8 @@ async function deleteTask(taskUuid) {
     }
     
     try {
-        const response = await fetch(`/api/task_management/agent/{{ agent.uuid }}/tasks/${taskUuid}`, {
+        const agentId = '{{ agent.id }}';
+        const response = await fetch(`/agents/api/${agentId}/tasks/${taskUuid}`, {
             method: 'DELETE',
             headers: {
                 'X-CSRFToken': '{{ csrf_token() }}'
@@ -755,7 +1172,8 @@ async function migrateLegacyInstructions() {
 // Sprint 18: Refresh tasks display
 async function refreshTasksDisplay() {
     try {
-        const response = await fetch(`/api/task_management/agent/{{ agent.uuid }}/tasks`);
+        const agentId = '{{ agent.id }}';
+        const response = await fetch(`/agents/api/${agentId}/tasks`);
         const result = await response.json();
         
         if (result.success) {
@@ -781,12 +1199,7 @@ function addNewTaskOld() {
     console.log('Add Task clicked - Feature in development for Sprint 18');
 }
 
-function editTask(taskId) {
-    showNotification('Task editing will be available in Sprint 18 Task Management Revolution.', false);
-    console.log('Edit Task clicked for task:', taskId);
-}
-
-function deleteTask(taskId) {
+function deleteTaskOld(taskId) {
     if (confirm('Are you sure you want to delete this task?')) {
         showNotification('Task deletion will be available in Sprint 18.', false);
         console.log('Delete Task clicked for task:', taskId);
@@ -830,6 +1243,134 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize tasks
     initializeTasks();
+});
+
+// Debug function to test API connectivity
+async function debugTaskAPI() {
+    try {
+        const agentId = '{{ agent.id }}';
+        const debugUrl = `/agents/api/${agentId}/tasks/debug`;
+        
+        console.log('Testing debug endpoint:', debugUrl);
+        
+        const response = await fetch(debugUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({test: 'debug'})
+        });
+        
+        const result = await response.json();
+        console.log('Debug response:', result);
+        showNotification('Debug test completed. Check console for details.', true);
+        
+    } catch (error) {
+        console.error('Debug test failed:', error);
+        showNotification('Debug test failed: ' + error.message, false);
+    }
+}
+
+// Add debug button (for testing only)
+function addDebugButton() {
+    if (document.getElementById('debugTaskButton')) return; // Already added
+    
+    const debugButton = document.createElement('button');
+    debugButton.id = 'debugTaskButton';
+    debugButton.type = 'button';
+    debugButton.className = 'btn btn-sm btn-warning';
+    debugButton.innerHTML = '<i class="bi bi-bug"></i> Debug API';
+    debugButton.onclick = debugTaskAPI;
+    
+    const buttonContainer = document.querySelector('.flex.gap-2');
+    if (buttonContainer) {
+        buttonContainer.appendChild(debugButton);
+    }
+}
+
+// Call addDebugButton on script load (for testing only)
+// addDebugButton();
+
+// ===========================
+// SPRINT 18: TASK REORDERING FUNCTIONS
+// ===========================
+
+async function moveTaskUp(taskUuid) {
+    try {
+        const agentId = '{{ agent.id }}';
+        const response = await fetch(`/agents/api/${agentId}/tasks/${taskUuid}/move-up`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification('Task moved up successfully', true);
+            // Reload page to show new order
+            window.location.reload();
+        } else {
+            showNotification('Failed to move task: ' + result.error, false);
+        }
+    } catch (error) {
+        console.error('Error moving task up:', error);
+        showNotification('Error moving task: ' + error.message, false);
+    }
+}
+
+async function moveTaskDown(taskUuid) {
+    try {
+        const agentId = '{{ agent.id }}';
+        const response = await fetch(`/agents/api/${agentId}/tasks/${taskUuid}/move-down`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification('Task moved down successfully', true);
+            // Reload page to show new order
+            window.location.reload();
+        } else {
+            showNotification('Failed to move task: ' + result.error, false);
+        }
+    } catch (error) {
+        console.error('Error moving task down:', error);
+        showNotification('Error moving task: ' + error.message, false);
+    }
+}
+
+// Update assistant status based on configuration
+function updateAssistantStatus() {
+    const assistantTool = document.getElementById('ai_assistant_tool').value;
+    const statusElement = document.getElementById('assistantStatus');
+    
+    if (statusElement) {
+        if (assistantTool && assistantTool !== '') {
+            statusElement.textContent = 'Configured';
+            statusElement.className = 'ml-2 px-2 py-1 text-xs rounded-full bg-green-100 text-green-600';
+        } else {
+            statusElement.textContent = 'Not Configured';
+            statusElement.className = 'ml-2 px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600';
+        }
+    }
+}
+
+// Call updateAssistantStatus when tool selection changes
+document.addEventListener('DOMContentLoaded', function() {
+    updateAssistantStatus();
+    const assistantToolSelect = document.getElementById('ai_assistant_tool');
+    if (assistantToolSelect) {
+        assistantToolSelect.addEventListener('change', updateAssistantStatus);
+    }
 });
 </script>
 {% endblock %}
