@@ -485,31 +485,55 @@ def api_delete_knowledge(knowledge_id):
 def create_from_assistant(assistant_id):
     """Create a new agent from an existing OpenAI Assistant"""
     try:
-        from app.utils.openai_assistant_wrapper import OpenAIAssistantAPI
+        # Find API key from tools
+        all_tools = tools_manager.get_all()
+        api_key = None
         
-        # Get assistant details
-        openai_api = OpenAIAssistantAPI()
-        assistant_result = openai_api.get_assistant(assistant_id)
+        for tool in all_tools:
+            config = tool.get('config', {})
+            for key, value in config.items():
+                if 'api_key' in key.lower() and value and isinstance(value, str) and len(value) > 10:
+                    api_key = value
+                    break
+            if api_key:
+                break
         
-        if not assistant_result.get('success'):
-            flash(f'Assistant not found: {assistant_result.get("message", "Unknown error")}', 'error')
+        if not api_key:
+            flash('No API key found for assistant access', 'error')
             return redirect(url_for('assistants.list_assistants'))
         
-        assistant = assistant_result['data']
+        # Get assistant info directly from OpenAI
+        import openai
+        client = openai.OpenAI(api_key=api_key)
+        assistant = client.beta.assistants.retrieve(assistant_id)
+        
+        # Get tools list
+        tools_list = []
+        if hasattr(assistant, 'tools') and assistant.tools:
+            tools_list = [tool.type if hasattr(tool, 'type') else str(tool) for tool in assistant.tools]
+        
+        # Get file_ids
+        file_ids = []
+        if hasattr(assistant, 'file_ids'):
+            file_ids = assistant.file_ids or []
+        elif hasattr(assistant, 'tool_resources'):
+            if hasattr(assistant.tool_resources, 'file_search') and hasattr(assistant.tool_resources.file_search, 'vector_store_ids'):
+                file_ids = assistant.tool_resources.file_search.vector_store_ids or []
         
         # Create new agent with assistant data
         agent_data = {
             'id': str(uuid.uuid4()),
-            'name': assistant.get('name', f'Agent for {assistant_id[:8]}'),
-            'description': assistant.get('description', f'Agent created from OpenAI Assistant {assistant_id[:8]}'),
+            'name': assistant.name or f'Agent for {assistant_id[:8]}',
+            'description': assistant.description or f'Agent created from OpenAI Assistant {assistant_id[:8]}',
             'category': 'AI Assistant',
             'status': 'active',
             'assistant_id': assistant_id,
-            'model': assistant.get('model', 'gpt-4-turbo-preview'),
-            'instructions': assistant.get('instructions', ''),
-            'tools': assistant.get('tools', []),
-            'file_ids': assistant.get('file_ids', []),
-            'metadata': assistant.get('metadata', {}),
+            'ai_assistant_tool': 'tool:openai_assistant_api',
+            'model': assistant.model,
+            'instructions': assistant.instructions or '',
+            'tools': tools_list,
+            'file_ids': file_ids,
+            'metadata': assistant.metadata or {} if hasattr(assistant, 'metadata') else {},
             'tasks': [],
             'knowledge_base': [],
             'global_variables': {},
@@ -518,7 +542,7 @@ def create_from_assistant(assistant_id):
         }
         
         # Save agent
-        agents_manager.save(agent_data['id'], agent_data)
+        agents_manager.save(agent_data)
         
         flash(f'Agent "{agent_data["name"]}" created successfully from Assistant {assistant_id[:8]}', 'success')
         return redirect(url_for('agents.edit_agent', agent_id=agent_data['id']))
@@ -526,3 +550,38 @@ def create_from_assistant(assistant_id):
     except Exception as e:
         flash(f'Error creating agent from assistant: {str(e)}', 'error')
         return redirect(url_for('assistants.list_assistants'))
+
+@agents_bp.route('/api/quick-actions/<agent_id>', methods=['GET', 'POST'])
+def api_quick_actions(agent_id):
+    """Manage quick actions for an agent"""
+    try:
+        agent = agents_manager.load(agent_id)
+        if not agent:
+            return jsonify({'error': 'Agent not found'}), 404
+        
+        if request.method == 'GET':
+            # Return current quick actions
+            quick_actions = agent.get('quick_actions', [])
+            return jsonify({'quick_actions': quick_actions})
+        
+        elif request.method == 'POST':
+            # Save new quick actions
+            data = request.get_json()
+            quick_actions = data.get('quick_actions', [])
+            
+            # Validate quick actions structure
+            for action in quick_actions:
+                if not all(key in action for key in ['name', 'message', 'icon', 'color']):
+                    return jsonify({'error': 'Invalid quick action structure'}), 400
+            
+            # Update agent with new quick actions
+            agent['quick_actions'] = quick_actions
+            agent['updated_at'] = datetime.now().isoformat()
+            
+            if agents_manager.save(agent):
+                return jsonify({'success': True, 'message': 'Quick actions saved successfully'})
+            else:
+                return jsonify({'error': 'Failed to save quick actions'}), 500
+                
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

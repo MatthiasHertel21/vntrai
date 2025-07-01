@@ -1,79 +1,143 @@
 {% extends "base.html" %}
 
-{% block title %}Chat with {{ assistant.name }} - Assistant{% endblock %}
+{% block title %}Insights - {{ assistant.name }}{% endblock %}
 
 {% block page_header %}
 <div class="page-header max-w-7xl mx-auto w-full">
     <div class="flex justify-between items-center">
         <div class="flex items-center gap-4">
-            <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
-                <i class="bi bi-chat"></i>
+            <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center shadow-sm border">
+                <img src="{{ url_for('static', filename='icons/insights.png') }}" 
+                     alt="Insights" 
+                     class="w-8 h-8">
             </div>
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">Chat with {{ assistant.name }}</h1>
-                <p class="text-gray-600">Direct conversation with AI assistant</p>
+                <h1 class="text-2xl font-bold text-gray-900">Insights</h1>
+                <p class="text-gray-600">Interactive conversation with {{ assistant.name }}</p>
             </div>
         </div>
         <div class="flex gap-2">
+            <!-- Chat Toolbar Integration -->
+            <button onclick="clearChat()" class="btn btn-outline" title="Clear Chat">
+                <i class="bi bi-trash"></i>
+                <span class="hidden sm:inline ml-1">Clear</span>
+            </button>
+            <button onclick="newThread()" class="btn btn-outline" title="New Thread">
+                <i class="bi bi-plus-circle"></i>
+                <span class="hidden sm:inline ml-1">New</span>
+            </button>
+            <button onclick="loadHistory()" class="btn btn-outline" id="loadHistoryBtn" style="display: none;" title="Load History">
+                <i class="bi bi-clock-history"></i>
+                <span class="hidden sm:inline ml-1">History</span>
+            </button>
+            <button onclick="exportChat()" class="btn btn-outline" title="Export Chat">
+                <i class="bi bi-download"></i>
+                <span class="hidden sm:inline ml-1">Export</span>
+            </button>
             {% if agent %}
                 <a href="{{ url_for('agents.edit_agent', agent_id=agent.id) }}" 
                    class="btn btn-outline">
                     <i class="bi bi-pencil"></i>
-                    Edit Agent
+                    <span class="hidden sm:inline ml-1">Edit Agent</span>
                 </a>
             {% endif %}
             <a href="{{ url_for('assistants.list_assistants') }}" 
                class="btn btn-primary">
                 <i class="bi bi-arrow-left"></i>
-                Back to Assistants
+                <span class="hidden sm:inline ml-1">Back</span>
             </a>
         </div>
     </div>
 </div>
 {% endblock %}
 
+
+
 {% block content %}
-<div class="max-w-7xl mx-auto w-full">
-    <!-- Assistant Information -->
-    <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 p-6">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-                <h4 class="font-semibold text-gray-900 mb-2">Assistant Details</h4>
-                <div class="space-y-1 text-sm">
-                    <p><span class="text-gray-600">ID:</span> {{ assistant.id[:16] }}...</p>
-                    <p><span class="text-gray-600">Model:</span> {{ assistant.model }}</p>
-                    <p><span class="text-gray-600">Tools:</span> {{ assistant.tools|length }} enabled</p>
+<!-- Quick Action Editor Modal -->
+<div id="quickActionModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="p-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-900" id="modalTitle">Manage Quick Actions</h3>
+                    <button onclick="closeQuickActionEditor()" class="text-gray-400 hover:text-gray-600">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
                 </div>
             </div>
-            {% if agent %}
-                <div>
-                    <h4 class="font-semibold text-gray-900 mb-2">Connected Agent</h4>
-                    <div class="space-y-1 text-sm">
-                        <p><span class="text-gray-600">Name:</span> {{ agent.name }}</p>
-                        <p><span class="text-gray-600">Category:</span> {{ agent.category }}</p>
-                        <p><span class="text-gray-600">Status:</span> {{ agent.status|title }}</p>
+            <div class="p-4">
+                <form id="quickActionForm" onsubmit="saveQuickAction(event)">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                            <input type="text" id="actionName" required 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="e.g., Ask about capabilities">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                            <textarea id="actionMessage" required rows="3"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                      placeholder="e.g., Help me understand your capabilities"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Icon (Bootstrap Icons)</label>
+                            <input type="text" id="actionIcon" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="e.g., question-circle"
+                                   value="chat-dots">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Color</label>
+                            <select id="actionColor" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="blue">Blue</option>
+                                <option value="green">Green</option>
+                                <option value="yellow">Yellow</option>
+                                <option value="red">Red</option>
+                                <option value="purple">Purple</option>
+                                <option value="gray">Gray</option>
+                            </select>
+                        </div>
                     </div>
+                    <div class="flex justify-between mt-6">
+                        <button type="button" onclick="deleteCurrentQuickAction()" id="deleteButton" 
+                                class="px-4 py-2 text-red-600 hover:text-red-800 hidden">
+                            <i class="bi bi-trash mr-1"></i>Delete
+                        </button>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="closeQuickActionEditor()" 
+                                    class="px-4 py-2 text-gray-600 hover:text-gray-800">
+                                Cancel
+                            </button>
+                            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Existing Quick Actions List -->
+            <div class="border-t border-gray-200 p-4">
+                <h4 class="font-medium text-gray-900 mb-2">Existing Actions</h4>
+                <div class="space-y-2" id="existingActionsList">
+                    <!-- Will be populated by JavaScript -->
                 </div>
-            {% endif %}
-            <div>
-                <h4 class="font-semibold text-gray-900 mb-2">Chat Options</h4>
-                <div class="space-y-2">
-                    <button onclick="clearChat()" class="btn btn-outline btn-sm w-full">
-                        <i class="bi bi-trash mr-2"></i>Clear Chat
-                    </button>
-                    <button onclick="exportChat()" class="btn btn-outline btn-sm w-full">
-                        <i class="bi bi-download mr-2"></i>Export Chat
-                    </button>
-                </div>
+                <button onclick="addNewQuickAction()" class="w-full mt-2 px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 text-sm">
+                    <i class="bi bi-plus mr-1"></i>Add New Action
+                </button>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Chat Interface -->
-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <!-- Chat Area -->
-        <div class="lg:col-span-3">
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 h-96 flex flex-col">
+<div class="max-w-7xl mx-auto w-full">
+    <!-- Main Chat Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <!-- Chat Area - Larger, positioned top-left -->
+        <div class="lg:col-span-4">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 h-[600px] flex flex-col">
                 <!-- Chat Header -->
                 <div class="p-4 border-b border-gray-200 bg-gray-50 rounded-t-lg">
                     <div class="flex items-center justify-between">
@@ -90,6 +154,10 @@
                             <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                 <div class="w-1.5 h-1.5 bg-green-400 rounded-full mr-1.5"></div>
                                 Online
+                            </span>
+                            <span id="threadIndicator" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800" style="display: none;">
+                                <i class="bi bi-chat-dots mr-1"></i>
+                                <span id="threadStatus">New Thread</span>
                             </span>
                         </div>
                     </div>
@@ -136,54 +204,53 @@
             </div>
         </div>
         
-        <!-- Chat Info Sidebar -->
-        <div class="space-y-6">
-            <!-- Quick Actions -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <h4 class="font-semibold text-gray-900 mb-3">Quick Actions</h4>
-                <div class="space-y-2">
-                    <button onclick="sendQuickMessage('Help me understand your capabilities')"
-                            class="w-full text-left p-2 text-sm bg-gray-50 rounded hover:bg-gray-100 transition-colors">
-                        <i class="bi bi-question-circle mr-2 text-blue-500"></i>
-                        Ask about capabilities
-                    </button>
-                    <button onclick="sendQuickMessage('What tasks can you help me with?')"
-                            class="w-full text-left p-2 text-sm bg-gray-50 rounded hover:bg-gray-100 transition-colors">
-                        <i class="bi bi-list-task mr-2 text-green-500"></i>
-                        Available tasks
-                    </button>
-                    <button onclick="sendQuickMessage('Show me an example of what you can do')"
-                            class="w-full text-left p-2 text-sm bg-gray-50 rounded hover:bg-gray-100 transition-colors">
-                        <i class="bi bi-lightbulb mr-2 text-yellow-500"></i>
-                        Request example
-                    </button>
+        <!-- Compact Info Sidebar -->
+        <div class="space-y-4">
+            <!-- Assistant Info -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+                <h4 class="font-semibold text-gray-900 mb-2 text-sm">{{ assistant.name }}</h4>
+                <div class="space-y-1 text-xs text-gray-600">
+                    <p><span class="font-medium">Model:</span> {{ assistant.model }}</p>
+                    {% if agent %}
+                        <p><span class="font-medium">Agent:</span> {{ agent.name }}</p>
+                    {% endif %}
+                    {% if assistant.instructions %}
+                        <div class="mt-2 pt-2 border-t border-gray-100">
+                            <p class="font-medium text-gray-700 mb-1">Instructions:</p>
+                            <div class="text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                                {{ assistant.instructions[:150] }}{% if assistant.instructions|length > 150 %}...{% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
                 </div>
             </div>
             
-            <!-- Instructions -->
-            {% if assistant.instructions %}
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                    <h4 class="font-semibold text-gray-900 mb-3">System Instructions</h4>
-                    <div class="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                        {{ assistant.instructions[:200] }}{% if assistant.instructions|length > 200 %}...{% endif %}
-                    </div>
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-3">
+                <div class="flex items-center justify-between mb-2">
+                    <h4 class="font-semibold text-gray-900 text-sm">Quick Actions</h4>
+                    <button onclick="openQuickActionEditor()" class="text-blue-600 hover:text-blue-800 transition-colors" title="Manage Quick Actions">
+                        <i class="bi bi-gear text-sm"></i>
+                    </button>
                 </div>
-            {% endif %}
-            
-            <!-- Tools -->
-            {% if assistant.tools %}
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                    <h4 class="font-semibold text-gray-900 mb-3">Available Tools</h4>
-                    <div class="space-y-2">
-                        {% for tool in assistant.tools %}
-                            <div class="flex items-center p-2 bg-gray-50 rounded">
-                                <i class="bi bi-tool mr-2 text-gray-500"></i>
-                                <span class="text-sm text-gray-700">{{ tool.type|title }}</span>
-                            </div>
-                        {% endfor %}
-                    </div>
+                <div class="space-y-1" id="quickActionsList">
+                    <button onclick="sendQuickMessage('Help me understand your capabilities')"
+                            class="w-full text-left p-2 text-xs bg-gray-50 rounded hover:bg-gray-100 transition-colors">
+                        <i class="bi bi-question-circle mr-1 text-blue-500"></i>
+                        Capabilities
+                    </button>
+                    <button onclick="sendQuickMessage('What tasks can you help me with?')"
+                            class="w-full text-left p-2 text-xs bg-gray-50 rounded hover:bg-gray-100 transition-colors">
+                        <i class="bi bi-list-task mr-1 text-green-500"></i>
+                        Tasks
+                    </button>
+                    <button onclick="sendQuickMessage('Show me an example of what you can do')"
+                            class="w-full text-left p-2 text-xs bg-gray-50 rounded hover:bg-gray-100 transition-colors">
+                        <i class="bi bi-lightbulb mr-1 text-yellow-500"></i>
+                        Example
+                    </button>
                 </div>
-            {% endif %}
+            </div>
         </div>
     </div>
 </div>
@@ -192,9 +259,193 @@
 {% block extra_js %}
 <script>
 let messageCount = 0;
+let currentThreadId = null;
+let isTyping = false;
+let quickActions = [];
+let editingActionIndex = -1;
 
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('messageInput').focus();
+    loadQuickActions();
+    
+    // Auto-resize textarea-like behavior for input
+    const input = document.getElementById('messageInput');
+    input.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    });
+});
+
+// Quick Actions Management
+async function loadQuickActions() {
+    try {
+        const response = await fetch(`/agents/api/quick-actions/{{ agent.id if agent else 'default' }}`);
+        if (response.ok) {
+            const data = await response.json();
+            quickActions = data.quick_actions || getDefaultQuickActions();
+        } else {
+            quickActions = getDefaultQuickActions();
+        }
+        renderQuickActions();
+    } catch (error) {
+        console.error('Error loading quick actions:', error);
+        quickActions = getDefaultQuickActions();
+        renderQuickActions();
+    }
+}
+
+function getDefaultQuickActions() {
+    return [
+        {
+            name: "Ask about capabilities",
+            message: "Help me understand your capabilities",
+            icon: "question-circle",
+            color: "blue"
+        },
+        {
+            name: "Available tasks",
+            message: "What tasks can you help me with?",
+            icon: "list-task",
+            color: "green"
+        },
+        {
+            name: "Request example",
+            message: "Show me an example of what you can do",
+            icon: "lightbulb",
+            color: "yellow"
+        }
+    ];
+}
+
+function renderQuickActions() {
+    const container = document.getElementById('quickActionsList');
+    container.innerHTML = '';
+    
+    quickActions.forEach((action, index) => {
+        const actionDiv = document.createElement('div');
+        actionDiv.innerHTML = `
+            <button onclick="sendQuickMessage('${action.message.replace(/'/g, "\\'")}')"
+                    class="w-full text-left p-2 text-xs bg-gray-50 rounded hover:bg-gray-100 transition-colors">
+                <i class="bi bi-${action.icon} mr-1 text-${action.color}-500"></i>
+                ${action.name}
+            </button>
+        `;
+        container.appendChild(actionDiv);
+    });
+}
+
+function openQuickActionEditor() {
+    renderExistingActions();
+    document.getElementById('quickActionModal').classList.remove('hidden');
+}
+
+function closeQuickActionEditor() {
+    document.getElementById('quickActionModal').classList.add('hidden');
+    resetForm();
+}
+
+function renderExistingActions() {
+    const container = document.getElementById('existingActionsList');
+    container.innerHTML = '';
+    
+    quickActions.forEach((action, index) => {
+        const actionDiv = document.createElement('div');
+        actionDiv.className = 'flex items-center justify-between p-2 bg-gray-50 rounded';
+        actionDiv.innerHTML = `
+            <div class="flex items-center">
+                <i class="bi bi-${action.icon} mr-2 text-${action.color}-500"></i>
+                <span class="text-sm">${action.name}</span>
+            </div>
+            <button onclick="editQuickAction(${index})" class="text-blue-600 hover:text-blue-800">
+                <i class="bi bi-pencil text-xs"></i>
+            </button>
+        `;
+        container.appendChild(actionDiv);
+    });
+}
+
+function addNewQuickAction() {
+    resetForm();
+    document.getElementById('modalTitle').textContent = 'Add Quick Action';
+    editingActionIndex = -1;
+}
+
+function editQuickAction(index) {
+    const action = quickActions[index];
+    document.getElementById('actionName').value = action.name;
+    document.getElementById('actionMessage').value = action.message;
+    document.getElementById('actionIcon').value = action.icon;
+    document.getElementById('actionColor').value = action.color;
+    document.getElementById('modalTitle').textContent = 'Edit Quick Action';
+    document.getElementById('deleteButton').classList.remove('hidden');
+    editingActionIndex = index;
+}
+
+function resetForm() {
+    document.getElementById('quickActionForm').reset();
+    document.getElementById('actionIcon').value = 'chat-dots';
+    document.getElementById('actionColor').value = 'blue';
+    document.getElementById('modalTitle').textContent = 'Add Quick Action';
+    document.getElementById('deleteButton').classList.add('hidden');
+    editingActionIndex = -1;
+}
+
+async function saveQuickAction(event) {
+    event.preventDefault();
+    
+    const name = document.getElementById('actionName').value;
+    const message = document.getElementById('actionMessage').value;
+    const icon = document.getElementById('actionIcon').value;
+    const color = document.getElementById('actionColor').value;
+    
+    const actionData = { name, message, icon, color };
+    
+    if (editingActionIndex >= 0) {
+        quickActions[editingActionIndex] = actionData;
+    } else {
+        quickActions.push(actionData);
+    }
+    
+    await saveQuickActionsToServer();
+    renderQuickActions();
+    renderExistingActions();
+    closeQuickActionEditor();
+}
+
+async function deleteCurrentQuickAction() {
+    if (editingActionIndex >= 0) {
+        quickActions.splice(editingActionIndex, 1);
+        await saveQuickActionsToServer();
+        renderQuickActions();
+        renderExistingActions();
+        closeQuickActionEditor();
+    }
+}
+
+async function saveQuickActionsToServer() {
+    try {
+        const response = await fetch(`/agents/api/quick-actions/{{ agent.id if agent else 'default' }}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ quick_actions: quickActions })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to save quick actions');
+        }
+    } catch (error) {
+        console.error('Error saving quick actions:', error);
+        showNotification('Error saving quick actions', false);
+    }
+}
+
+// Chat functionality
 function handleKeyPress(event) {
-    if (event.key === 'Enter') {
+    if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
         sendMessage();
     }
 }
@@ -208,32 +459,51 @@ async function sendMessage() {
     const input = document.getElementById('messageInput');
     const message = input.value.trim();
     
-    if (!message) return;
+    if (!message || isTyping) return;
     
     // Clear input
     input.value = '';
     
-    // Disable send button
+    // Disable send button and show typing
     const sendButton = document.getElementById('sendButton');
     sendButton.disabled = true;
     sendButton.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+    isTyping = true;
     
     // Add user message to chat
     addMessageToChat(message, 'user');
     
+    // Show typing indicator
+    showTypingIndicator();
+    
     try {
         // Send to assistant
+        const requestBody = { message: message };
+        if (currentThreadId) {
+            requestBody.thread_id = currentThreadId;
+        }
+        
         const response = await fetch(`/assistants/api/chat/{{ assistant.id }}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ message: message })
+            body: JSON.stringify(requestBody)
         });
         
         const data = await response.json();
         
+        // Remove typing indicator
+        removeTypingIndicator();
+        
         if (data.success) {
+            // Update thread ID if this is a new conversation
+            if (data.data.thread_id && !currentThreadId) {
+                currentThreadId = data.data.thread_id;
+                updateThreadStatus('Active Thread');
+                document.getElementById('loadHistoryBtn').style.display = 'block';
+            }
+            
             // Add assistant response
             addMessageToChat(data.data.message, 'assistant');
         } else {
@@ -241,18 +511,124 @@ async function sendMessage() {
         }
         
     } catch (error) {
+        removeTypingIndicator();
         addMessageToChat('Connection error: ' + error.message, 'assistant', true);
     } finally {
         // Re-enable send button
         sendButton.disabled = false;
         sendButton.innerHTML = '<i class="bi bi-send"></i>';
+        isTyping = false;
     }
 }
 
-function addMessageToChat(message, sender, isError = false) {
+function showTypingIndicator() {
+    const chatMessages = document.getElementById('chatMessages');
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'flex items-start mb-4';
+    typingDiv.id = 'typingIndicator';
+    
+    typingDiv.innerHTML = `
+        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 mr-3 flex-shrink-0">
+            <i class="bi bi-cpu"></i>
+        </div>
+        <div class="flex-1">
+            <div class="max-w-xs lg:max-w-md">
+                <div class="bg-gray-100 rounded-lg p-3">
+                    <div class="flex items-center space-x-1">
+                        <div class="flex space-x-1">
+                            <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                            <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                            <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                        </div>
+                        <span class="text-xs text-gray-500 ml-2">{{ assistant.name }} is typing...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    chatMessages.appendChild(typingDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function removeTypingIndicator() {
+    const typingIndicator = document.getElementById('typingIndicator');
+    if (typingIndicator) {
+        typingIndicator.remove();
+    }
+}
+
+async function newThread() {
+    try {
+        const response = await fetch(`/assistants/api/chat/{{ assistant.id }}/thread`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            currentThreadId = data.data.thread_id;
+            clearChat();
+            updateThreadStatus('New Thread');
+            showNotification('New conversation thread created', true);
+            document.getElementById('loadHistoryBtn').style.display = 'block';
+        } else {
+            showNotification('Error creating new thread: ' + data.message, false);
+        }
+        
+    } catch (error) {
+        showNotification('Error creating new thread: ' + error.message, false);
+    }
+}
+
+async function loadHistory() {
+    if (!currentThreadId) {
+        showNotification('No active thread to load history from', false);
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/assistants/api/chat/{{ assistant.id }}/history/${currentThreadId}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            // Clear current chat
+            clearChat();
+            
+            // Load conversation history
+            const messages = data.data.messages;
+            for (const msg of messages) {
+                addMessageToChat(msg.content, msg.role, false, msg.timestamp);
+            }
+            
+            showNotification(`Loaded ${messages.length} messages from conversation history`, true);
+            updateThreadStatus(`Thread (${messages.length} msgs)`);
+        } else {
+            showNotification('Error loading history: ' + data.message, false);
+        }
+        
+    } catch (error) {
+        showNotification('Error loading history: ' + error.message, false);
+    }
+}
+
+function updateThreadStatus(status) {
+    const indicator = document.getElementById('threadIndicator');
+    const statusSpan = document.getElementById('threadStatus');
+    
+    indicator.style.display = 'inline-flex';
+    statusSpan.textContent = status;
+}
+
+function addMessageToChat(message, sender, isError = false, timestamp = null) {
     const chatMessages = document.getElementById('chatMessages');
     const messageDiv = document.createElement('div');
     messageDiv.className = 'flex items-start mb-4';
+    
+    const timeStr = timestamp ? new Date(timestamp).toLocaleTimeString() : 'Just now';
     
     if (sender === 'user') {
         messageDiv.innerHTML = `
@@ -261,7 +637,7 @@ function addMessageToChat(message, sender, isError = false) {
                     <div class="bg-blue-500 text-white rounded-lg p-3">
                         <p class="text-sm">${escapeHtml(message)}</p>
                     </div>
-                    <p class="text-xs text-gray-500 mt-1 text-right">Just now</p>
+                    <p class="text-xs text-gray-500 mt-1 text-right">${timeStr}</p>
                 </div>
             </div>
             <div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 ml-3 flex-shrink-0">
@@ -278,7 +654,7 @@ function addMessageToChat(message, sender, isError = false) {
                     <div class="bg-gray-100 rounded-lg p-3 ${isError ? 'border border-red-200 bg-red-50' : ''}">
                         <p class="text-sm ${isError ? 'text-red-800' : 'text-gray-800'}">${escapeHtml(message)}</p>
                     </div>
-                    <p class="text-xs text-gray-500 mt-1">Just now</p>
+                    <p class="text-xs text-gray-500 mt-1">${timeStr}</p>
                 </div>
             </div>
         `;
@@ -290,33 +666,40 @@ function addMessageToChat(message, sender, isError = false) {
 }
 
 function clearChat() {
-    if (confirm('Clear all chat messages?')) {
-        const chatMessages = document.getElementById('chatMessages');
-        // Keep only the welcome message
-        const welcomeMessage = chatMessages.firstElementChild;
-        chatMessages.innerHTML = '';
-        chatMessages.appendChild(welcomeMessage);
-        messageCount = 0;
-        showNotification('Chat cleared', true);
-    }
+    const chatMessages = document.getElementById('chatMessages');
+    // Keep only the welcome message
+    const welcomeMessage = chatMessages.firstElementChild;
+    chatMessages.innerHTML = '';
+    chatMessages.appendChild(welcomeMessage);
+    messageCount = 0;
+    removeTypingIndicator();
 }
 
 function exportChat() {
     const messages = document.querySelectorAll('#chatMessages .flex');
     let chatText = `Chat with {{ assistant.name }}\n`;
-    chatText += `Date: ${new Date().toLocaleString()}\n\n`;
+    chatText += `Date: ${new Date().toLocaleString()}\n`;
+    if (currentThreadId) {
+        chatText += `Thread ID: ${currentThreadId}\n`;
+    }
+    chatText += `\n`;
     
     messages.forEach(msg => {
-        const text = msg.querySelector('p').textContent;
-        const isUser = msg.querySelector('.bg-blue-500');
-        chatText += `${isUser ? 'You' : '{{ assistant.name }}'}: ${text}\n\n`;
+        const textElement = msg.querySelector('p');
+        if (textElement && !textElement.textContent.includes('is typing')) {
+            const text = textElement.textContent;
+            const isUser = msg.querySelector('.bg-blue-500');
+            const timeElement = msg.querySelectorAll('p')[1];
+            const time = timeElement ? timeElement.textContent : '';
+            chatText += `[${time}] ${isUser ? 'You' : '{{ assistant.name }}'}: ${text}\n\n`;
+        }
     });
     
     const blob = new Blob([chatText], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `chat_${new Date().toISOString().split('T')[0]}.txt`;
+    a.download = `chat_${currentThreadId || 'session'}_${new Date().toISOString().split('T')[0]}.txt`;
     a.click();
     URL.revokeObjectURL(url);
     
@@ -331,7 +714,7 @@ function escapeHtml(text) {
 
 function showNotification(message, success) {
     const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
+    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 ${
         success ? 'bg-green-100 border border-green-400 text-green-700' : 'bg-red-100 border border-red-400 text-red-700'
     }`;
     
@@ -349,7 +732,8 @@ function showNotification(message, success) {
     
     setTimeout(() => {
         if (notification.parentElement) {
-            notification.remove();
+            notification.style.opacity = '0';
+            setTimeout(() => notification.remove(), 300);
         }
     }, 5000);
 }
@@ -357,6 +741,13 @@ function showNotification(message, success) {
 // Focus input on load
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('messageInput').focus();
+    
+    // Auto-resize textarea-like behavior for input
+    const input = document.getElementById('messageInput');
+    input.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    });
 });
 </script>
 {% endblock %}

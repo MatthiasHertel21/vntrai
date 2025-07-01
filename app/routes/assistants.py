@@ -15,6 +15,39 @@ import uuid
 
 assistants_bp = Blueprint('assistants', __name__, url_prefix='/assistants')
 
+def get_openai_api_key():
+    """Get OpenAI API key with preference for Assistant API tools"""
+    all_tools = tools_manager.get_all()
+    
+    # First, try to find an OpenAI Assistant API specific tool
+    for tool in all_tools:
+        tool_name = tool.get('name', '').lower()
+        
+        # Look for assistant-specific tools first
+        if 'assistant' in tool_name or ('openai' in tool_name and 'assistant' in tool_name):
+            config = tool.get('config', {})
+            for key, value in config.items():
+                if 'api_key' in key.lower() and value and isinstance(value, str) and len(value) > 10:
+                    return value
+    
+    # Second priority: any OpenAI tool
+    for tool in all_tools:
+        tool_name = tool.get('name', '').lower()
+        if 'openai' in tool_name or 'gpt' in tool_name:
+            config = tool.get('config', {})
+            for key, value in config.items():
+                if 'api_key' in key.lower() and value and isinstance(value, str) and len(value) > 10:
+                    return value
+    
+    # Last resort: any tool with an API key
+    for tool in all_tools:
+        config = tool.get('config', {})
+        for key, value in config.items():
+            if 'api_key' in key.lower() and value and isinstance(value, str) and len(value) > 10:
+                return value
+    
+    return None
+
 @assistants_bp.route('/')
 def list_assistants():
     """Assistant Discovery and Management Dashboard"""
@@ -333,18 +366,8 @@ def analytics():
 def api_delete_assistant(assistant_id):
     """Delete an assistant via API"""
     try:
-        # Find API key from tools
-        all_tools = tools_manager.get_all()
-        api_key = None
-        
-        for tool in all_tools:
-            config = tool.get('config', {})
-            for key, value in config.items():
-                if 'api_key' in key.lower() and value and isinstance(value, str) and len(value) > 10:
-                    api_key = value
-                    break
-            if api_key:
-                break
+        # Get API key using our helper function
+        api_key = get_openai_api_key()
         
         if not api_key:
             return jsonify({'success': False, 'message': 'No API key found for deletion'})
@@ -363,7 +386,7 @@ def api_delete_assistant(assistant_id):
             for agent in agents:
                 if agent.get('assistant_id') == assistant_id:
                     agent['assistant_id'] = None
-                    agents_manager.save(agent['id'], agent)
+                    agents_manager.save(agent)
             
             return jsonify({'success': True, 'message': 'Assistant deleted successfully'})
         else:
@@ -513,18 +536,8 @@ def health_monitoring():
 def chat_interface(assistant_id):
     """Assistant Chat Interface"""
     try:
-        # Find API key and get assistant info directly
-        all_tools = tools_manager.get_all()
-        api_key = None
-        
-        for tool in all_tools:
-            config = tool.get('config', {})
-            for key, value in config.items():
-                if 'api_key' in key.lower() and value and isinstance(value, str) and len(value) > 10:
-                    api_key = value
-                    break
-            if api_key:
-                break
+        # Get API key using our helper function
+        api_key = get_openai_api_key()
         
         if not api_key:
             flash('No API key found', 'error')
@@ -560,21 +573,174 @@ def chat_interface(assistant_id):
 
 @assistants_bp.route('/api/chat/<assistant_id>', methods=['POST'])
 def api_chat_with_assistant(assistant_id):
-    """Send message to assistant"""
+    """Send message to assistant using OpenAI Assistant API with persistent threads"""
     try:
         data = request.get_json()
         message = data.get('message', '').strip()
+        thread_id = data.get('thread_id')  # Optional: use existing thread
         
         if not message:
             return jsonify({'success': False, 'message': 'Message is required'})
         
-        # For now, return a simulated response
+        # Get API key
+        api_key = get_openai_api_key()
+        if not api_key:
+            return jsonify({'success': False, 'message': 'No OpenAI API key found'})
+        
+        client = openai.OpenAI(api_key=api_key)
+        
+        # Create or use existing thread
+        if not thread_id:
+            thread = client.beta.threads.create()
+            thread_id = thread.id
+        
+        # Add user message to thread
+        client.beta.threads.messages.create(
+            thread_id=thread_id,
+            role="user",
+            content=message
+        )
+        
+        # Create and poll run
+        run = client.beta.threads.runs.create(
+            thread_id=thread_id,
+            assistant_id=assistant_id
+        )
+        
+        # Poll for completion
+        max_attempts = 30  # 30 seconds timeout
+        attempts = 0
+        
+        while run.status in ['queued', 'in_progress', 'cancelling'] and attempts < max_attempts:
+            import time
+            time.sleep(1)
+            run = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
+            attempts += 1
+        
+        if run.status == 'completed':
+            # Get the assistant's response
+            messages = client.beta.threads.messages.list(
+                thread_id=thread_id,
+                order='desc',
+                limit=1
+            )
+            
+            if messages.data:
+                assistant_message = messages.data[0]
+                if assistant_message.role == 'assistant':
+                    # Extract text content from message
+                    content = ''
+                    for content_block in assistant_message.content:
+                        if hasattr(content_block, 'text'):
+                            content += content_block.text.value
+                        elif hasattr(content_block, 'value'):
+                            content += str(content_block.value)
+                        else:
+                            content += str(content_block)
+                    
+                    return jsonify({
+                        'success': True,
+                        'data': {
+                            'message': content,
+                            'assistant_id': assistant_id,
+                            'thread_id': thread_id,
+                            'timestamp': datetime.now().isoformat(),
+                            'run_id': run.id
+                        }
+                    })
+            
+            return jsonify({'success': False, 'message': 'No response received from assistant'})
+            
+        elif run.status == 'failed':
+            error_message = 'Assistant run failed'
+            if hasattr(run, 'last_error') and run.last_error:
+                error_message = f"Assistant run failed: {run.last_error.message}"
+            return jsonify({'success': False, 'message': error_message})
+            
+        elif run.status == 'requires_action':
+            # Handle tool calls if needed
+            return jsonify({
+                'success': False, 
+                'message': 'Assistant requires action/tool calls (not yet implemented)'
+            })
+            
+        else:
+            return jsonify({
+                'success': False, 
+                'message': f'Assistant run timed out or unexpected status: {run.status}'
+            })
+        
+    except openai.AuthenticationError:
+        return jsonify({'success': False, 'message': 'Invalid OpenAI API key'})
+    except openai.NotFoundError:
+        return jsonify({'success': False, 'message': 'Assistant not found'})
+    except openai.RateLimitError:
+        return jsonify({'success': False, 'message': 'OpenAI API rate limit exceeded'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'})
+
+@assistants_bp.route('/api/chat/<assistant_id>/thread', methods=['POST'])
+def create_new_thread(assistant_id):
+    """Create a new conversation thread"""
+    try:
+        api_key = get_openai_api_key()
+        if not api_key:
+            return jsonify({'success': False, 'message': 'No OpenAI API key found'})
+        
+        client = openai.OpenAI(api_key=api_key)
+        thread = client.beta.threads.create()
+        
         return jsonify({
             'success': True,
             'data': {
-                'message': f'This is a simulated response from assistant {assistant_id[:8]}... to your message: "{message}". Full OpenAI Assistant API integration would handle actual conversation flow here.',
-                'assistant_id': assistant_id,
-                'timestamp': datetime.now().isoformat()
+                'thread_id': thread.id,
+                'created_at': datetime.now().isoformat()
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@assistants_bp.route('/api/chat/<assistant_id>/history/<thread_id>')
+def get_thread_history(assistant_id, thread_id):
+    """Get conversation history for a thread"""
+    try:
+        api_key = get_openai_api_key()
+        if not api_key:
+            return jsonify({'success': False, 'message': 'No OpenAI API key found'})
+        
+        client = openai.OpenAI(api_key=api_key)
+        
+        # Get messages from thread
+        messages = client.beta.threads.messages.list(
+            thread_id=thread_id,
+            order='asc'  # Chronological order
+        )
+        
+        conversation_history = []
+        for message in messages.data:
+            content = ''
+            for content_block in message.content:
+                if hasattr(content_block, 'text'):
+                    content += content_block.text.value
+                elif hasattr(content_block, 'value'):
+                    content += str(content_block.value)
+                else:
+                    content += str(content_block)
+            
+            conversation_history.append({
+                'id': message.id,
+                'role': message.role,
+                'content': content,
+                'created_at': message.created_at,
+                'timestamp': datetime.fromtimestamp(message.created_at).isoformat()
+            })
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'thread_id': thread_id,
+                'messages': conversation_history
             }
         })
         
@@ -671,5 +837,90 @@ def api_delete_file(file_id):
         
         return jsonify({'success': True, 'message': 'File deleted successfully'})
         
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@assistants_bp.route('/api/create_agent/<assistant_id>', methods=['POST'])
+def api_create_agent_from_assistant(assistant_id):
+    """Create a new agent for an orphaned assistant"""
+    try:
+        # Get API key using our helper function
+        api_key = get_openai_api_key()
+        
+        if not api_key:
+            return jsonify({'success': False, 'message': 'No API key found'})
+        
+        # Get assistant info directly from OpenAI
+        client = openai.OpenAI(api_key=api_key)
+        assistant = client.beta.assistants.retrieve(assistant_id)
+        
+        # Create new agent
+        agent_data = {
+            'id': str(uuid.uuid4()),
+            'name': assistant.name or f'Agent for {assistant_id[:8]}',
+            'description': assistant.description or f'Auto-created agent for assistant {assistant_id}',
+            'category': 'General',
+            'status': 'active',
+            'assistant_id': assistant_id,
+            'ai_assistant_tool': 'tool:openai_assistant_api',
+            'model': assistant.model,
+            'instructions': assistant.instructions or '',
+            'tasks': [],
+            'knowledge_base': [],
+            'files': [],
+            'created_at': datetime.now().isoformat(),
+            'updated_at': datetime.now().isoformat()
+        }
+        
+        agents_manager.save(agent_data)
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Agent "{agent_data["name"]}" created successfully',
+            'agent_id': agent_data['id']
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Error creating agent: {str(e)}'})
+
+@assistants_bp.route('/api/chat/<assistant_id>/threads')
+def list_threads(assistant_id):
+    """List available threads for an assistant"""
+    try:
+        # Since OpenAI doesn't provide a direct way to list threads for an assistant,
+        # we'll return a placeholder response. In a production system, you might
+        # want to store thread information in your database
+        return jsonify({
+            'success': True,
+            'data': {
+                'threads': [],
+                'message': 'Thread listing not available via OpenAI API. Create new threads as needed.'
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@assistants_bp.route('/api/chat/<assistant_id>/thread/<thread_id>/delete', methods=['POST'])
+def delete_thread(assistant_id, thread_id):
+    """Delete a conversation thread"""
+    try:
+        api_key = get_openai_api_key()
+        if not api_key:
+            return jsonify({'success': False, 'message': 'No OpenAI API key found'})
+        
+        client = openai.OpenAI(api_key=api_key)
+        
+        # Delete the thread
+        response = client.beta.threads.delete(thread_id)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Thread deleted successfully',
+            'deleted': response.deleted if hasattr(response, 'deleted') else True
+        })
+        
+    except openai.NotFoundError:
+        return jsonify({'success': False, 'message': 'Thread not found'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
