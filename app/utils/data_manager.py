@@ -527,6 +527,30 @@ class ToolsManager(DataManager):
         all_tools = self.get_all()
         return [tool for tool in all_tools if self.is_assistant_enabled(tool['id'])]
     
+    def ensure_options_field(self, tool_id: str) -> bool:
+        """Ensure options field exists for a tool (Sprint 18)"""
+        tool = self.get_by_id(tool_id)
+        if not tool:
+            return False
+        
+        if 'options' not in tool:
+            tool['options'] = {}
+        
+        if 'assistant' not in tool['options']:
+            tool['options']['assistant'] = {
+                'enabled': False,
+                'assistant_id': '',
+                'model': 'gpt-4-turbo-preview',
+                'instructions': '',
+                'auto_create': True,
+                'thread_management': 'auto'
+            }
+            
+            tool['updated_at'] = datetime.now().isoformat()
+            return self.save(tool)
+        
+        return True
+
     async def create_assistant_for_tool(self, tool_id: str, force_recreate: bool = False) -> Dict[str, Any]:
         """Create an OpenAI Assistant for a tool if it has assistant options enabled."""
         try:
@@ -722,31 +746,43 @@ class IconManager:
 
 
 class AgentsManager(DataManager):
-    """Agent data management operations"""
+    """Manager for agents data with Sprint 18 Task Management Revolution"""
     
     def __init__(self):
         super().__init__('agents')
     
-    def create_agent(self, name: str, category: str = 'General', description: str = '') -> Dict[str, Any]:
-        """Create new agent with foundation structure"""
+    def create_agent(self, name: str, category: str = 'general', description: str = '') -> Dict[str, Any]:
+        """Create new agent with Sprint 18 task structure"""
         agent = {
-            'id': str(uuid.uuid4()),
+            'uuid': str(uuid.uuid4()),  # Primary UUID
+            'id': str(uuid.uuid4()),     # Secondary ID for compatibility
             'name': name,
             'category': category,
             'description': description,
-            'status': 'inactive',
-            'assistant_id': None,
-            'assistant_tool_id': None,
-            'use_as_agent': True,  # Default: can be used as agent
-            'use_as_insight': False,  # Default: not for insights
-            'quick_actions': [],  # Custom quick actions for insights
-            'tasks': [],
+            'status': 'active',
+            
+            # Sprint 18: Task definitions stored in agent
+            'tasks': [],  # Array of task definitions
+            
+            # Knowledge base and files
             'knowledge_base': [],
             'files': [],
-            'global_variables': {},
-            'system_prompt': '',
+            
+            # AI Assistant configuration
+            'ai_assistant_tool': '',  # Tool ID with assistant option
+            'assistant_id': '',
+            'assistant_model': 'gpt-4-turbo-preview',
+            'assistant_tools_retrieval': False,
+            'assistant_tools_code_interpreter': False,
+            'use_openai_assistant': False,
+            
+            # Agent usage modes (from Sprint 17.5)
+            'use_as_agent': True,
+            'use_as_insight': False,
+            'quick_actions': [],
+            
+            # Metadata
             'metadata': {
-                'icon': 'default',
                 'color': 'blue',
                 'tags': []
             },
@@ -758,148 +794,540 @@ class AgentsManager(DataManager):
         if self.save(agent):
             return agent
         return None
-    
-    def get_agent_statistics(self, agent_id: str) -> Dict[str, Any]:
-        """Get agent run statistics"""
-        # TODO: Will be implemented in Sprint 19 (AgentRun system)
-        return {
-            'total_runs': 0,
-            'active_runs': 0,
-            'completed_runs': 0,
-            'failed_runs': 0,
-            'last_run': None
-        }
-    
-    def filter_by_category(self, category: str) -> List[Dict[str, Any]]:
-        """Filter agents by category"""
-        all_agents = self.load_all()
-        return [agent for agent in all_agents if agent.get('category', '').lower() == category.lower()]
-    
-    def filter_by_status(self, status: str) -> List[Dict[str, Any]]:
-        """Filter agents by status"""
-        all_agents = self.load_all()
-        return [agent for agent in all_agents if agent.get('status') == status]
-    
-    def add_task(self, agent_id: str, task: Dict[str, Any]) -> bool:
-        """Add task to agent"""
+
+    # Sprint 18: Task Management Methods
+    def add_task_definition(self, agent_id: str, task: Dict[str, Any]) -> bool:
+        """Add task definition to agent (Sprint 18)"""
         agent = self.load(agent_id)
         if not agent:
             return False
         
-        # Ensure task has required fields
-        if 'id' not in task:
-            task['id'] = str(uuid.uuid4())
-        if 'status' not in task:
-            task['status'] = 'pending'
+        # Ensure task has required fields for Sprint 18
+        if 'uuid' not in task:
+            task['uuid'] = str(uuid.uuid4())
+        if 'type' not in task:
+            task['type'] = 'ai'  # Default to AI task
+        if 'name' not in task:
+            task['name'] = f"Task {len(agent['tasks']) + 1}"
+        if 'order' not in task:
+            task['order'] = len(agent['tasks']) + 1
         if 'created_at' not in task:
             task['created_at'] = datetime.now().isoformat()
         
         task['updated_at'] = datetime.now().isoformat()
         
+        if 'tasks' not in agent:
+            agent['tasks'] = []
+        
         agent['tasks'].append(task)
+        agent['updated_at'] = datetime.now().isoformat()
         return self.save(agent)
     
-    def update_task(self, agent_id: str, task_id: str, task_data: Dict[str, Any]) -> bool:
-        """Update specific task in agent"""
+    def update_task_definition(self, agent_id: str, task_uuid: str, task_data: Dict[str, Any]) -> bool:
+        """Update task definition in agent (Sprint 18)"""
         agent = self.load(agent_id)
-        if not agent:
+        if not agent or 'tasks' not in agent:
             return False
         
         for i, task in enumerate(agent['tasks']):
-            if task.get('id') == task_id:
-                task_data['id'] = task_id
+            if task.get('uuid') == task_uuid:
+                task_data['uuid'] = task_uuid
                 task_data['updated_at'] = datetime.now().isoformat()
+                # Preserve order and creation time
+                if 'order' not in task_data:
+                    task_data['order'] = task.get('order', i + 1)
+                if 'created_at' not in task_data:
+                    task_data['created_at'] = task.get('created_at', datetime.now().isoformat())
+                
                 agent['tasks'][i] = {**task, **task_data}
+                agent['updated_at'] = datetime.now().isoformat()
                 return self.save(agent)
+        
+        return False
+    
+    def remove_task_definition(self, agent_id: str, task_uuid: str) -> bool:
+        """Remove task definition from agent (Sprint 18)"""
+        agent = self.load(agent_id)
+        if not agent or 'tasks' not in agent:
+            return False
+        
+        original_count = len(agent['tasks'])
+        agent['tasks'] = [task for task in agent['tasks'] if task.get('uuid') != task_uuid]
+        
+        if len(agent['tasks']) < original_count:
+            # Reorder remaining tasks
+            for i, task in enumerate(agent['tasks']):
+                task['order'] = i + 1
+            agent['updated_at'] = datetime.now().isoformat()
+            return self.save(agent)
+        
+        return False
+    
+    def reorder_task_definitions(self, agent_id: str, task_uuids: List[str]) -> bool:
+        """Reorder task definitions in agent (Sprint 18)"""
+        agent = self.load(agent_id)
+        if not agent or 'tasks' not in agent:
+            return False
+        
+        # Create task dictionary for quick lookup
+        tasks_dict = {task['uuid']: task for task in agent['tasks']}
+        
+        # Reorder tasks and update order field
+        reordered_tasks = []
+        for i, task_uuid in enumerate(task_uuids):
+            if task_uuid in tasks_dict:
+                task = tasks_dict[task_uuid]
+                task['order'] = i + 1
+                task['updated_at'] = datetime.now().isoformat()
+                reordered_tasks.append(task)
+        
+        # Add any tasks that weren't in the reorder list
+        for task in agent['tasks']:
+            if task['uuid'] not in task_uuids:
+                task['order'] = len(reordered_tasks) + 1
+                reordered_tasks.append(task)
+        
+        agent['tasks'] = reordered_tasks
+        agent['updated_at'] = datetime.now().isoformat()
+        return self.save(agent)
+    
+    def get_task_definition(self, agent_id: str, task_uuid: str) -> Optional[Dict[str, Any]]:
+        """Get specific task definition from agent (Sprint 18)"""
+        agent = self.load(agent_id)
+        if not agent or 'tasks' not in agent:
+            return None
+        
+        for task in agent['tasks']:
+            if task.get('uuid') == task_uuid:
+                return task
+        
+        return None
+    
+    def get_task_definitions(self, agent_id: str) -> List[Dict[str, Any]]:
+        """Get all task definitions from agent (Sprint 18)"""
+        agent = self.load(agent_id)
+        if not agent or 'tasks' not in agent:
+            return []
+        
+        # Sort by order field
+        return sorted(agent['tasks'], key=lambda x: x.get('order', 0))
+
+    # Assistant-enabled tools filtering for Sprint 18
+    def get_assistant_enabled_tools(self) -> List[Dict[str, Any]]:
+        """Get tools that have assistant option enabled (Sprint 18)"""
+        return tools_manager.get_tools_with_assistant_enabled()
+    
+    def validate_assistant_tool_selection(self, agent_id: str, tool_id: str) -> bool:
+        """Validate that selected tool has assistant option enabled (Sprint 18)"""
+        if not tool_id:
+            return False
+        
+        tool = tools_manager.get_by_id(tool_id)
+        if not tool:
+            return False
+        
+        return tools_manager.is_assistant_enabled(tool_id)
+
+    def get_agent_statistics(self) -> Dict[str, Any]:
+        """Get statistics about agents for overview page"""
+        all_agents = self.load_all()
+        
+        # Count by status
+        status_counts = {
+            'active': 0,
+            'inactive': 0,
+            'draft': 0
+        }
+        
+        # Count by category
+        category_counts = {}
+        
+        # Count by use_as field (Sprint 17.5)
+        use_as_counts = {
+            'agent': 0,
+            'insight': 0,
+            'both': 0
+        }
+        
+        # Task statistics (Sprint 18)
+        total_tasks = 0
+        agents_with_tasks = 0
+        
+        for agent in all_agents:
+            # Status counts
+            status = agent.get('status', 'inactive')
+            if status in status_counts:
+                status_counts[status] += 1
+            
+            # Category counts
+            category = agent.get('category', 'general')
+            category_counts[category] = category_counts.get(category, 0) + 1
+            
+            # Use as counts (Sprint 17.5)
+            use_as_agent = agent.get('use_as_agent', True)
+            use_as_insight = agent.get('use_as_insight', False)
+            
+            if use_as_agent and use_as_insight:
+                use_as_counts['both'] += 1
+            elif use_as_insight:
+                use_as_counts['insight'] += 1
+            else:
+                use_as_counts['agent'] += 1
+            
+            # Task statistics (Sprint 18)
+            tasks = agent.get('tasks', [])
+            if tasks:
+                agents_with_tasks += 1
+                total_tasks += len(tasks)
+        
+        # Calculate averages
+        total_agents = len(all_agents)
+        avg_tasks_per_agent = round(total_tasks / total_agents, 1) if total_agents > 0 else 0
+        
+        return {
+            'total_agents': total_agents,
+            'status_counts': status_counts,
+            'category_counts': category_counts,
+            'use_as_counts': use_as_counts,
+            'task_statistics': {
+                'total_tasks': total_tasks,
+                'agents_with_tasks': agents_with_tasks,
+                'avg_tasks_per_agent': avg_tasks_per_agent
+            }
+        }
+
+    def get_single_agent_statistics(self, agent_id: str) -> Dict[str, Any]:
+        """Get statistics for a single agent"""
+        agent = self.load(agent_id)
+        if not agent:
+            return {}
+        
+        # Count tasks (Sprint 18)
+        tasks = agent.get('tasks', [])
+        task_counts = {
+            'total': len(tasks),
+            'ai_tasks': len([t for t in tasks if t.get('type') == 'ai']),
+            'tool_tasks': len([t for t in tasks if t.get('type') == 'tool'])
+        }
+        
+        # Count files
+        files = agent.get('files', [])
+        file_count = len(files)
+        
+        # Count knowledge base items
+        knowledge_base = agent.get('knowledge_base', [])
+        knowledge_count = len(knowledge_base)
+        
+        # Assistant status
+        has_assistant = bool(agent.get('assistant_id'))
+        assistant_tool = agent.get('ai_assistant_tool')
+        
+        return {
+            'task_counts': task_counts,
+            'file_count': file_count,
+            'knowledge_count': knowledge_count,
+            'has_assistant': has_assistant,
+            'assistant_tool': assistant_tool,
+            'status': agent.get('status', 'inactive'),
+            'category': agent.get('category', 'general'),
+            'use_as_agent': agent.get('use_as_agent', True),
+            'use_as_insight': agent.get('use_as_insight', False)
+        }
+
+    # Legacy task methods - maintained for backward compatibility but marked for removal
+    def add_task(self, agent_id: str, task: Dict[str, Any]) -> bool:
+        """Legacy method - use add_task_definition instead (Sprint 18)"""
+        # Redirect to new method
+        return self.add_task_definition(agent_id, task)
+    
+    def update_task(self, agent_id: str, task_id: str, task_data: Dict[str, Any]) -> bool:
+        """Legacy method - use update_task_definition instead (Sprint 18)"""
+        # Try to find by id or uuid
+        agent = self.load(agent_id)
+        if not agent or 'tasks' not in agent:
+            return False
+        
+        # Find task by id or uuid
+        task_uuid = None
+        for task in agent['tasks']:
+            if task.get('id') == task_id or task.get('uuid') == task_id:
+                task_uuid = task.get('uuid', task.get('id'))
+                break
+        
+        if task_uuid:
+            return self.update_task_definition(agent_id, task_uuid, task_data)
         
         return False
     
     def remove_task(self, agent_id: str, task_id: str) -> bool:
-        """Remove task from agent"""
+        """Legacy method - use remove_task_definition instead (Sprint 18)"""
+        # Try to find by id or uuid
         agent = self.load(agent_id)
-        if not agent:
+        if not agent or 'tasks' not in agent:
             return False
         
-        agent['tasks'] = [task for task in agent['tasks'] if task.get('id') != task_id]
-        return self.save(agent)
-    
-    def reorder_tasks(self, agent_id: str, task_ids: List[str]) -> bool:
-        """Reorder tasks in agent"""
-        agent = self.load(agent_id)
-        if not agent:
-            return False
+        # Find task by id or uuid
+        task_uuid = None
+        for task in agent['tasks']:
+            if task.get('id') == task_id or task.get('uuid') == task_id:
+                task_uuid = task.get('uuid', task.get('id'))
+                break
         
-        # Create new task order based on provided IDs
-        tasks_dict = {task['id']: task for task in agent['tasks']}
-        agent['tasks'] = [tasks_dict[task_id] for task_id in task_ids if task_id in tasks_dict]
-        
-        return self.save(agent)
-    
-    def add_knowledge_item(self, agent_id: str, knowledge_item: Dict[str, Any]) -> bool:
-        """Add knowledge item to agent"""
-        agent = self.load(agent_id)
-        if not agent:
-            return False
-        
-        if 'id' not in knowledge_item:
-            knowledge_item['id'] = str(uuid.uuid4())
-        if 'created_at' not in knowledge_item:
-            knowledge_item['created_at'] = datetime.now().isoformat()
-        
-        knowledge_item['updated_at'] = datetime.now().isoformat()
-        
-        agent['knowledge_base'].append(knowledge_item)
-        return self.save(agent)
-    
-    def update_knowledge_item(self, agent_id: str, knowledge_id: str, knowledge_data: Dict[str, Any]) -> bool:
-        """Update specific knowledge item in agent"""
-        agent = self.load(agent_id)
-        if not agent:
-            return False
-        
-        for i, item in enumerate(agent['knowledge_base']):
-            if item.get('id') == knowledge_id:
-                knowledge_data['id'] = knowledge_id
-                knowledge_data['updated_at'] = datetime.now().isoformat()
-                agent['knowledge_base'][i] = {**item, **knowledge_data}
-                return self.save(agent)
+        if task_uuid:
+            return self.remove_task_definition(agent_id, task_uuid)
         
         return False
     
-    def remove_knowledge_item(self, agent_id: str, knowledge_id: str) -> bool:
-        """Remove knowledge item from agent"""
+    def reorder_tasks(self, agent_id: str, task_ids: List[str]) -> bool:
+        """Legacy method - use reorder_task_definitions instead (Sprint 18)"""
+        # Convert ids to uuids if needed
         agent = self.load(agent_id)
-        if not agent:
+        if not agent or 'tasks' not in agent:
             return False
         
-        agent['knowledge_base'] = [item for item in agent['knowledge_base'] if item.get('id') != knowledge_id]
-        return self.save(agent)
+        task_uuids = []
+        for task_id in task_ids:
+            for task in agent['tasks']:
+                if task.get('id') == task_id or task.get('uuid') == task_id:
+                    task_uuids.append(task.get('uuid', task.get('id')))
+                    break
+        
+        return self.reorder_task_definitions(agent_id, task_uuids)
+
+class AgentRunManager(DataManager):
+    """Manager for agent runs with Sprint 18 task execution"""
     
-    def load(self, agent_id: str) -> Optional[Dict[str, Any]]:
-        """Load agent by ID with migration for missing fields"""
-        agent = super().load(agent_id)
-        if agent:
-            # Migrate old agents to have use_as fields if they don't exist
-            updated = False
-            if 'use_as_agent' not in agent:
-                agent['use_as_agent'] = True  # Default for existing agents
-                updated = True
-            if 'use_as_insight' not in agent:
-                agent['use_as_insight'] = False  # Default for existing agents  
-                updated = True
-            if 'quick_actions' not in agent:
-                agent['quick_actions'] = []  # Default empty quick actions
-                updated = True
+    def __init__(self):
+        super().__init__('agentrun')
+    
+    def create_agent_run(self, agent_id: str, name: str = '') -> Dict[str, Any]:
+        """Create new agent run with Sprint 18 task state structure"""
+        agent_run = {
+            'uuid': str(uuid.uuid4()),
+            'agent_uuid': agent_id,
+            'name': name or f"Run {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+            'status': 'created',
             
-            # Save migrated agent
-            if updated:
-                self.save(agent)
+            # Sprint 18: Task execution states stored in agentrun
+            'task_states': [],  # Array of task execution states
+            
+            # Run context and inputs
+            'inputs': {},
+            'context': {},
+            'outputs': {},
+            
+            # Metadata
+            'created_at': datetime.now().isoformat(),
+            'updated_at': datetime.now().isoformat(),
+            'started_at': None,
+            'completed_at': None
+        }
+        
+        # Initialize task states from agent's task definitions
+        agent = agents_manager.load(agent_id)
+        if agent and 'tasks' in agent:
+            for task_def in agent['tasks']:
+                task_state = {
+                    'task_uuid': task_def['uuid'],
+                    'status': 'pending',
+                    'inputs': {},
+                    'outputs': {},
+                    'results': {},
+                    'error': None,
+                    'started_at': None,
+                    'completed_at': None,
+                    'execution_time': None
+                }
+                agent_run['task_states'].append(task_state)
+        
+        if self.save(agent_run):
+            return agent_run
+        return None
+    
+    def get_task_state(self, run_id: str, task_uuid: str) -> Optional[Dict[str, Any]]:
+        """Get task execution state from agent run (Sprint 18)"""
+        agent_run = self.load(run_id)
+        if not agent_run or 'task_states' not in agent_run:
+            return None
+        
+        for task_state in agent_run['task_states']:
+            if task_state.get('task_uuid') == task_uuid:
+                return task_state
+        
+        return None
+    
+    def update_task_state(self, run_id: str, task_uuid: str, state_data: Dict[str, Any]) -> bool:
+        """Update task execution state in agent run (Sprint 18)"""
+        agent_run = self.load(run_id)
+        if not agent_run or 'task_states' not in agent_run:
+            return False
+        
+        for i, task_state in enumerate(agent_run['task_states']):
+            if task_state.get('task_uuid') == task_uuid:
+                # Update state data while preserving task_uuid
+                updated_state = {**task_state, **state_data}
+                updated_state['task_uuid'] = task_uuid
+                updated_state['updated_at'] = datetime.now().isoformat()
                 
-        return agent
+                agent_run['task_states'][i] = updated_state
+                agent_run['updated_at'] = datetime.now().isoformat()
+                return self.save(agent_run)
+        
+        return False
+    
+    def set_task_status(self, run_id: str, task_uuid: str, status: str, error: str = None) -> bool:
+        """Set task status (Sprint 18)"""
+        state_data = {'status': status}
+        
+        if status == 'running' and not self.get_task_state(run_id, task_uuid).get('started_at'):
+            state_data['started_at'] = datetime.now().isoformat()
+        elif status in ['completed', 'error', 'skipped']:
+            state_data['completed_at'] = datetime.now().isoformat()
+            
+            # Calculate execution time if started
+            task_state = self.get_task_state(run_id, task_uuid)
+            if task_state and task_state.get('started_at'):
+                started = datetime.fromisoformat(task_state['started_at'].replace('Z', '+00:00'))
+                completed = datetime.now()
+                execution_time = (completed - started).total_seconds()
+                state_data['execution_time'] = execution_time
+        
+        if error:
+            state_data['error'] = error
+        
+        return self.update_task_state(run_id, task_uuid, state_data)
+    
+    def set_task_inputs(self, run_id: str, task_uuid: str, inputs: Dict[str, Any]) -> bool:
+        """Set task inputs (Sprint 18)"""
+        return self.update_task_state(run_id, task_uuid, {'inputs': inputs})
+    
+    def set_task_outputs(self, run_id: str, task_uuid: str, outputs: Dict[str, Any]) -> bool:
+        """Set task outputs (Sprint 18)"""
+        return self.update_task_state(run_id, task_uuid, {'outputs': outputs})
+    
+    def set_task_results(self, run_id: str, task_uuid: str, results: Dict[str, Any]) -> bool:
+        """Set task results (Sprint 18)"""
+        return self.update_task_state(run_id, task_uuid, {'results': results})
+    
+    def get_task_progress(self, run_id: str) -> Dict[str, Any]:
+        """Get overall task progress for agent run (Sprint 18)"""
+        agent_run = self.load(run_id)
+        if not agent_run or 'task_states' not in agent_run:
+            return {
+                'total': 0,
+                'pending': 0,
+                'running': 0,
+                'completed': 0,
+                'error': 0,
+                'skipped': 0,
+                'progress_percent': 0
+            }
+        
+        task_states = agent_run['task_states']
+        total = len(task_states)
+        
+        status_counts = {
+            'pending': 0,
+            'running': 0,
+            'completed': 0,
+            'error': 0,
+            'skipped': 0
+        }
+        
+        for task_state in task_states:
+            status = task_state.get('status', 'pending')
+            if status in status_counts:
+                status_counts[status] += 1
+        
+        completed_count = status_counts['completed'] + status_counts['error'] + status_counts['skipped']
+        progress_percent = (completed_count / total * 100) if total > 0 else 0
+        
+        return {
+            'total': total,
+            'progress_percent': round(progress_percent, 1),
+            **status_counts
+        }
+    
+    def get_task_definitions_with_states(self, run_id: str) -> List[Dict[str, Any]]:
+        """Get task definitions combined with their execution states (Sprint 18)"""
+        agent_run = self.load(run_id)
+        if not agent_run:
+            return []
+        
+        agent = agents_manager.load(agent_run['agent_uuid'])
+        if not agent or 'tasks' not in agent:
+            return []
+        
+        # Combine task definitions with their states
+        combined_tasks = []
+        task_states_dict = {ts['task_uuid']: ts for ts in agent_run.get('task_states', [])}
+        
+        for task_def in sorted(agent['tasks'], key=lambda x: x.get('order', 0)):
+            task_uuid = task_def['uuid']
+            task_state = task_states_dict.get(task_uuid, {
+                'task_uuid': task_uuid,
+                'status': 'pending',
+                'inputs': {},
+                'outputs': {},
+                'results': {},
+                'error': None
+            })
+            
+            combined_task = {
+                'definition': task_def,
+                'state': task_state,
+                'uuid': task_uuid,
+                'name': task_def.get('name', 'Unnamed Task'),
+                'type': task_def.get('type', 'ai'),
+                'status': task_state.get('status', 'pending')
+            }
+            combined_tasks.append(combined_task)
+        
+        return combined_tasks
+    
+    def sync_task_definitions(self, run_id: str) -> bool:
+        """Sync task definitions from agent to agent run (Sprint 18)"""
+        agent_run = self.load(run_id)
+        if not agent_run:
+            return False
+        
+        agent = agents_manager.load(agent_run['agent_uuid'])
+        if not agent or 'tasks' not in agent:
+            return False
+        
+        # Get existing task states
+        existing_states = {ts['task_uuid']: ts for ts in agent_run.get('task_states', [])}
+        
+        # Create new task states based on current agent task definitions
+        new_task_states = []
+        for task_def in agent['tasks']:
+            task_uuid = task_def['uuid']
+            
+            # Preserve existing state if it exists, otherwise create new
+            if task_uuid in existing_states:
+                new_task_states.append(existing_states[task_uuid])
+            else:
+                new_task_states.append({
+                    'task_uuid': task_uuid,
+                    'status': 'pending',
+                    'inputs': {},
+                    'outputs': {},
+                    'results': {},
+                    'error': None,
+                    'started_at': None,
+                    'completed_at': None,
+                    'execution_time': None
+                })
+        
+        agent_run['task_states'] = new_task_states
+        agent_run['updated_at'] = datetime.now().isoformat()
+        return self.save(agent_run)
 
-
-# Global instances
+# Global instances for Sprint 18
 integrations_manager = IntegrationsManager()
 tools_manager = ToolsManager()
 agents_manager = AgentsManager()
+agent_run_manager = AgentRunManager()
 icon_manager = IconManager()
+
+# Update global instances

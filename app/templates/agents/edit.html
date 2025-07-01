@@ -239,36 +239,71 @@
 
             <!-- Right Column: Tasks & Knowledge Base -->
             <div class="space-y-6">
-                <!-- Tasks -->
+                <!-- Sprint 18: Tasks Management Revolution -->
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h3 class="text-lg font-medium text-gray-900 border-b border-gray-200 pb-3 mb-4 flex items-center">
-                        <i class="bi bi-list-task mr-2 text-orange-500"></i>
-                        Tasks
-                        <span class="ml-auto text-sm font-normal text-gray-500">{{ (agent.tasks or [])|length }} tasks</span>
-                    </h3>
+                    <div class="flex justify-between items-center border-b border-gray-200 pb-3 mb-4">
+                        <div class="flex items-center">
+                            <i class="bi bi-list-task mr-2 text-green-500"></i>
+                            <h3 class="text-lg font-medium text-gray-900">Tasks</h3>
+                            <span class="ml-2 text-sm font-normal text-gray-500">
+                                <span id="taskCount">{{ (agent.tasks or [])|length }}</span> tasks
+                            </span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="openTaskEditor()" class="btn btn-sm btn-primary">
+                                <i class="bi bi-gear mr-1"></i>
+                                Manage Tasks
+                            </button>
+                            <button type="button" onclick="addNewTask()" class="btn btn-sm btn-outline">
+                                <i class="bi bi-plus"></i>
+                                Add Task
+                            </button>
+                        </div>
+                    </div>
                     
-                    <div class="space-y-3">
+                    <!-- Sprint 18: Task List Display -->
+                    <div id="tasksPreview" class="space-y-3">
                         {% if agent.tasks %}
                             {% for task in agent.tasks %}
-                                <div class="p-4 border border-gray-200 rounded-lg bg-gray-50">
-                                    <div class="flex items-start justify-between">
-                                        <div class="flex-1">
-                                            <div class="flex items-center mb-2">
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-2">
-                                                    {{ task.type|title }}
-                                                </span>
-                                                <h4 class="font-medium text-gray-900">{{ task.name }}</h4>
+                                <div class="p-3 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center flex-1">
+                                            <div class="flex items-center">
+                                                {% if task.type == 'ai' %}
+                                                    <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                                                        <i class="bi bi-robot text-blue-600 text-sm"></i>
+                                                    </div>
+                                                {% elif task.type == 'tool' %}
+                                                    <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                                                        <i class="bi bi-tools text-purple-600 text-sm"></i>
+                                                    </div>
+                                                {% else %}
+                                                    <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
+                                                        <i class="bi bi-question text-gray-600 text-sm"></i>
+                                                    </div>
+                                                {% endif %}
+                                                
+                                                <div>
+                                                    <div class="flex items-center">
+                                                        <h4 class="font-medium text-gray-900 text-sm">{{ task.name }}</h4>
+                                                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium 
+                                                                     {% if task.type == 'ai' %}bg-blue-100 text-blue-800{% elif task.type == 'tool' %}bg-purple-100 text-purple-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                                                            {{ task.type|title }}
+                                                        </span>
+                                                    </div>
+                                                    {% if task.description %}
+                                                        <p class="text-xs text-gray-600 mt-1">{{ task.description[:80] }}{% if task.description|length > 80 %}...{% endif %}</p>
+                                                    {% endif %}
+                                                </div>
                                             </div>
-                                            {% if task.description %}
-                                                <p class="text-sm text-gray-600">{{ task.description }}</p>
-                                            {% endif %}
                                         </div>
-                                        <div class="flex gap-1 ml-2">
-                                            <button type="button" onclick="editTask('{{ task.uuid }}')" class="text-blue-500 hover:text-blue-700 text-sm">
-                                                <i class="bi bi-pencil"></i>
+                                        <div class="flex items-center gap-1">
+                                            <span class="text-xs text-gray-500">#{{ task.order or loop.index }}</span>
+                                            <button type="button" onclick="editTask('{{ task.uuid }}')" class="p-1 text-blue-500 hover:text-blue-700">
+                                                <i class="bi bi-pencil text-xs"></i>
                                             </button>
-                                            <button type="button" onclick="deleteTask('{{ task.uuid }}')" class="text-red-500 hover:text-red-700 text-sm">
-                                                <i class="bi bi-trash"></i>
+                                            <button type="button" onclick="deleteTask('{{ task.uuid }}')" class="p-1 text-red-500 hover:text-red-700">
+                                                <i class="bi bi-trash text-xs"></i>
                                             </button>
                                         </div>
                                     </div>
@@ -276,18 +311,34 @@
                             {% endfor %}
                         {% else %}
                             <div class="text-center py-6 text-gray-500">
-                                <i class="bi bi-plus-circle text-2xl mb-2"></i>
-                                <p>No tasks defined</p>
-                                <p class="text-sm">Add tasks to define what this agent can do</p>
+                                <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                                    <i class="bi bi-plus-circle text-xl text-gray-400"></i>
+                                </div>
+                                <p class="font-medium">No tasks defined</p>
+                                <p class="text-sm mb-4">Define tasks to specify what this agent can do</p>
+                                <button type="button" onclick="addNewTask()" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-plus mr-1"></i>
+                                    Create First Task
+                                </button>
                             </div>
                         {% endif %}
-                        
-                        <button type="button" 
-                                onclick="addNewTask()"
-                                class="w-full py-2 px-4 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-500 transition-colors">
-                            <i class="bi bi-plus mr-2"></i>
-                            Add Task
-                        </button>
+                    </div>
+                    
+                    <!-- Migration Alert for Legacy Agents -->
+                    <div id="migrationAlert" class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg hidden">
+                        <div class="flex items-start">
+                            <i class="bi bi-exclamation-triangle text-yellow-600 mr-2 mt-1"></i>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-yellow-800">Legacy Agent Detected</p>
+                                <p class="text-sm text-yellow-700 mt-1">
+                                    This agent has legacy instructions. You can migrate them to the new task system.
+                                </p>
+                                <button type="button" onclick="migrateLegacyInstructions()" class="mt-2 btn btn-sm btn-warning">
+                                    <i class="bi bi-arrow-right mr-1"></i>
+                                    Migrate to Tasks
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -494,8 +545,238 @@ function showNotification(message, success) {
     }, 5000);
 }
 
-// Task Management Functions
+// ===========================
+// SPRINT 18: TASK MANAGEMENT REVOLUTION
+// ===========================
+
+let agentTasks = [];
+let currentEditingTaskUuid = null;
+
+// Initialize tasks from agent data
+function initializeTasks() {
+    // Load existing tasks
+    if (typeof window.agentData !== 'undefined' && window.agentData.tasks) {
+        agentTasks = [...window.agentData.tasks];
+    } else {
+        agentTasks = [];
+    }
+    
+    // Check if migration is needed
+    checkMigrationNeeded();
+    
+    // Update task count
+    updateTaskCount();
+}
+
+function checkMigrationNeeded() {
+    const hasInstructions = window.agentData?.instructions && window.agentData.instructions.trim() !== '';
+    const hasInputFields = window.agentData?.input_fields && window.agentData.input_fields.length > 0;
+    const hasTasks = agentTasks.length > 0;
+    
+    if ((hasInstructions || hasInputFields) && !hasTasks) {
+        document.getElementById('migrationAlert').classList.remove('hidden');
+    } else {
+        document.getElementById('migrationAlert').classList.add('hidden');
+    }
+}
+
+function updateTaskCount() {
+    const taskCountElement = document.getElementById('taskCount');
+    if (taskCountElement) {
+        taskCountElement.textContent = agentTasks.length;
+    }
+}
+
+// Sprint 18: Open dedicated Task Editor
+function openTaskEditor() {
+    const agentUuid = '{{ agent.uuid }}';
+    window.open(`/agents/${agentUuid}/task-editor`, '_blank');
+}
+
+// Sprint 18: Add new task with modal
 function addNewTask() {
+    // Create task creation modal
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="p-6">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Add New Task</h3>
+                <form id="taskCreateForm">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Task Name</label>
+                            <input type="text" id="taskName" name="name" required 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="Enter task name">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Task Type</label>
+                            <select id="taskType" name="type" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                <option value="ai">AI Task</option>
+                                <option value="tool">Tool Task</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <textarea id="taskDescription" name="description" rows="3"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                      placeholder="Describe what this task does..."></textarea>
+                        </div>
+                    </div>
+                    <div class="flex gap-3 mt-6">
+                        <button type="submit" class="btn btn-primary flex-1">
+                            <i class="bi bi-plus mr-1"></i>
+                            Create Task
+                        </button>
+                        <button type="button" onclick="this.closest('.fixed').remove()" 
+                                class="btn btn-outline flex-1">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Handle form submission
+    document.getElementById('taskCreateForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        await createTask({
+            name: document.getElementById('taskName').value,
+            type: document.getElementById('taskType').value,
+            description: document.getElementById('taskDescription').value
+        });
+        modal.remove();
+    });
+    
+    // Focus on name input
+    document.getElementById('taskName').focus();
+}
+
+// Sprint 18: Create task via API
+async function createTask(taskData) {
+    try {
+        const response = await fetch(`/api/task_management/agent/{{ agent.uuid }}/tasks`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify(taskData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification('Task created successfully', true);
+            // Refresh task display
+            await refreshTasksDisplay();
+        } else {
+            showNotification('Failed to create task: ' + result.error, false);
+        }
+    } catch (error) {
+        console.error('Error creating task:', error);
+        showNotification('Error creating task: ' + error.message, false);
+    }
+}
+
+// Sprint 18: Edit task
+function editTask(taskUuid) {
+    // For now, open task editor focused on this task
+    const agentUuid = '{{ agent.uuid }}';
+    window.open(`/agents/${agentUuid}/task-editor?task=${taskUuid}`, '_blank');
+}
+
+// Sprint 18: Delete task
+async function deleteTask(taskUuid) {
+    if (!confirm('Are you sure you want to delete this task?')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/task_management/agent/{{ agent.uuid }}/tasks/${taskUuid}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotification('Task deleted successfully', true);
+            // Refresh task display
+            await refreshTasksDisplay();
+        } else {
+            showNotification('Failed to delete task: ' + result.error, false);
+        }
+    } catch (error) {
+        console.error('Error deleting task:', error);
+        showNotification('Error deleting task: ' + error.message, false);
+    }
+}
+
+// Sprint 18: Migrate legacy instructions to tasks
+async function migrateLegacyInstructions() {
+    if (!confirm('This will create a new AI task from your existing instructions. Continue?')) {
+        return;
+    }
+    
+    try {
+        const instructions = window.agentData?.instructions || '';
+        const inputFields = window.agentData?.input_fields || [];
+        
+        const taskData = {
+            name: 'Legacy Instructions',
+            type: 'ai',
+            description: 'Migrated from legacy agent instructions',
+            ai_config: {
+                instructions: instructions,
+                input_fields: inputFields,
+                goals: []
+            }
+        };
+        
+        await createTask(taskData);
+        
+        // Hide migration alert
+        document.getElementById('migrationAlert').classList.add('hidden');
+        
+    } catch (error) {
+        console.error('Error migrating instructions:', error);
+        showNotification('Error migrating instructions: ' + error.message, false);
+    }
+}
+
+// Sprint 18: Refresh tasks display
+async function refreshTasksDisplay() {
+    try {
+        const response = await fetch(`/api/task_management/agent/{{ agent.uuid }}/tasks`);
+        const result = await response.json();
+        
+        if (result.success) {
+            agentTasks = result.tasks;
+            updateTaskCount();
+            
+            // Reload the page to update the display
+            // In a full implementation, we would update the DOM directly
+            window.location.reload();
+        }
+    } catch (error) {
+        console.error('Error refreshing tasks:', error);
+    }
+}
+
+// ===========================
+// LEGACY TASK MANAGEMENT (DEPRECATED)
+// ===========================
+
+// Task Management Functions
+function addNewTaskOld() {
     showNotification('Task creation is now handled through the new Task Editor. This feature will be available in Sprint 18.', false);
     console.log('Add Task clicked - Feature in development for Sprint 18');
 }
@@ -546,6 +827,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (selectedTool) {
         onAssistantToolChange(selectedTool);
     }
+    
+    // Initialize tasks
+    initializeTasks();
 });
 </script>
 {% endblock %}

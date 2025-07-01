@@ -25,7 +25,7 @@ def insights():
         # Add statistics to each agent
         for agent in insight_agents:
             # Get agent statistics
-            stats = agents_manager.get_agent_statistics(agent['id'])
+            stats = agents_manager.get_single_agent_statistics(agent['id'])
             agent.update(stats)
             
             # Load quick actions

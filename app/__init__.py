@@ -75,6 +75,7 @@ def create_app(config_class=Config):
     from app.routes.agents import agents_bp
     from app.routes.tasks import tasks_bp
     from app.routes.assistants import assistants_bp
+    from app.routes.task_management import task_management_bp  # Sprint 18
     
     app.register_blueprint(main.bp)
     app.register_blueprint(integrations_bp)
@@ -83,6 +84,7 @@ def create_app(config_class=Config):
     app.register_blueprint(agents_bp, url_prefix='/agents')
     app.register_blueprint(tasks_bp, url_prefix='/tasks')
     app.register_blueprint(assistants_bp, url_prefix='/assistants')
+    app.register_blueprint(task_management_bp)  # Sprint 18: No URL prefix, uses /api/task_management
     
     # Logging setup
     if not app.debug:

@@ -51,7 +51,7 @@ def list_agents():
         
         # Add statistics to each agent
         for agent in agents:
-            agent_stats = agents_manager.get_agent_statistics(agent['id'])
+            agent_stats = agents_manager.get_single_agent_statistics(agent['id'])
             agent.update(agent_stats)
         
         stats = {
@@ -118,7 +118,7 @@ def view_agent(agent_id):
             return redirect(url_for('agents.list_agents'))
         
         # Get agent statistics
-        stats = agents_manager.get_agent_statistics(agent_id)
+        stats = agents_manager.get_single_agent_statistics(agent_id)
         agent.update(stats)
         
         return render_template('agents/view.html', agent=agent)
@@ -444,23 +444,12 @@ def api_delete_task(task_id):
 
 @agents_bp.route('/api/tasks/reorder', methods=['POST'])
 def api_reorder_tasks():
-    """Reorder tasks via API"""
-    try:
-        data = request.get_json()
-        agent_id = data.get('agent_id')
-        task_ids = data.get('task_ids', [])
-        
-        if not agent_id or not task_ids:
-            return jsonify({'error': 'Missing agent_id or task_ids'}), 400
-        
-        success = agents_manager.reorder_tasks(agent_id, task_ids)
-        if success:
-            return jsonify({'message': 'Tasks reordered successfully'})
-        else:
-            return jsonify({'error': 'Failed to reorder tasks'}), 500
-            
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    """DEPRECATED: Legacy task reorder API - use Sprint 18 Task Management API instead"""
+    return jsonify({
+        'error': 'This API endpoint has been deprecated. Please use the Sprint 18 Task Management API: /api/task_management/agent/<agent_uuid>/tasks/reorder',
+        'deprecated': True,
+        'migration_url': '/api/task_management/agent/<agent_uuid>/tasks/reorder'
+    }), 410  # HTTP 410 Gone
 
 @agents_bp.route('/api/knowledge', methods=['POST'])
 def api_create_knowledge():
@@ -663,3 +652,179 @@ def api_clear_agent_data(agent_id):
             
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# Sprint 18: Task Management API Routes
+
+@agents_bp.route('/api/<agent_id>/tasks', methods=['GET'])
+def api_get_agent_tasks(agent_id):
+    """API endpoint to get agent tasks (Sprint 18)"""
+    try:
+        agent = agents_manager.load(agent_id)
+        if not agent:
+            return jsonify({'success': False, 'error': 'Agent not found'}), 404
+        
+        tasks = agents_manager.get_task_definitions(agent_id)
+        
+        return jsonify({
+            'success': True,
+            'tasks': tasks,
+            'count': len(tasks)
+        })
+    
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@agents_bp.route('/api/<agent_id>/tasks', methods=['POST'])
+def api_create_agent_task(agent_id):
+    """API endpoint to create agent task (Sprint 18)"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'No data provided'}), 400
+        
+        # Create task definition with Sprint 18 structure
+        task_def = {
+            'uuid': str(uuid.uuid4()),
+            'name': data.get('name', 'New Task'),
+            'type': data.get('type', 'ai'),
+            'description': data.get('description', ''),
+            'order': data.get('order', 1),
+            'created_at': datetime.now().isoformat(),
+            'updated_at': datetime.now().isoformat()
+        }
+        
+        # Add type-specific configuration
+        if task_def['type'] == 'ai':
+            task_def['ai_config'] = {
+                'instructions': data.get('instructions', ''),
+                'goals': data.get('goals', ''),
+                'input_fields': data.get('input_fields', []),
+                'output_type': data.get('output_type', 'text'),
+                'output_description': data.get('output_description', '')
+            }
+        elif task_def['type'] == 'tool':
+            task_def['tool_config'] = {
+                'tool_uuid': data.get('tool_uuid', ''),
+                'input_mapping': data.get('input_mapping', {}),
+                'output_mapping': data.get('output_mapping', {})
+            }
+        
+        success = agents_manager.add_task_definition(agent_id, task_def)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'task': task_def,
+                'message': 'Task created successfully'
+            })
+        else:
+            return jsonify({'success': False, 'error': 'Failed to create task'}), 500
+    
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@agents_bp.route('/api/<agent_id>/tasks/<task_uuid>', methods=['PUT'])
+def api_update_agent_task(agent_id, task_uuid):
+    """API endpoint to update agent task (Sprint 18)"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'No data provided'}), 400
+        
+        data['updated_at'] = datetime.now().isoformat()
+        success = agents_manager.update_task_definition(agent_id, task_uuid, data)
+        
+        if success:
+            task = agents_manager.get_task_definition(agent_id, task_uuid)
+            return jsonify({
+                'success': True,
+                'task': task,
+                'message': 'Task updated successfully'
+            })
+        else:
+            return jsonify({'success': False, 'error': 'Failed to update task'}), 500
+    
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@agents_bp.route('/api/<agent_id>/tasks/<task_uuid>', methods=['DELETE'])
+def api_delete_agent_task(agent_id, task_uuid):
+    """API endpoint to delete agent task (Sprint 18)"""
+    try:
+        success = agents_manager.remove_task_definition(agent_id, task_uuid)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Task deleted successfully'
+            })
+        else:
+            return jsonify({'success': False, 'error': 'Failed to delete task'}), 500
+    
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@agents_bp.route('/api/<agent_id>/tasks/reorder', methods=['POST'])
+def api_reorder_agent_tasks(agent_id):
+    """API endpoint to reorder agent tasks (Sprint 18)"""
+    try:
+        data = request.get_json()
+        if not data or 'task_uuids' not in data:
+            return jsonify({'success': False, 'error': 'task_uuids array required'}), 400
+        
+        success = agents_manager.reorder_task_definitions(agent_id, data['task_uuids'])
+        
+        if success:
+            tasks = agents_manager.get_task_definitions(agent_id)
+            return jsonify({
+                'success': True,
+                'tasks': tasks,
+                'message': 'Tasks reordered successfully'
+            })
+        else:
+            return jsonify({'success': False, 'error': 'Failed to reorder tasks'}), 500
+    
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@agents_bp.route('/api/tools/assistant-enabled', methods=['GET'])
+def api_get_assistant_enabled_tools():
+    """API endpoint to get tools with assistant option enabled (Sprint 18)"""
+    try:
+        tools = tools_manager.get_assistant_enabled_tools()
+        
+        return jsonify({
+            'success': True,
+            'tools': tools,
+            'count': len(tools)
+        })
+    
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@agents_bp.route('/task-editor/<agent_id>')
+def task_editor(agent_id):
+    """Sprint 18: Dedicated Task Editor for Agent"""
+    try:
+        agent = agents_manager.load(agent_id)
+        if not agent:
+            flash('Agent not found', 'error')
+            return redirect(url_for('agents.list_agents'))
+        
+        # Get available tools for task configuration
+        available_tools = tools_manager.load_all()
+        assistant_tools = [tool for tool in available_tools 
+                          if tools_manager.is_assistant_enabled(tool.get('id', ''))]
+        
+        # Get task definitions
+        tasks = agents_manager.get_task_definitions(agent_id)
+        
+        return render_template('agents/task_editor.html',
+                             agent=agent,
+                             tasks=tasks,
+                             available_tools=available_tools,
+                             assistant_tools=assistant_tools)
+    
+    except Exception as e:
+        flash(f'Error loading task editor: {str(e)}', 'error')
+        return redirect(url_for('agents.edit_agent', agent_id=agent_id))
