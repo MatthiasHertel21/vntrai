@@ -1,7 +1,7 @@
 # BASICS - Bitte unbedingt beachten
 1. Testscripte und Debugging:
 - Das System läuft in einem docker container ... also bitte nicht immer versuchen irgendetwas mit python aufzurufen - das geht nicht
-- alle Arten von docker-Auf## AgentRun
+- alle Arten von docker-Aufrufen mit sudo
 2. Beim Abschluss eines sprints
 - abnahme der akzeptanzbedingungen durch bestätigung
 - cleanup ausführen nach vorgaben
@@ -15,112 +15,117 @@
 
 
 
-# AKTUELLER SPRINT (Agent-Assistant Deep Integration)
-**Current focus: Sprint 17.5 Agent-Assistant Deep Integration (13.-14. Juli 2025)**
+# AKTUELLER SPRINT (Task Management Revolution)
+**Current focus: Sprint 18 Task Management Revolution (15.-19. Juli 2025)**
 
-✅ **Sprint 17 (8.-12. Juli 2025): AI Assistant Integration - ABGESCHLOSSEN UND GESCHLOSSEN**
+✅ **Sprint 17.5 (13.-14. Juli 2025): Insights Deep Integration - ABGESCHLOSSEN UND GESCHLOSSEN**
 
-# 🎯 **KRITISCHE BACKLOG-ITEMS FÜR SPRINT 17.5**
+# 🎯 **SPRINT 17.5 - ABGESCHLOSSEN (13.-14. Juli 2025)** ✅
 
-## 🔍 **Assistant Discovery & Management (Höchste Priorität)**
-1. **Assistant Discovery Dashboard**
-   - Neue Route `/assistants` für Assistant-Übersicht
-   - Liste aller Assistants von OpenAI API abrufen (unabhängig von Agents)
-   - Assistant-Status anzeigen: aktiv, inaktiv, verwaist (kein Agent zugeordnet)
-   - Direkte Aktionen: Delete Assistant, Create Agent for Assistant
+## ✅ **Erfolgreich implementierte Features:**
 
-2. **Assistant Analytics Integration**
-   - Usage-Statistics pro Assistant (API-Calls, Token-Verbrauch)
-   - Performance-Metrics (Response-Zeit, Success-Rate, Error-Rate)
-   - Cost-Tracking und Budget-Warnings
-   - Zeitbasierte Charts und Trends
+### 1. **Insights Overview & Chat Interface - ABGESCHLOSSEN**
+- ✅ Persistent thread-based OpenAI Assistant chat with full backend/frontend
+- ✅ Chat page refactored: improved layout, toolbar, compact sidebar, quick actions CRUD
+- ✅ Added "use as" options (agent/insight) to agent edit form with backend migration
+- ✅ DataValidator fixes to persist new agent fields (category, use_as)
+- ✅ Insights overview page with card layout, statistics, navigation to chat
+- ✅ Filter row with category filter and text search functionality
+- ✅ Card actions (clear, export, edit, chat) with proper modal integration
+- ✅ Card layout improvements: status tags, smaller cards, footer positioning
+- ✅ Fixed Jinja2 routing from 'assistants.chat' to 'assistants.chat_interface'
 
-3. **Enhanced File Management**
-   - File-Tracking zwischen Agent und Assistant
-   - File-Status in Assistant API verfolgen (uploaded, processing, ready, error)
-   - Bulk-File-Operations (cleanup, download, remove from Assistant)
-   - File-Usage-Analytics (welche Files werden von Assistant genutzt)
+### 2. **Backend & Data Management - ABGESCHLOSSEN**
+- ✅ Added/updated routes for chat, quick actions, agent management
+- ✅ Migration logic for new agent fields with backward compatibility
+- ✅ Debug logging for agent save/load operations
+- ✅ Fixed template issues (duplicate text, missing endblock, etc.)
+- ✅ Enhanced frontend JS for quick actions CRUD and modal dialogs
 
-## 💬 **Assistant Chat Interface (Hohe Priorität)**
-1. **Direct Chat with Agent's Assistant**
-   - Chat-Interface in Agent Edit Page oder separate `/agents/{uuid}/chat` Route
-   - Thread-Management für persistente Conversations
-   - Real-time Streaming von Assistant-Responses
-   - Chat-History persistent speichern (JSON oder SQLite)
+## � **Sprint 17.5 Statistics:**
+- **Features completed:** 8/8 critical features
+- **UI/UX improvements:** 12 major improvements
+- **Backend routes:** 6 new/updated routes
+- **Template files:** 2 major refactors (chat.html, insights.html)
+- **Bug fixes:** 5 critical fixes
 
-2. **Conversation Management**
-   - Chat-Export (TXT, JSON, PDF)
-   - Conversation-Search und -Filter
-   - Thread-Archivierung und -Cleanup
-   - Multi-Thread-Support pro Assistant
+## 🔍 **Unfinished Items - Moved to Tech Debt/Backlog:**
 
-## ⚙️ **Assistant Lifecycle Enhancement (Mittlere Priorität)**
-1. **Advanced Assistant Management**
-   - Assistant-Cloning zwischen Agents
-   - Assistant-Configuration-Templates
-   - Automated Assistant-Health-Checks
-   - Assistant-Migration-Tools (Config-Transfer)
+### **Moved to Tech Debt:**
+- [ ] **Assistant Discovery Dashboard** - `/assistants` route for comprehensive assistant management
+- [ ] **Assistant Analytics Integration** - Usage statistics, performance metrics, cost tracking
 
----
+### **Moved to Sprint 18 Backlog:**
+- [ ] **Enhanced File Management** - Advanced file tracking and bulk operations
+- [ ] **Assistant Lifecycle Enhancement** - Cloning, templates, health checks
 
-# 🎯 **KRITISCHE BACKLOG-ITEMS FÜR SPRINT 18**
+# 🎯 **AKTUELLER SPRINT: Sprint 18 Task Management Revolution (15.-19. Juli 2025)**
+
+## **SPRINT 18 - KRITISCHE ARCHITEKTUR-ÄNDERUNG:**
+**Tasks sind keine eigenständigen Entities mehr. Task-Definitionen werden in agent.json gespeichert, Task-Ausführung in agentrun.json.**
+
+### 🔄 **Sprint 18 Core Features:**
 
 ## 📋 **Task-System-Revolution (Höchste Priorität)**
 1. **Task-Definitionen in agent.json integrieren**
-   - `tasks: [{"uuid": "...", "name": "...", "type": "ai|tool", "definition": {...}}]`
-   - Task Editor Container in Agent Edit Page implementieren
-   - Add/Edit/Delete/Reorder Funktionen für Tasks direkt in Agent GUI
+   - [ ] `tasks: [{"uuid": "...", "name": "...", "type": "ai|tool", "definition": {...}}]`
+   - [ ] Task Editor Container in Agent Edit Page implementieren
+   - [ ] Add/Edit/Delete/Reorder Funktionen für Tasks direkt in Agent GUI
 
 2. **Task-Ausführung in agentrun.json verwalten** 
-   - `task_states: [{"task_uuid": "...", "status": "pending|running|completed|error|skipped", "inputs": {...}, "results": {...}}]`
-   - AgentRun GUI lädt Task-Definitionen aus zugehörigem Agent
-   - Task-Status und -Inputs werden nur in AgentRun-Kontext gespeichert
+   - [ ] `task_states: [{"task_uuid": "...", "status": "pending|running|completed|error|skipped", "inputs": {...}, "results": {...}}]`
+   - [ ] AgentRun GUI lädt Task-Definitionen aus zugehörigem Agent
+   - [ ] Task-Status und -Inputs werden nur in AgentRun-Kontext gespeichert
 
 3. **Tools "options" Field Implementation**
-   - Tools JSON Schema um "options" Array erweitern
-   - "assistant" Option für Assistant-fähige Tools
-   - Tool Selection in Agent GUI filtern auf Assistant-Tools
+   - [ ] Tools JSON Schema um "options" Array erweitern
+   - [ ] "assistant" Option für Assistant-fähige Tools
+   - [ ] Tool Selection in Agent GUI filtern auf Assistant-Tools
 
 ## 🔧 **Agent-System-Erweiterungen (Hohe Priorität)**
-1. **Agent Task Editor** - Container in Agent Edit Page
-2. **AgentRun Task Execution** - Task-Flow und -Status Management
-3. **Knowledge Base Integration** - Knowledge Items in Agent-Kontext
+- [ ] **Agent Task Editor** - Container in Agent Edit Page
+- [ ] **AgentRun Task Execution** - Task-Flow und -Status Management
+- [ ] **Knowledge Base Integration** - Knowledge Items in Agent-Kontext
+- [ ] **Insights File Management Integration** - Upload-Control, Assistant API Integration (verschoben aus Sprint 17.5)
+- [ ] **Insights Knowledge Base Integration** - Wrapup-Generation, Knowledge-Extraktion (verschoben aus Sprint 17.5)
+- [ ] **Insights Admin Panel Integration** - Assistant-Konfiguration über Agent-Management (verschoben aus Sprint 17.5)
 
 ## 🎨 **UI/UX-Verbesserungen (Mittlere Priorität)**
-1. **Toolbar-Migration** - Footer-Buttons in Toolbar verschieben
-2. **Card-Layout-Vereinheitlichung** - Tools analog zu Integrations
-3. **Icon-Design-System** - Konsistente Icons überall
+- [ ] **Toolbar-Migration** - Footer-Buttons in Toolbar verschieben
+- [ ] **Card-Layout-Vereinheitlichung** - Tools analog zu Integrations
+- [ ] **Icon-Design-System** - Konsistente Icons überall
+
+### 📊 **Sprint 18 Definition of Done:**
+- [ ] Task-Editor vollständig in Agent Edit Page integriert
+- [ ] Task-Definitionen werden in agent.json gespeichert 
+- [ ] AgentRun UI verwaltet Task-Ausführung und -Results
+- [ ] Keine eigenständigen Task-CRUD-Operationen mehr
+- [ ] Task-Status wird in agentrun.json verwaltet
+- [ ] Tools "options" Feld mit "assistant" Option implementiert
+- [ ] Insights File Management in Agent-System integriert
+- [ ] Insights Knowledge Base Features in Agent-Kontext verfügbar
+- [ ] Insights Admin Features über Agent-Assistant-Management zugänglich
 
 ---
 
 # BACKLOG
 
+## Tech Depth
+- Alle Aufrufe der Assistent API sollen über die API Wrapper-Klasse erfolgen
+- [ ] **Assistant Discovery Dashboard** - `/assistants` route for comprehensive assistant management (moved from Sprint 17.5)
+- [ ] **Assistant Analytics Integration** - Usage statistics, performance metrics, cost tracking (moved from Sprint 17.5)
+
 ## New Backlog Items
----
-### Insights 
-#### Context
-- Insights sind ein chat mit einer AI, der dicht an der standardfunktionilität von chatgpt liegt
-- alle insights teilen sich einen assistent-api Thread
-- die assistent_id und alle Insight-übergreifenden Konfigurationen werden gespeichert in data/insights/config.json
-- jeder insight entspricht einer user-session, eine user-session kann geteilt werden über verschiedene vntrai nutzer 
-- jeder insight hat eine uuid
-- die daten zu jedem insight werden gespeichert in einem json unter data/insights/uuid.json
-- die files zu einem insight werden gespeichert unter data/insights/uuid/filename
-- jeder insight kann files und datasets verwenden, die zur user-session hinzugefügt werden
-- ist kein assisten verfügbar, wird automatisch einer erzeugt und dessen daten in der data/insights/config.json gespeichert
-#### GUI
-- zweispaltige GUI, 
-- Container links: "Chat"
-- container rechts: "Files", "Datasets", "Knowledge", "Prompts"
-##### container chat
-- großes ausgabefenster für ergebnisse der ai
-- kleines message-fenster zum eingeben von usermessages und "send" Button
-- nach dem absetzen von "send" wird ein context-prmpt erzeugt und abgesetzt und die antwort in das ausgabefenster gestreamed
-##### container files
-- file upload-control
-- liste der hochgeladenen files mit Löschaktion
-- files werden beim hochladen in der usersession registriert, die fileids werden in der json des ignsights gepsiechert (zusammen mit name, typ, grö0e)
-- die file_ids werden der nutzersession zugefügt (additional file ids)
+- die testbuttons zurai assistent configuration in agents/edit sollen in den kopf des containers
+
+### Insights Integration (zu Sprint 18 verschoben)
+**Insights Features werden in Sprint 18 in das Agent-System integriert:**
+- [ ] **File Management Integration**: Upload-Control, Speicherung, Assistant API Integration
+- [ ] **Knowledge Base Integration**: Wrapup-Generation, Knowledge-Extraktion, Agent-Integration  
+- [ ] **Admin Panel Integration**: Assistant-Konfiguration über Agent-Management
+- [ ] **Cleanup-Funktionen**: Alte Dateien und leere Insights automatisch bereinigen
+
+**Kontext:** Insights sind spezialisierte Agent-Nutzung ("use_as": "insight") mit geteiltem Assistant-Thread
 ---
 ## 🎯 **Aktueller Sprint: Sprint 18 Task Management Revolution (15.-19. Juli 2025)**
 ### Ziel: Vollständige Integration von Tasks in Agent/AgentRun System
@@ -153,7 +158,24 @@ Tasks sind keine eigenständigen Entities mehr. Task-Definitionen werden in agen
 
 ---
 
-## 📋 **Abgeschlossener Sprint 15 (30. Juni 2025) - Layout-Verbesserungen & Icon-Design-System**
+## 📋 **Abgeschlossener Sprint 17.5 (13.-14. Juli 2025) - Insights Deep Integration** ✅
+
+### ✅ **Erfolgreich abgeschlossen:**
+- **💬 Persistent OpenAI Assistant Chat**: Thread-based chat with full streaming and history
+- **🎨 Insights Overview Page**: Card layout with statistics, filters, search, and navigation
+- **⚙️ Agent "Use As" Enhancement**: Added category and use_as fields with backend migration
+- **🔧 Chat Interface Refactor**: Improved layout, toolbar, compact sidebar, quick actions CRUD
+- **📊 DataValidator Improvements**: Fixed persistence for new agent fields with debug logging
+- **🎯 UI/UX Refinements**: Filter row, card actions, status tags, footer positioning, routing fixes
+
+### 📊 **Sprint 17.5 Statistics:**
+- **Features completed:** 8/8 critical features
+- **UI/UX improvements:** 12 major improvements  
+- **Backend routes:** 6 new/updated routes
+- **Template refactors:** 2 major (chat.html, insights.html)
+- **Bug fixes:** 5 critical fixes
+
+---
 ### ✅ **Erfolgreich abgeschlossen:**
 - **🎨 Container-Width-Consistency**: Einheitliche max-w-4xl Container-Breite für alle /tools und /integrations Seiten
 - **🔧 Tools Card "Run" Action**: Ausführungs-Dialog Integration - "Run" Aktion öffnet dasselbe Modal wie tools/view
@@ -165,7 +187,8 @@ Tasks sind keine eigenständigen Entities mehr. Task-Definitionen werden in agen
 - **📅 Last-Used-Information**: Tool-Karten zeigen Datum der letzten Nutzung
 - **💾 Critical Bug Fixes**: Integration-Edit-System vollständig repariert, keine Datenverluste mehr
 
-## 🔄 **Aus Sprint 15 ins Backlog verschoben:**
+---
+## � **Aus Sprint 15 ins Backlog verschoben:**
 ### **UI/UX Finalisierung (niedrige Priorität)**
 - [ ] **tools/edit komplette Überarbeitung**: Button-Migration zu Toolbar, Two-Column-Layout, English GUI
 - [ ] **UI-Cleanup in integrations/edit**: "Test Integration" Abschnitt entfernen 
@@ -178,6 +201,18 @@ Tasks sind keine eigenständigen Entities mehr. Task-Definitionen werden in agen
 - [ ] **Dynamische Implementations-Auswahl in /test**: API-basierte Dropdown-Population
 - [ ] **Icon-Design-System**: Konsistente Icons für alle Cards und Actions
 - [ ] **Mobile-Optimierung**: Responsive Design-Verbesserungen
+
+## 📋 **Enhanced File Management (verschoben aus Sprint 17.5)**
+- [ ] **File-Tracking zwischen Agent und Assistant**
+- [ ] **File-Status in Assistant API verfolgen** (uploaded, processing, ready, error)
+- [ ] **Bulk-File-Operations** (cleanup, download, remove from Assistant)
+- [ ] **File-Usage-Analytics** (welche Files werden von Assistant genutzt)
+
+## 📋 **Assistant Lifecycle Enhancement (verschoben aus Sprint 17.5)**
+- [ ] **Assistant-Cloning zwischen Agents**
+- [ ] **Assistant-Configuration-Templates**
+- [ ] **Automated Assistant-Health-Checks**
+- [ ] **Assistant-Migration-Tools** (Config-Transfer)
 
 ## 💻 **Tools System Backlog (hohe Priorität für Sprint 18)**
 

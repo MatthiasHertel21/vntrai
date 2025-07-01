@@ -1,0 +1,434 @@
+{% extends "base.html" %}
+
+{% block title %}Insights - Interactive AI Conversations{% endblock %}
+
+{% block page_header %}
+<div class="page-header max-w-7xl mx-auto w-full">
+    <div class="flex justify-between items-center">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center shadow-sm border">
+                <img src="{{ url_for('static', filename='icons/insights.png') }}" 
+                     alt="Insights" 
+                     class="w-8 h-8">
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Insights</h1>
+                <p class="text-gray-600">Interactive AI conversations and analysis</p>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto w-full">
+    {% if error %}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+            <strong>Error:</strong> {{ error }}
+        </div>
+    {% endif %}
+    
+    {% if agents %}
+        <!-- Filter Row -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                    <input type="text" 
+                           id="searchFilter" 
+                           placeholder="Filter insights..."
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                    <select id="categoryFilter" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                        <option value="">All Categories</option>
+                        <option value="General">General</option>
+                        <option value="Analysis">Analysis</option>
+                        <option value="Support">Support</option>
+                        <option value="Research">Research</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select id="statusFilter" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                        <option value="">All Status</option>
+                        <option value="connected">Connected</option>
+                        <option value="disconnected">Disconnected</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button onclick="clearFilters()" 
+                            class="w-full btn btn-outline">
+                        <i class="bi bi-arrow-clockwise mr-1"></i>
+                        Clear Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Insights Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="insightsGrid">
+            {% for agent in agents %}
+                <div class="insight-card bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200"
+                     data-agent-id="{{ agent.id }}"
+                     data-assistant-id="{{ agent.assistant_id or '' }}"
+                     data-category="{{ agent.category or 'General' }}"
+                     data-status="{{ 'connected' if agent.assistant_id else 'disconnected' }}">
+                    
+                    <!-- Card Header -->
+                    <div class="p-3 border-b border-gray-100">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm border mr-2">
+                                    <img src="{{ url_for('static', filename='icons/insights.png') }}" 
+                                         alt="Insights" 
+                                         class="w-5 h-5">
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-semibold text-gray-900">
+                                        {{ agent.name }}
+                                    </h3>
+                                    {% if agent.assistant_id %}
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                            <div class="w-1.5 h-1.5 bg-green-400 rounded-full mr-1"></div>
+                                            Connected
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                                            <div class="w-1.5 h-1.5 bg-gray-400 rounded-full mr-1"></div>
+                                            Disconnected
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="relative">
+                                <button onclick="toggleActions(event, '{{ agent.id }}')" 
+                                        class="p-1 rounded hover:bg-gray-100 transition-colors"
+                                        title="Actions">
+                                    <i class="bi bi-three-dots text-gray-500"></i>
+                                </button>
+                                <div id="actions-{{ agent.id }}" 
+                                     class="absolute right-0 top-8 w-36 bg-white rounded-lg shadow-lg border border-gray-200 z-10 hidden">
+                                    <div class="py-1">
+                                        <button onclick="chatWithAgent('{{ agent.id }}', '{{ agent.assistant_id or '' }}')" 
+                                                class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
+                                            <i class="bi bi-chat-dots mr-2 text-blue-600"></i>
+                                            Chat
+                                        </button>
+                                        <button onclick="clearAgentData('{{ agent.id }}')" 
+                                                class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
+                                            <i class="bi bi-trash mr-2 text-red-600"></i>
+                                            Clear
+                                        </button>
+                                        <button onclick="exportAgentData('{{ agent.id }}')" 
+                                                class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
+                                            <i class="bi bi-download mr-2 text-green-600"></i>
+                                            Export
+                                        </button>
+                                        <button onclick="editAgent('{{ agent.id }}')" 
+                                                class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center">
+                                            <i class="bi bi-pencil mr-2 text-purple-600"></i>
+                                            Edit
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Card Content -->
+                    <div class="p-3">
+                        <!-- Description -->
+                        {% if agent.description %}
+                            <p class="text-xs text-gray-600 mb-3 line-clamp-2">
+                                {{ agent.description }}
+                            </p>
+                        {% endif %}
+                        
+                        <!-- Category & Model -->
+                        <div class="space-y-1 mb-3">
+                            <div class="flex items-center text-xs text-gray-600">
+                                <i class="bi bi-tag mr-1.5 text-purple-500"></i>
+                                <span>{{ agent.category or 'General' }}</span>
+                            </div>
+                            <div class="flex items-center text-xs text-gray-600">
+                                <i class="bi bi-cpu mr-1.5 text-blue-500"></i>
+                                <span>{{ agent.model or 'gpt-4-turbo-preview' }}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Quick Actions Preview -->
+                        {% if agent.quick_actions_count > 0 %}
+                            <div class="pt-2 border-t border-gray-100">
+                                <p class="text-xs text-gray-500 mb-1">Quick Actions:</p>
+                                <div class="flex flex-wrap gap-1">
+                                    {% for action in agent.get('quick_actions', [])[:2] %}
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-100 text-purple-700">
+                                            {{ action.name[:12] }}{% if action.name|length > 12 %}...{% endif %}
+                                        </span>
+                                    {% endfor %}
+                                    {% if agent.quick_actions_count > 2 %}
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600">
+                                            +{{ agent.quick_actions_count - 2 }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+    {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-12">
+            <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="bi bi-lightbulb text-gray-400 text-3xl"></i>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">No Insights Available</h3>
+            <p class="text-gray-500 mb-6 max-w-sm mx-auto">
+                No agents are configured for insights. Enable insights for your agents to start interactive conversations.
+            </p>
+            <a href="{{ url_for('agents.list_agents') }}" 
+               class="btn btn-primary">
+                <i class="bi bi-gear mr-2"></i>
+                Configure Agents
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let allAgents = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Load agents data from backend
+    allAgents = [
+        {% for agent in agents %}
+        {
+            id: '{{ agent.id }}',
+            assistant_id: '{{ agent.assistant_id or "" }}',
+            name: '{{ agent.name }}',
+            category: '{{ agent.category or "General" }}',
+            description: '{{ agent.description or "" }}',
+            model: '{{ agent.model or "gpt-4-turbo-preview" }}',
+            status: '{{ "connected" if agent.assistant_id else "disconnected" }}',
+            quick_actions_count: {{ agent.quick_actions_count or 0 }},
+            quick_actions: {{ agent.get('quick_actions', []) | tojson | safe }}
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    // Initialize filters
+    setupFilters();
+    renderAgents(allAgents);
+    
+    // Close action menus when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.relative')) {
+            closeAllActionMenus();
+        }
+    });
+});
+
+function setupFilters() {
+    const searchFilter = document.getElementById('searchFilter');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const statusFilter = document.getElementById('statusFilter');
+    
+    if (searchFilter) {
+        searchFilter.addEventListener('input', filterAgents);
+    }
+    if (categoryFilter) {
+        categoryFilter.addEventListener('change', filterAgents);
+    }
+    if (statusFilter) {
+        statusFilter.addEventListener('change', filterAgents);
+    }
+}
+
+function filterAgents() {
+    const searchTerm = document.getElementById('searchFilter').value.toLowerCase();
+    const categoryFilter = document.getElementById('categoryFilter').value;
+    const statusFilter = document.getElementById('statusFilter').value;
+    
+    const filteredAgents = allAgents.filter(agent => {
+        const matchesSearch = !searchTerm || 
+            agent.name.toLowerCase().includes(searchTerm) ||
+            agent.description.toLowerCase().includes(searchTerm);
+        
+        const matchesCategory = !categoryFilter || agent.category === categoryFilter;
+        const matchesStatus = !statusFilter || agent.status === statusFilter;
+        
+        return matchesSearch && matchesCategory && matchesStatus;
+    });
+    
+    renderAgents(filteredAgents);
+}
+
+function renderAgents(agents) {
+    const grid = document.getElementById('insightsGrid');
+    if (!grid) return;
+    
+    if (agents.length === 0) {
+        grid.innerHTML = `
+            <div class="col-span-full text-center py-12">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="bi bi-search text-gray-400 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No insights found</h3>
+                <p class="text-gray-500">Try adjusting your filters or search terms.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    // Agents are already rendered in the template, just show/hide based on filter
+    const allCards = document.querySelectorAll('.insight-card');
+    allCards.forEach(card => {
+        const agentId = card.dataset.agentId;
+        const shouldShow = agents.some(agent => agent.id === agentId);
+        card.style.display = shouldShow ? 'block' : 'none';
+    });
+}
+
+function clearFilters() {
+    document.getElementById('searchFilter').value = '';
+    document.getElementById('categoryFilter').value = '';
+    document.getElementById('statusFilter').value = '';
+    renderAgents(allAgents);
+}
+
+function toggleActions(event, agentId) {
+    event.stopPropagation();
+    
+    // Close all other action menus
+    closeAllActionMenus();
+    
+    // Toggle current menu
+    const menu = document.getElementById('actions-' + agentId);
+    if (menu) {
+        menu.classList.toggle('hidden');
+    }
+}
+
+function closeAllActionMenus() {
+    const menus = document.querySelectorAll('[id^="actions-"]');
+    menus.forEach(menu => menu.classList.add('hidden'));
+}
+
+function chatWithAgent(agentId, assistantId) {
+    closeAllActionMenus();
+    if (assistantId) {
+        window.location.href = `/assistants/chat/${assistantId}`;
+    } else {
+        showNotification('Agent not connected to OpenAI Assistant', false);
+    }
+}
+
+function clearAgentData(agentId) {
+    closeAllActionMenus();
+    if (confirm('Are you sure you want to clear all data for this agent? This action cannot be undone.')) {
+        fetch(`/agents/api/clear-data/${agentId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification('Agent data cleared successfully', true);
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showNotification(data.error || 'Failed to clear agent data', false);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Error clearing agent data', false);
+        });
+    }
+}
+
+function exportAgentData(agentId) {
+    closeAllActionMenus();
+    
+    const agent = allAgents.find(a => a.id === agentId);
+    if (!agent) {
+        showNotification('Agent not found', false);
+        return;
+    }
+    
+    // Create export data
+    const exportData = {
+        agent: agent,
+        exported_at: new Date().toISOString(),
+        quick_actions: agent.quick_actions || []
+    };
+    
+    // Download as JSON
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `agent_${agent.name.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    showNotification('Agent data exported', true);
+}
+
+function editAgent(agentId) {
+    closeAllActionMenus();
+    window.location.href = `/agents/edit/${agentId}`;
+}
+
+function showNotification(message, success) {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 ${
+        success ? 'bg-green-100 border border-green-400 text-green-700' : 'bg-red-100 border border-red-400 text-red-700'
+    }`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="bi bi-${success ? 'check-circle' : 'exclamation-triangle'} mr-2"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => document.body.removeChild(notification), 300);
+    }, 3000);
+}
+</script>
+
+<style>
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.insight-card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.insight-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+</style>
+{% endblock %}

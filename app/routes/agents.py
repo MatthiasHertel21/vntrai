@@ -137,6 +137,14 @@ def edit_agent(agent_id):
                 flash('Agent not found', 'error')
                 return redirect(url_for('agents.list_agents'))
             
+            # Ensure migration of use_as fields for display
+            if 'use_as_agent' not in agent:
+                agent['use_as_agent'] = True
+            if 'use_as_insight' not in agent:
+                agent['use_as_insight'] = False
+            if 'quick_actions' not in agent:
+                agent['quick_actions'] = []
+            
             # Get available tools with assistant functionality enabled
             available_tools = tools_manager.load_all()
             assistant_tools = []
@@ -159,6 +167,14 @@ def edit_agent(agent_id):
             flash('Agent not found', 'error')
             return redirect(url_for('agents.list_agents'))
         
+        # Migrate old agents to have use_as fields if they don't exist
+        if 'use_as_agent' not in agent:
+            agent['use_as_agent'] = True  # Default for existing agents
+        if 'use_as_insight' not in agent:
+            agent['use_as_insight'] = False  # Default for existing agents
+        if 'quick_actions' not in agent:
+            agent['quick_actions'] = []  # Default empty quick actions
+        
         # Update basic information
         if 'name' in request.form:
             agent['name'] = request.form.get('name', '').strip()
@@ -175,8 +191,26 @@ def edit_agent(agent_id):
         if 'instructions' in request.form:
             agent['instructions'] = request.form.get('instructions', '')
         
+        # Update "use as" options - handle checkbox behavior
+        # Checkboxes are only sent when checked, so we need to check for presence
+        agent['use_as_agent'] = 'use_as_agent' in request.form
+        agent['use_as_insight'] = 'use_as_insight' in request.form
+        
+        # Debug: Log the form data and resulting values
+        print(f"DEBUG: Form data: use_as_agent={'use_as_agent' in request.form}, use_as_insight={'use_as_insight' in request.form}")
+        print(f"DEBUG: Agent values: use_as_agent={agent['use_as_agent']}, use_as_insight={agent['use_as_insight']}")
+        
+        # Debug: Log the form data
+        print(f"DEBUG: Form data contains use_as_agent: {'use_as_agent' in request.form}")
+        print(f"DEBUG: Form data contains use_as_insight: {'use_as_insight' in request.form}")
+        print(f"DEBUG: Agent use_as_agent set to: {agent.get('use_as_agent')}")
+        print(f"DEBUG: Agent use_as_insight set to: {agent.get('use_as_insight')}")
+        
         # Sanitize and validate agent data
         sanitized_agent = DataValidator.sanitize_agent_data(agent)
+        
+        # Debug: Log the agent state after sanitization
+        print(f"DEBUG: After sanitize - use_as_agent={sanitized_agent.get('use_as_agent')}, use_as_insight={sanitized_agent.get('use_as_insight')}")
         
         # Validate the data
         is_valid, validation_errors = DataValidator.validate_agent_data(sanitized_agent)
@@ -185,7 +219,13 @@ def edit_agent(agent_id):
                 flash(error, 'error')
             return redirect(url_for('agents.edit_agent', agent_id=agent_id))
         
+        # Debug: Log the agent state before saving
+        print(f"DEBUG: Before save - use_as_agent={sanitized_agent.get('use_as_agent')}, use_as_insight={sanitized_agent.get('use_as_insight')}")
+        
         if agents_manager.save(sanitized_agent):
+            # Verify the saved data
+            saved_agent = agents_manager.load(agent_id)
+            print(f"DEBUG: After save - use_as_agent={saved_agent.get('use_as_agent')}, use_as_insight={saved_agent.get('use_as_insight')}")
             flash('Agent updated successfully', 'success')
         else:
             flash('Failed to update agent', 'error')
@@ -534,6 +574,9 @@ def create_from_assistant(assistant_id):
             'tools': tools_list,
             'file_ids': file_ids,
             'metadata': assistant.metadata or {} if hasattr(assistant, 'metadata') else {},
+            'use_as_agent': True,  # Can be used as agent
+            'use_as_insight': True,  # Also enable as insight since it's from assistant
+            'quick_actions': [],  # Empty quick actions list
             'tasks': [],
             'knowledge_base': [],
             'global_variables': {},
@@ -555,33 +598,68 @@ def create_from_assistant(assistant_id):
 def api_quick_actions(agent_id):
     """Manage quick actions for an agent"""
     try:
-        agent = agents_manager.load(agent_id)
-        if not agent:
-            return jsonify({'error': 'Agent not found'}), 404
-        
         if request.method == 'GET':
-            # Return current quick actions
+            # Load agent and return quick actions
+            agent = agents_manager.load(agent_id)
+            if not agent:
+                return jsonify({'error': 'Agent not found'}), 404
+            
             quick_actions = agent.get('quick_actions', [])
             return jsonify({'quick_actions': quick_actions})
         
         elif request.method == 'POST':
-            # Save new quick actions
+            # Save quick actions
             data = request.get_json()
             quick_actions = data.get('quick_actions', [])
             
-            # Validate quick actions structure
-            for action in quick_actions:
-                if not all(key in action for key in ['name', 'message', 'icon', 'color']):
-                    return jsonify({'error': 'Invalid quick action structure'}), 400
+            agent = agents_manager.load(agent_id)
+            if not agent:
+                return jsonify({'error': 'Agent not found'}), 404
             
-            # Update agent with new quick actions
             agent['quick_actions'] = quick_actions
-            agent['updated_at'] = datetime.now().isoformat()
             
             if agents_manager.save(agent):
                 return jsonify({'success': True, 'message': 'Quick actions saved successfully'})
             else:
                 return jsonify({'error': 'Failed to save quick actions'}), 500
                 
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@agents_bp.route('/api/clear-data/<agent_id>', methods=['POST'])
+def api_clear_agent_data(agent_id):
+    """Clear all data for an agent (threads, messages, etc.)"""
+    try:
+        agent = agents_manager.load(agent_id)
+        if not agent:
+            return jsonify({'error': 'Agent not found'}), 404
+        
+        # Clear assistant thread if exists
+        if agent.get('assistant_id'):
+            from app.implementation_modules.openai_assistant_api import OpenAIAssistantAPI
+            assistant_api = OpenAIAssistantAPI()
+            
+            # Get thread ID from agent
+            thread_id = agent.get('thread_id')
+            if thread_id:
+                try:
+                    # Delete the thread
+                    assistant_api.client.beta.threads.delete(thread_id)
+                    # Clear thread_id from agent
+                    agent['thread_id'] = None
+                except Exception as e:
+                    print(f"Warning: Could not delete thread {thread_id}: {e}")
+        
+        # Clear conversation history and reset statistics
+        agent['conversation_history'] = []
+        agent['total_runs'] = 0
+        agent['last_run'] = None
+        
+        # Save the updated agent
+        if agents_manager.save(agent):
+            return jsonify({'success': True, 'message': 'Agent data cleared successfully'})
+        else:
+            return jsonify({'error': 'Failed to save agent data'}), 500
+            
     except Exception as e:
         return jsonify({'error': str(e)}), 500

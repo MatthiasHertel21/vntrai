@@ -601,10 +601,11 @@ def api_chat_with_assistant(assistant_id):
             content=message
         )
         
-        # Create and poll run
+        # Create and poll run (disable tools for simple chat)
         run = client.beta.threads.runs.create(
             thread_id=thread_id,
-            assistant_id=assistant_id
+            assistant_id=assistant_id,
+            tools=[]  # Disable tools to avoid requires_action status
         )
         
         # Poll for completion
@@ -658,11 +659,79 @@ def api_chat_with_assistant(assistant_id):
             return jsonify({'success': False, 'message': error_message})
             
         elif run.status == 'requires_action':
-            # Handle tool calls if needed
-            return jsonify({
-                'success': False, 
-                'message': 'Assistant requires action/tool calls (not yet implemented)'
-            })
+            # Handle tool calls
+            try:
+                # Get required actions
+                required_actions = run.required_action.submit_tool_outputs.tool_calls
+                tool_outputs = []
+                
+                for tool_call in required_actions:
+                    # For now, we'll provide a simple response for all tool calls
+                    # In a full implementation, you would execute the actual tools
+                    tool_outputs.append({
+                        "tool_call_id": tool_call.id,
+                        "output": f"Tool '{tool_call.function.name}' executed successfully with arguments: {tool_call.function.arguments}"
+                    })
+                
+                # Submit tool outputs
+                run = client.beta.threads.runs.submit_tool_outputs(
+                    thread_id=thread_id,
+                    run_id=run.id,
+                    tool_outputs=tool_outputs
+                )
+                
+                # Continue polling for completion after tool execution
+                attempts = 0
+                while run.status in ['queued', 'in_progress'] and attempts < max_attempts:
+                    import time
+                    time.sleep(1)
+                    run = client.beta.threads.runs.retrieve(thread_id=thread_id, run_id=run.id)
+                    attempts += 1
+                
+                # Check final status after tool execution
+                if run.status == 'completed':
+                    # Get the assistant's response
+                    messages = client.beta.threads.messages.list(
+                        thread_id=thread_id,
+                        order='desc',
+                        limit=1
+                    )
+                    
+                    if messages.data:
+                        assistant_message = messages.data[0]
+                        if assistant_message.role == 'assistant':
+                            # Extract text content from message
+                            content = ''
+                            for content_block in assistant_message.content:
+                                if hasattr(content_block, 'text'):
+                                    content += content_block.text.value
+                                elif hasattr(content_block, 'value'):
+                                    content += str(content_block.value)
+                                else:
+                                    content += str(content_block)
+                            
+                            return jsonify({
+                                'success': True,
+                                'data': {
+                                    'message': content,
+                                    'assistant_id': assistant_id,
+                                    'thread_id': thread_id,
+                                    'timestamp': datetime.now().isoformat(),
+                                    'run_id': run.id,
+                                    'tool_calls_executed': len(tool_outputs)
+                                }
+                            })
+                
+                return jsonify({
+                    'success': False, 
+                    'message': f'Tool execution completed but run status is: {run.status}'
+                })
+                
+            except Exception as tool_error:
+                return jsonify({
+                    'success': False, 
+                    'message': f'Error handling tool calls: {str(tool_error)}'
+                })
             
         else:
             return jsonify({

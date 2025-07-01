@@ -9,8 +9,37 @@ def index():
 
 @bp.route('/insights')
 def insights():
-    """My Insights Seite."""
-    return render_template('insights.html')
+    """Insights - Interactive conversation agents."""
+    from app.utils.data_manager import agents_manager
+    
+    try:
+        # Get all agents
+        all_agents = agents_manager.load_all()
+        
+        # Filter agents that are enabled for insights
+        insight_agents = [
+            agent for agent in all_agents 
+            if agent.get('use_as_insight', False) and agent.get('status') == 'active'
+        ]
+        
+        # Add statistics to each agent
+        for agent in insight_agents:
+            # Get agent statistics
+            stats = agents_manager.get_agent_statistics(agent['id'])
+            agent.update(stats)
+            
+            # Load quick actions
+            quick_actions = agent.get('quick_actions', [])
+            agent['quick_actions_count'] = len(quick_actions)
+            
+            # Calculate usage stats (placeholder)
+            agent['total_conversations'] = stats.get('total_runs', 0)
+            agent['avg_response_time'] = '1.2s'  # Placeholder
+        
+        return render_template('insights.html', agents=insight_agents)
+        
+    except Exception as e:
+        return render_template('insights.html', agents=[], error=str(e))
 
 @bp.route('/flows')
 def flows():

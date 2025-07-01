@@ -737,6 +737,9 @@ class AgentsManager(DataManager):
             'status': 'inactive',
             'assistant_id': None,
             'assistant_tool_id': None,
+            'use_as_agent': True,  # Default: can be used as agent
+            'use_as_insight': False,  # Default: not for insights
+            'quick_actions': [],  # Custom quick actions for insights
             'tasks': [],
             'knowledge_base': [],
             'files': [],
@@ -871,6 +874,28 @@ class AgentsManager(DataManager):
         
         agent['knowledge_base'] = [item for item in agent['knowledge_base'] if item.get('id') != knowledge_id]
         return self.save(agent)
+    
+    def load(self, agent_id: str) -> Optional[Dict[str, Any]]:
+        """Load agent by ID with migration for missing fields"""
+        agent = super().load(agent_id)
+        if agent:
+            # Migrate old agents to have use_as fields if they don't exist
+            updated = False
+            if 'use_as_agent' not in agent:
+                agent['use_as_agent'] = True  # Default for existing agents
+                updated = True
+            if 'use_as_insight' not in agent:
+                agent['use_as_insight'] = False  # Default for existing agents  
+                updated = True
+            if 'quick_actions' not in agent:
+                agent['quick_actions'] = []  # Default empty quick actions
+                updated = True
+            
+            # Save migrated agent
+            if updated:
+                self.save(agent)
+                
+        return agent
 
 
 # Global instances

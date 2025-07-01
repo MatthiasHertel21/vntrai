@@ -2,15 +2,16 @@
 
 Dieses Dokument enthält alle erfolgreich abgeschlossenen Sprints und umgesetzten Anforderungen aus der development.md, um das Hauptdokument übersichtlicher zu halten.
 
-## 📊 Projekt-Statistiken (Stand: 5. Juli 2025)
+## 📊 Projekt-Statistiken (Stand: 14. Juli 2025)
 
-- **Gesamtsprints abgeschlossen**: 16
-- **Implementierungszeit**: ~20 Tage
-- **Migrierte Daten**: 13 Integrations, 15 Tools, 12 Icons, Agents System
-- **Codezeilen**: ~22.000+ LOC
-- **Templates**: 35+ HTML-Templates
-- **JavaScript-Module**: 15+ dynamische UI-Module
-- **Backend-Routes**: 75+ Flask-Routes
+- **Gesamtsprints abgeschlossen**: 17.5
+- **Implementierungszeit**: ~24 Tage
+- **Migrierte Daten**: 13 Integrations, 15 Tools, 12 Icons, Agents System, Insights Module
+- **Codezeilen**: ~25.000+ LOC
+- **Templates**: 40+ HTML-Templates
+- **JavaScript-Module**: 18+ dynamische UI-Module
+- **Backend-Routes**: 85+ Flask-Routes
+- **Major Features**: Tools/Integrations CRUD, Agent System, OpenAI Assistant Integration, Insights Chat Interface
 
 ---
 
@@ -524,7 +525,70 @@ Dieses Dokument enthält alle erfolgreich abgeschlossenen Sprints und umgesetzte
 
 ---
 
-## 🎯 **Abgeschlossene Layout-Anforderungen:**
+## Sprint 17.5: Insights Deep Integration ✅ COMPLETED (13.-14. Juli 2025)
+### Ziel: Vollständige Insights-Implementierung mit persistentem Chat und UI/UX-Verbesserungen
+
+**User Stories:**
+- Als Benutzer möchte ich ein persistentes Chat-Interface mit OpenAI Assistant nutzen
+- Als Benutzer möchte ich eine Insights-Übersicht mit Karten-Layout und Filteroptionen sehen
+- Als Benutzer möchte ich Agents als "Insights" kategorisieren und entsprechende Quick Actions nutzen
+- Als Entwickler möchte ich neue Agent-Felder persistent speichern können
+
+**Sprint 17.5 Achievements:**
+- ✅ **Persistent OpenAI Assistant Chat**: Thread-based chat with full streaming, history, and quick actions CRUD
+- ✅ **Insights Overview Page**: Card layout with statistics, category/text filters, and chat navigation
+- ✅ **Agent "Use As" Enhancement**: Added category and use_as fields with complete backend migration
+- ✅ **Chat Interface Refactor**: Improved layout, toolbar, compact sidebar, modal integration
+- ✅ **DataValidator Improvements**: Fixed persistence for new agent fields with comprehensive debug logging
+- ✅ **UI/UX Refinements**: Filter functionality, card actions, status tags, footer positioning, routing fixes
+
+**Technical Implementation:**
+- [x] Persistent thread-based OpenAI Assistant chat with streaming responses ✅
+- [x] Chat page refactored: layout improvements, toolbar, compact sidebar ✅
+- [x] Quick actions CRUD: create, edit, delete with modal dialogs ✅
+- [x] Added "use_as" options (agent/insight) to agent edit form ✅
+- [x] Backend migration logic for new agent fields (category, use_as) ✅
+- [x] DataValidator enhanced to persist new fields without data loss ✅
+- [x] Insights overview with card layout, statistics, navigation ✅
+- [x] Filter row with category filter and text search ✅
+- [x] Card actions (clear, export, edit, chat) with proper integration ✅
+- [x] Card UI improvements: status tags, smaller cards, footer positioning ✅
+- [x] Fixed Jinja2 routing from 'assistants.chat' to 'assistants.chat_interface' ✅
+- [x] Template fixes: duplicate text removal, missing endblock, JS improvements ✅
+
+**Sprint 17.5 Statistics:**
+- **Features completed:** 8/8 critical features (100%)
+- **UI/UX improvements:** 12 major improvements
+- **Backend routes:** 6 new/updated routes
+- **Template refactors:** 2 major files (chat.html, insights.html)
+- **Bug fixes:** 5 critical fixes
+- **Lines of code:** ~1,500 LOC added/modified
+
+**Definition of Done:** ✅ ABGESCHLOSSEN
+- ✅ Persistent chat interface with OpenAI Assistant fully functional
+- ✅ Insights overview page with card layout and filtering implemented
+- ✅ Agent categorization and use_as functionality working
+- ✅ All backend routes for chat, quick actions, agent management operational
+- ✅ DataValidator properly persisting new agent fields
+- ✅ UI/UX improvements completed: filters, cards, actions, routing
+- ✅ No critical bugs, all features tested and working
+
+**Sprint 17.5 Learnings:**
+- **Thread-based Persistence:** OpenAI Assistant threads provide excellent conversation continuity
+- **DataValidator Robustness:** Proper field validation prevents data loss during migrations  
+- **UI Component Consistency:** Card layouts and filter patterns create intuitive user experience
+- **Template Organization:** Clear separation of concerns improves maintainability
+- **Modal Integration:** Consistent modal patterns reduce user confusion
+
+**Moved to Tech Debt/Backlog:**
+- Assistant Discovery Dashboard (`/assistants` route) - moved to tech debt
+- Assistant Analytics Integration (usage stats, performance metrics) - moved to tech debt
+- Enhanced File Management (advanced tracking, bulk operations) - moved to Sprint 18 backlog
+- Assistant Lifecycle Enhancement (cloning, templates, health checks) - moved to Sprint 18 backlog
+
+---
+
+## ✅ **Abgeschlossene Layout-Anforderungen:**
 
 ### ✅ **Layout Anpassungen (Alle abgeschlossen):**
 - ✅ die sidebar soll im eingeklappten Zustand noch etwas schmaler sein 

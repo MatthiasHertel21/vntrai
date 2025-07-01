@@ -83,13 +83,6 @@
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
         <div class="flex items-center gap-4">
             <div class="flex items-center">
-                <label for="searchFilter" class="text-sm font-medium text-gray-700 mr-2">Search:</label>
-                <input type="text" 
-                       id="searchFilter" 
-                       placeholder="Search insights..."
-                       class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
-            </div>
-            <div class="flex items-center">
                 <label for="categoryFilter" class="text-sm font-medium text-gray-700 mr-2">Category:</label>
                 <select id="categoryFilter" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
                     <option value="">All Categories</option>
@@ -101,7 +94,7 @@
     <!-- Insights Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="insightsGrid">
         {% for agent in agents %}
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 cursor-pointer group insight-card flex flex-col h-full"
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200 cursor-pointer group insight-card"
                  data-category="{{ agent.category or 'General' }}"
                  onclick="openInsight('{{ agent.id }}', '{{ agent.assistant_id or '' }}')">
                 
@@ -153,7 +146,7 @@
                                         <i class="bi bi-pencil mr-2"></i>Edit
                                     </a>
                                     {% if agent.assistant_id %}
-                                        <a href="{{ url_for('assistants.chat_interface', assistant_id=agent.assistant_id) }}" 
+                                        <a href="{{ url_for('assistants.chat', assistant_id=agent.assistant_id) }}" 
                                            class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                             <i class="bi bi-chat-dots mr-2"></i>Chat
                                         </a>
@@ -165,7 +158,7 @@
                 </div>
                 
                 <!-- Card Content -->
-                <div class="p-4 flex-1">
+                <div class="p-4">
                     <!-- Description -->
                     {% if agent.description %}
                         <p class="text-sm text-gray-600 mb-3 line-clamp-2">
@@ -217,7 +210,7 @@
         </div>
         <h3 class="text-lg font-medium text-gray-900 mb-2">No Insights Found</h3>
         <p class="text-gray-500 mb-6 max-w-sm mx-auto">
-            No insights match your current filters. Try adjusting your search terms or selecting a different category.
+            No insights match your current filter. Try selecting a different category.
         </p>
     </div>
     
@@ -273,9 +266,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize filters
     setupFilters();
     
-    // Initial rendering
-    updateStatistics(allAgents);
-    
     // Close action menus when clicking outside
     document.addEventListener('click', function(e) {
         if (!e.target.closest('.relative')) {
@@ -303,30 +293,18 @@ function populateCategoryFilter() {
 
 function setupFilters() {
     const categoryFilter = document.getElementById('categoryFilter');
-    const searchFilter = document.getElementById('searchFilter');
     
     if (categoryFilter) {
         categoryFilter.addEventListener('change', filterAgents);
-    }
-    
-    if (searchFilter) {
-        searchFilter.addEventListener('input', filterAgents);
-        searchFilter.addEventListener('keyup', filterAgents);
     }
 }
 
 function filterAgents() {
     const categoryFilter = document.getElementById('categoryFilter').value;
-    const searchText = document.getElementById('searchFilter').value.toLowerCase().trim();
     
     const filteredAgents = allAgents.filter(agent => {
         const matchesCategory = !categoryFilter || agent.category === categoryFilter;
-        const matchesSearch = !searchText || 
-            agent.name.toLowerCase().includes(searchText) ||
-            (agent.description && agent.description.toLowerCase().includes(searchText)) ||
-            agent.category.toLowerCase().includes(searchText);
-        
-        return matchesCategory && matchesSearch;
+        return matchesCategory;
     });
     
     renderAgents(filteredAgents);
@@ -349,14 +327,12 @@ function renderAgents(agents) {
         emptyState.style.display = 'none';
     }
     
-    // Show filtered cards by matching agent ID
+    // Show filtered cards
     agents.forEach(agent => {
-        // Find card by checking onclick attribute for agent ID
-        allCards.forEach(card => {
-            if (card.onclick && card.onclick.toString().includes(`'${agent.id}'`)) {
-                card.style.display = 'flex'; // Use flex to maintain card structure
-            }
-        });
+        const card = document.querySelector(`[data-category="${agent.category}"]`);
+        if (card && card.onclick.toString().includes(agent.id)) {
+            card.style.display = 'block';
+        }
     });
 }
 
@@ -493,17 +469,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 .cursor-pointer {
     transition: transform 0.2s ease-in-out;
-}
-
-/* Ensure card footer stays at bottom */
-.insight-card {
-    display: flex;
-    flex-direction: column;
-    min-height: 280px; /* Minimum height for consistent layout */
-}
-
-.insight-card > div:last-child {
-    margin-top: auto; /* Push footer to bottom */
 }
 </style>
 {% endblock %}

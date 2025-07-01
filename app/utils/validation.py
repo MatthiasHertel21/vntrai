@@ -296,6 +296,7 @@ class DataValidator:
         allowed_fields = {
             'id', 'name', 'category', 'description', 'status',
             'assistant_id', 'assistant_tool_id', 'ai_assistant_tool', 'model', 'instructions',
+            'use_as_agent', 'use_as_insight', 'quick_actions',  # New fields for insights functionality
             'tasks', 'knowledge_base', 'files', 'global_variables', 'system_prompt', 'metadata',
             'version', 'created_at', 'updated_at'
         }
