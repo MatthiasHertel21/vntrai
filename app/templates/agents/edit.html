@@ -57,10 +57,23 @@
             <div class="space-y-6">
                 <!-- Basic Information -->
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                    <h3 class="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2 mb-3 flex items-center">
-                        <i class="bi bi-info-circle mr-2 text-blue-500"></i>
-                        Basic Information
-                    </h3>
+                    <div class="flex justify-between items-center border-b border-gray-200 pb-2 mb-3">
+                        <h3 class="text-lg font-medium text-gray-900 flex items-center">
+                            <i class="bi bi-info-circle mr-2 text-blue-500"></i>
+                            Basic Information
+                        </h3>
+                        <div class="flex items-center">
+                            <span class="text-sm font-medium text-gray-700 mr-2">Status:</span>
+                            <select id="status" 
+                                    name="status"
+                                    class="px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="active" {{ 'selected' if agent.status == 'active' }}>Active</option>
+                                <option value="inactive" {{ 'selected' if agent.status == 'inactive' }}>Inactive</option>
+                                <option value="development" {{ 'selected' if agent.status == 'development' }}>Development</option>
+                                <option value="testing" {{ 'selected' if agent.status == 'testing' }}>Testing</option>
+                            </select>
+                        </div>
+                    </div>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
@@ -77,55 +90,30 @@
                         </div>
                         
                         <div>
-                            <label for="status" class="block text-sm font-medium text-gray-700 mb-1">
-                                Status
-                            </label>
-                            <select id="status" 
-                                    name="status"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="active" {{ 'selected' if agent.status == 'active' }}>Active</option>
-                                <option value="inactive" {{ 'selected' if agent.status == 'inactive' }}>Inactive</option>
-                                <option value="development" {{ 'selected' if agent.status == 'development' }}>Development</option>
-                                <option value="testing" {{ 'selected' if agent.status == 'testing' }}>Testing</option>
-                            </select>
-                        </div>
-                        
-                        <div class="md:col-span-2">
                             <label for="category" class="block text-sm font-medium text-gray-700 mb-1">
                                 Category
                             </label>
                             <div class="relative">
-                                <div class="flex gap-2">
-                                    <select id="category" 
-                                            name="category"
-                                            class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                        <option value="General" {{ 'selected' if agent.category == 'General' }}>General</option>
-                                        <option value="Content" {{ 'selected' if agent.category == 'Content' }}>Content & Writing</option>
-                                        <option value="Data" {{ 'selected' if agent.category == 'Data' }}>Data Analysis</option>
-                                        <option value="Marketing" {{ 'selected' if agent.category == 'Marketing' }}>Marketing</option>
-                                        <option value="Research" {{ 'selected' if agent.category == 'Research' }}>Research</option>
-                                        <option value="Support" {{ 'selected' if agent.category == 'Support' }}>Customer Support</option>
-                                        <option value="Development" {{ 'selected' if agent.category == 'Development' }}>Development</option>
-                                        <option value="Finance" {{ 'selected' if agent.category == 'Finance' }}>Finance</option>
-                                        <option value="Education" {{ 'selected' if agent.category == 'Education' }}>Education</option>
-                                        <option value="Healthcare" {{ 'selected' if agent.category == 'Healthcare' }}>Healthcare</option>
-                                        <!-- Custom categories will be dynamically added here -->
-                                        <option value="__NEW__">➕ Add New Category...</option>
-                                    </select>
-                                    <button type="button" 
-                                            id="addCategoryBtn"
-                                            onclick="showAddCategoryModal()"
-                                            class="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                                            title="Add new category">
-                                        <i class="bi bi-plus"></i>
-                                    </button>
-                                </div>
-                                
-                                <!-- Hidden input for custom category -->
-                                <input type="hidden" 
-                                       id="customCategory" 
-                                       name="custom_category"
-                                       value="{{ agent.category if agent.category not in ['General', 'Content', 'Data', 'Marketing', 'Research', 'Support', 'Development', 'Finance', 'Education', 'Healthcare'] else '' }}">
+                                <input type="text" 
+                                       id="category" 
+                                       name="category"
+                                       value="{{ agent.category or '' }}"
+                                       list="categoryOptions"
+                                       autocomplete="off"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                       placeholder="Enter or select category">
+                                <datalist id="categoryOptions">
+                                    <option value="General">General</option>
+                                    <option value="Content">Content & Writing</option>
+                                    <option value="Data">Data Analysis</option>
+                                    <option value="Marketing">Marketing</option>
+                                    <option value="Research">Research</option>
+                                    <option value="Support">Customer Support</option>
+                                    <option value="Development">Development</option>
+                                    <option value="Finance">Finance</option>
+                                    <option value="Education">Education</option>
+                                    <option value="Healthcare">Healthcare</option>
+                                </datalist>
                             </div>
                         </div>
                         
@@ -236,7 +224,10 @@
                             <select id="model" 
                                     name="model"
                                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="gpt-4-turbo-preview" {{ 'selected' if agent.model == 'gpt-4-turbo-preview' }}>GPT-4 Turbo</option>
+                                <option value="gpt-4o" {{ 'selected' if agent.model == 'gpt-4o' }}>GPT-4o</option>
+                                <option value="gpt-4o-mini" {{ 'selected' if agent.model == 'gpt-4o-mini' }}>GPT-4o Mini</option>
+                                <option value="gpt-4-turbo" {{ 'selected' if agent.model == 'gpt-4-turbo' }}>GPT-4 Turbo</option>
+                                <option value="gpt-4-turbo-preview" {{ 'selected' if agent.model == 'gpt-4-turbo-preview' }}>GPT-4 Turbo Preview</option>
                                 <option value="gpt-4" {{ 'selected' if agent.model == 'gpt-4' }}>GPT-4</option>
                                 <option value="gpt-3.5-turbo" {{ 'selected' if agent.model == 'gpt-3.5-turbo' }}>GPT-3.5 Turbo</option>
                             </select>
@@ -252,6 +243,14 @@
                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                       placeholder="System instructions for the AI assistant...">{{ agent.instructions or '' }}</textarea>
                             <p class="text-xs text-gray-500 mt-1">Instructions that define how the AI should behave</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Assistant Configuration Details -->
+                    <div id="assistant_config_details" class="hidden mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <h4 class="text-sm font-medium text-blue-900 mb-2">Configuration Details</h4>
+                        <div id="assistant_tool_details">
+                            <!-- Details will be populated by JavaScript -->
                         </div>
                     </div>
                 </div>
@@ -280,7 +279,7 @@
                     <div id="tasksPreview" class="space-y-2">
                         {% if agent.tasks %}
                             {% for task in agent.tasks %}
-                                <div class="p-3 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
+                                <div class="p-2 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer"
                                      onclick="editTask('{{ task.uuid }}')">
                                     <div class="flex items-center">
                                         <!-- Move buttons at the beginning -->
@@ -682,7 +681,13 @@ function onAssistantToolChange(value) {
     const detailsPanel = document.getElementById('assistant_config_details');
     const detailsDiv = document.getElementById('assistant_tool_details');
     
-    if (value.startsWith('tool:')) {
+    // Check if elements exist to prevent errors
+    if (!detailsPanel || !detailsDiv) {
+        console.warn('Assistant configuration details elements not found');
+        return;
+    }
+    
+    if (value && value.startsWith('tool:')) {
         // Tool-based assistant
         const toolId = value.substring(5);
         const tool = assistantTools.find(t => t.id === toolId);
@@ -705,6 +710,9 @@ function onAssistantToolChange(value) {
         // No selection
         detailsPanel.classList.add('hidden');
     }
+    
+    // Update test buttons state
+    updateTestButtonsState();
 }
 
 // Enable/disable test buttons based on assistant tool selection
@@ -849,33 +857,140 @@ function addNewTask() {
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
     modal.innerHTML = `
-        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div class="p-6">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Add New Task</h3>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Add New Task</h3>
+                    <button type="button" onclick="this.closest('.fixed').remove()" 
+                            class="text-gray-400 hover:text-gray-600">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
                 <form id="taskCreateForm">
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Task Name</label>
-                            <input type="text" id="taskName" name="name" required 
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                   placeholder="Enter task name">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Left Column: Basic Information -->
+                        <div class="space-y-4">
+                            <h4 class="text-md font-medium text-gray-900 border-b pb-2">Basic Information</h4>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Task Name *</label>
+                                <input type="text" id="taskName" name="name" required 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                       placeholder="Enter task name">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Task Type *</label>
+                                <select id="taskType" name="type" onchange="toggleTaskTypeFields()" 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="ai">AI Task (OpenAI Assistant)</option>
+                                    <option value="tool">Tool Task (External Tools)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                <textarea id="taskDescription" name="description" rows="3"
+                                          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                          placeholder="Describe what this task does..."></textarea>
+                            </div>
+                            
+                            <!-- Output Configuration -->
+                            <div class="border-t pt-4">
+                                <h5 class="text-sm font-medium text-gray-900 mb-3">Output Configuration</h5>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Output Variable</label>
+                                        <input type="text" id="outputVariable" name="output_variable"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                               placeholder="e.g., analysis_result">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Output Type</label>
+                                        <select id="outputType" name="output_type" 
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                            <option value="text">Text</option>
+                                            <option value="image">Image</option>
+                                            <option value="json">JSON</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Output Description</label>
+                                    <textarea id="outputDescription" name="output_description" rows="2"
+                                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                              placeholder="Describe what this task outputs..."></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Output Rendering</label>
+                                    <select id="outputRendering" name="output_rendering" 
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="text">Plain Text</option>
+                                        <option value="markup">Markdown</option>
+                                        <option value="html">HTML</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Task Type</label>
-                            <select id="taskType" name="type" 
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
-                                <option value="ai">AI Task</option>
-                                <option value="tool">Tool Task</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                            <textarea id="taskDescription" name="description" rows="3"
-                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                      placeholder="Describe what this task does..."></textarea>
+                        
+                        <!-- Right Column: Type-specific Configuration -->
+                        <div class="space-y-4">
+                            <!-- AI Task Configuration -->
+                            <div id="aiTaskConfig" class="task-config">
+                                <h4 class="text-md font-medium text-gray-900 border-b pb-2 flex items-center">
+                                    <i class="bi bi-robot mr-2 text-blue-500"></i>
+                                    AI Task Configuration
+                                </h4>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Instructions *</label>
+                                        <textarea id="aiInstructions" name="instructions" rows="4"
+                                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                                  placeholder="Detailed instructions for the AI assistant..."></textarea>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Goals</label>
+                                        <textarea id="aiGoals" name="goals" rows="2"
+                                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                                  placeholder="What should be achieved by this task..."></textarea>
+                                    </div>
+                                    
+                                    <!-- Input Fields Configuration -->
+                                    <div class="border-t pt-4">
+                                        <div class="flex justify-between items-center mb-3">
+                                            <h5 class="text-sm font-medium text-gray-900">Input Fields</h5>
+                                            <button type="button" onclick="addInputField()" 
+                                                    class="btn btn-sm btn-outline text-xs">
+                                                <i class="bi bi-plus mr-1"></i>Add Field
+                                            </button>
+                                        </div>
+                                        <div id="inputFieldsContainer" class="space-y-3">
+                                            <p class="text-sm text-gray-500">No input fields defined yet.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Tool Task Configuration -->
+                            <div id="toolTaskConfig" class="task-config hidden">
+                                <h4 class="text-md font-medium text-gray-900 border-b pb-2 flex items-center">
+                                    <i class="bi bi-tools mr-2 text-green-500"></i>
+                                    Tool Task Configuration
+                                </h4>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Select Tool *</label>
+                                        <select id="toolSelect" name="tool_uuid" onchange="loadToolInputFields()"
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                            <option value="">Choose a tool...</option>
+                                        </select>
+                                    </div>
+                                    <div id="toolInputsContainer" class="space-y-3">
+                                        <p class="text-sm text-gray-500">Select a tool to configure its inputs.</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="flex gap-3 mt-6">
+                    
+                    <div class="flex gap-3 mt-6 pt-4 border-t">
                         <button type="submit" class="btn btn-primary flex-1">
                             <i class="bi bi-plus mr-1"></i>
                             Create Task
@@ -892,14 +1007,15 @@ function addNewTask() {
     
     document.body.appendChild(modal);
     
+    // Initialize form
+    loadAvailableToolsForModal();
+    toggleTaskTypeFields();
+    
     // Handle form submission
     document.getElementById('taskCreateForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-        await createTask({
-            name: document.getElementById('taskName').value,
-            type: document.getElementById('taskType').value,
-            description: document.getElementById('taskDescription').value
-        });
+        const formData = collectTaskFormData();
+        await createTask(formData);
         modal.remove();
     });
     
@@ -993,45 +1109,155 @@ function editTask(taskUuid) {
     
     console.log('Found task:', task);
     
-    // Create edit modal
+    // Create edit modal with full configuration
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
     modal.innerHTML = `
-        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4">
-            <div class="p-6">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Edit Task</h3>
+        <div class="bg-white rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="p-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Edit Task: ${escapeHtml(task.name || 'Unnamed Task')}</h3>
+                    <button type="button" onclick="closeEditTaskModal()" 
+                            class="text-gray-400 hover:text-gray-600">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
                 <form id="editTaskForm">
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Task Name</label>
-                            <input type="text" id="editTaskName" name="name" required 
-                                   value="${(task.name || '').replace(/"/g, '&quot;')}"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                   placeholder="Enter task name">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <!-- Left Column: Basic Information -->
+                        <div class="space-y-3">
+                            <h4 class="text-md font-medium text-gray-900 border-b pb-2">Basic Information</h4>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Task Name *</label>
+                                <input type="text" id="editTaskName" name="name" required 
+                                       value="${escapeHtml(task.name || '')}"
+                                       class="w-full px-2 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                       placeholder="Enter task name">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Task Type *</label>
+                                <select id="editTaskType" name="type" onchange="toggleEditTaskTypeFields()" 
+                                        class="w-full px-2 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="ai" ${task.type === 'ai' ? 'selected' : ''}>AI Task</option>
+                                    <option value="tool" ${task.type === 'tool' ? 'selected' : ''}>Tool Task</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                <textarea id="editTaskDescription" name="description" rows="2"
+                                          class="w-full px-2 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                          placeholder="Describe what this task does...">${escapeHtml(task.description || '')}</textarea>
+                            </div>
+                            
+                            <!-- Output Configuration -->
+                            <div class="border-t pt-3">
+                                <h5 class="text-sm font-medium text-gray-900 mb-2">Output Configuration</h5>
+                                <div class="mb-2">
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Output Description</label>
+                                    <textarea id="editOutputDescription" name="output_description" rows="2"
+                                              class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                              placeholder="Describe what this task outputs...">${escapeHtml(task.output_description || '')}</textarea>
+                                </div>
+                                <!-- Output Type, Rendering, Variable in one row -->
+                                <div class="grid grid-cols-3 gap-2">
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">Output Type</label>
+                                        <select id="editOutputType" name="output_type" 
+                                                class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500">
+                                            <option value="text" ${(task.output_type || 'text') === 'text' ? 'selected' : ''}>Text</option>
+                                            <option value="image" ${task.output_type === 'image' ? 'selected' : ''}>Image</option>
+                                            <option value="json" ${task.output_type === 'json' ? 'selected' : ''}>JSON</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">Rendering</label>
+                                        <select id="editOutputRendering" name="output_rendering" 
+                                                class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500">
+                                            <option value="text" ${(task.output_rendering || 'text') === 'text' ? 'selected' : ''}>Text</option>
+                                            <option value="markup" ${task.output_rendering === 'markup' ? 'selected' : ''}>Markdown</option>
+                                            <option value="html" ${task.output_rendering === 'html' ? 'selected' : ''}>HTML</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-700 mb-1">Variable</label>
+                                        <input type="text" id="editOutputVariable" name="output_variable"
+                                               value="${escapeHtml(task.output_variable || '')}"
+                                               class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                               placeholder="result">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Task Type</label>
-                            <select id="editTaskType" name="type" 
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
-                                <option value="ai" ${task.type === 'ai' ? 'selected' : ''}>AI Task</option>
-                                <option value="tool" ${task.type === 'tool' ? 'selected' : ''}>Tool Task</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                            <textarea id="editTaskDescription" name="description" rows="3"
-                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                      placeholder="Describe what this task does...">${(task.description || '').replace(/"/g, '&quot;')}</textarea>
+                        
+                        <!-- Right Column: Type-specific Configuration -->
+                        <div class="space-y-3">
+                            <!-- AI Task Configuration -->
+                            <div id="editAiTaskConfig" class="task-config">
+                                <h4 class="text-md font-medium text-gray-900 border-b pb-2 flex items-center">
+                                    <i class="bi bi-robot mr-2 text-blue-500"></i>
+                                    AI Task Configuration
+                                </h4>
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Instructions *</label>
+                                        <textarea id="editAiInstructions" name="instructions" rows="3"
+                                                  class="w-full px-2 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                                  placeholder="Detailed instructions for the AI assistant...">${escapeHtml(task.ai_config?.instructions || '')}</textarea>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Goals</label>
+                                        <textarea id="editAiGoals" name="goals" rows="2"
+                                                  class="w-full px-2 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                                                  placeholder="What should be achieved by this task...">${escapeHtml(task.ai_config?.goals || '')}</textarea>
+                                    </div>
+                                    
+                                    <!-- Input Fields Configuration -->
+                                    <div class="border-t pt-3">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <h5 class="text-sm font-medium text-gray-900">Input Fields</h5>
+                                            <button type="button" onclick="addEditInputField()" 
+                                                    class="text-xs px-2 py-1 bg-blue-50 text-blue-600 border border-blue-200 rounded hover:bg-blue-100">
+                                                <i class="bi bi-plus mr-1"></i>Add
+                                            </button>
+                                        </div>
+                                        <div id="editInputFieldsContainer" class="space-y-2 max-h-80 overflow-y-auto">
+                                            <!-- Will be populated by JavaScript -->
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Tool Task Configuration -->
+                            <div id="editToolTaskConfig" class="task-config hidden">
+                                <h4 class="text-md font-medium text-gray-900 border-b pb-2 flex items-center">
+                                    <i class="bi bi-tools mr-2 text-green-500"></i>
+                                    Tool Task Configuration
+                                </h4>
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Select Tool *</label>
+                                        <select id="editToolSelect" name="tool_uuid" onchange="loadEditToolInputFields()"
+                                                class="w-full px-2 py-2 text-sm border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                                            <option value="">Choose a tool...</option>
+                                        </select>
+                                    </div>
+                                    <div id="editToolInputsContainer" class="space-y-2">
+                                        <!-- Will be populated by JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="flex gap-3 mt-6">
-                        <button type="submit" class="btn btn-primary flex-1">
+                    
+                    <!-- Buttons right-aligned with normal width -->
+                    <div class="flex justify-end gap-3 mt-4 pt-3 border-t">
+                        <button type="button" onclick="closeEditTaskModal()" 
+                                class="px-4 py-2 text-sm border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 text-sm border border-transparent rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                             <i class="bi bi-check mr-1"></i>
                             Update Task
-                        </button>
-                        <button type="button" onclick="closeEditTaskModal()" 
-                                class="btn btn-outline flex-1">
-                            Cancel
                         </button>
                     </div>
                 </form>
@@ -1041,15 +1267,15 @@ function editTask(taskUuid) {
     
     document.body.appendChild(modal);
     
+    // Initialize edit form with task data
+    initializeEditTaskForm(task);
+    
     // Handle form submission
     document.getElementById('editTaskForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         console.log('Submitting task update for:', taskUuid);
-        await updateTask(taskUuid, {
-            name: document.getElementById('editTaskName').value,
-            type: document.getElementById('editTaskType').value,
-            description: document.getElementById('editTaskDescription').value
-        });
+        const formData = collectEditTaskFormData();
+        await updateTask(taskUuid, formData);
         closeEditTaskModal();
     });
     
@@ -1370,7 +1596,668 @@ document.addEventListener('DOMContentLoaded', function() {
     const assistantToolSelect = document.getElementById('ai_assistant_tool');
     if (assistantToolSelect) {
         assistantToolSelect.addEventListener('change', updateAssistantStatus);
+        // Trigger initial configuration details display
+        onAssistantToolChange(assistantToolSelect.value);
     }
 });
+
+// ===========================
+// TASK CONFIGURATION HELPER FUNCTIONS
+// ===========================
+
+// Global variables for task configuration
+let availableTools = [];
+let taskInputFields = [];
+
+// Toggle between AI and Tool task configuration
+function toggleTaskTypeFields() {
+    const taskType = document.getElementById('taskType').value;
+    const aiConfig = document.getElementById('aiTaskConfig');
+    const toolConfig = document.getElementById('toolTaskConfig');
+    
+    if (taskType === 'ai') {
+        aiConfig.classList.remove('hidden');
+        toolConfig.classList.add('hidden');
+    } else {
+        aiConfig.classList.add('hidden');
+        toolConfig.classList.remove('hidden');
+    }
+}
+
+// Load available tools for the modal
+async function loadAvailableToolsForModal() {
+    try {
+        const response = await fetch('/agents/api/tools');
+        const data = await response.json();
+        
+        if (data.success) {
+            availableTools = data.tools;
+            populateToolSelectModal();
+        } else {
+            console.error('Failed to load tools:', data.error);
+        }
+    } catch (error) {
+        console.error('Error loading tools:', error);
+    }
+}
+
+function populateToolSelectModal() {
+    const toolSelect = document.getElementById('toolSelect');
+    if (!toolSelect) return;
+    
+    // Clear existing options except the first one
+    toolSelect.innerHTML = '<option value="">Choose a tool...</option>';
+    
+    // Group tools by category
+    const aiTools = availableTools.filter(tool => tool.category === 'AI' || tool.node_type === 'Agent');
+    const otherTools = availableTools.filter(tool => tool.category !== 'AI' && tool.node_type !== 'Agent');
+    
+    // Add AI Tools group
+    if (aiTools.length > 0) {
+        const aiGroup = document.createElement('optgroup');
+        aiGroup.label = 'AI Tools';
+        aiTools.forEach(tool => {
+            const option = document.createElement('option');
+            option.value = tool.uuid;
+            option.textContent = `${tool.name} - ${(tool.description || '').substring(0, 50)}${(tool.description || '').length > 50 ? '...' : ''}`;
+            aiGroup.appendChild(option);
+        });
+        toolSelect.appendChild(aiGroup);
+    }
+    
+    // Add Other Tools group
+    if (otherTools.length > 0) {
+        const toolsGroup = document.createElement('optgroup');
+        toolsGroup.label = 'System Tools';
+        otherTools.forEach(tool => {
+            const option = document.createElement('option');
+            option.value = tool.uuid;
+            option.textContent = `${tool.name} - ${(tool.description || '').substring(0, 50)}${(tool.description || '').length > 50 ? '...' : ''}`;
+            toolsGroup.appendChild(option);
+        });
+        toolSelect.appendChild(toolsGroup);
+    }
+}
+
+// Load tool-specific input fields when a tool is selected
+function loadToolInputFields() {
+    const toolSelect = document.getElementById('toolSelect');
+    const toolInputsContainer = document.getElementById('toolInputsContainer');
+    
+    if (!toolSelect || !toolInputsContainer) return;
+    
+    const selectedToolUuid = toolSelect.value;
+    
+    if (!selectedToolUuid) {
+        toolInputsContainer.innerHTML = '<p class="text-sm text-gray-500">Select a tool to configure its inputs.</p>';
+        return;
+    }
+    
+    // Find the selected tool
+    const selectedTool = availableTools.find(tool => tool.uuid === selectedToolUuid);
+    if (!selectedTool) {
+        toolInputsContainer.innerHTML = '<p class="text-sm text-red-500">Tool not found.</p>';
+        return;
+    }
+    
+    // Display tool information
+    let toolInputsHtml = `
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+            <h6 class="font-medium text-blue-900">${selectedTool.name}</h6>
+            <p class="text-sm text-blue-700">${selectedTool.description || 'No description available'}</p>
+        </div>
+    `;
+    
+    // Load tool inputs from integration or tool definition
+    const toolInputs = selectedTool.inputs || [];
+    
+    if (toolInputs.length > 0) {
+        toolInputsHtml += '<div class="space-y-3">';
+        toolInputs.forEach((input, index) => {
+            toolInputsHtml += `
+                <div class="border border-gray-200 rounded-lg p-3">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        ${input.display_name || input.name}
+                        ${input.required ? '<span class="text-red-500">*</span>' : ''}
+                    </label>
+                    ${generateInputField(input, index)}
+                    ${input.description ? `<p class="text-xs text-gray-500 mt-1">${input.description}</p>` : ''}
+                </div>
+            `;
+        });
+        toolInputsHtml += '</div>';
+    } else {
+        toolInputsHtml += '<p class="text-sm text-gray-500">This tool has no configurable inputs.</p>';
+    }
+    
+    toolInputsContainer.innerHTML = toolInputsHtml;
+}
+
+// Generate HTML for different input field types
+function generateInputField(input, index) {
+    const fieldName = `tool_input_${index}`;
+    const fieldType = input.type || 'text';
+    const required = input.required ? 'required' : '';
+    
+    switch (fieldType) {
+        case 'textarea':
+            return `<textarea name="${fieldName}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" rows="3" ${required} placeholder="${input.placeholder || ''}">${escapeHtml(value)}</textarea>`;
+        
+        case 'number':
+            return `<input type="number" name="${fieldName}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" ${required} value="${escapeHtml(value)}" placeholder="${input.placeholder || ''}" ${input.min ? `min="${input.min}"` : ''} ${input.max ? `max="${input.max}"` : ''}>`;
+        
+        case 'date':
+            return `<input type="date" name="${fieldName}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" ${required} value="${escapeHtml(value)}">`;
+        
+        case 'select':
+            let selectHtml = `<select name="${fieldName}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" ${required}>`;
+            if (!required) {
+                selectHtml += '<option value="">Select an option...</option>';
+            }
+            if (input.options) {
+                input.options.forEach(option => {
+                    const selected = option.value === value ? 'selected' : '';
+                    selectHtml += `<option value="${option.value}" ${selected}>${option.label}</option>`;
+                });
+            }
+            selectHtml += '</select>';
+            return selectHtml;
+        
+        case 'option':
+        case 'radio':
+            let radioHtml = '<div class="space-y-2">';
+            if (input.options) {
+                input.options.forEach((option, optIndex) => {
+                    const checked = option.value === value ? 'checked' : '';
+                    radioHtml += `
+                        <label class="flex items-center">
+                            <input type="radio" name="${fieldName}" value="${option.value}" ${checked} ${required} class="mr-2">
+                            <span class="text-sm">${option.label}</span>
+                        </label>
+                    `;
+                });
+            }
+            radioHtml += '</div>';
+            return radioHtml;
+        
+        default: // text
+            return `<input type="text" name="${fieldName}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" ${required} value="${escapeHtml(value)}" placeholder="${input.placeholder || ''}">`;
+    }
+}
+
+// Edit task helper functions
+let editTaskInputFields = [];
+
+function toggleEditTaskTypeFields() {
+    const taskType = document.getElementById('editTaskType').value;
+    const aiConfig = document.getElementById('editAiTaskConfig');
+    const toolConfig = document.getElementById('editToolTaskConfig');
+    
+    if (taskType === 'ai') {
+        aiConfig.classList.remove('hidden');
+        toolConfig.classList.add('hidden');
+    } else {
+        aiConfig.classList.add('hidden');
+        toolConfig.classList.remove('hidden');
+    }
+}
+
+function initializeEditTaskForm(task) {
+    // Load available tools first
+    loadAvailableToolsForEditModal().then(() => {
+        // Set task type and toggle fields
+        toggleEditTaskTypeFields();
+        
+        if (task.type === 'ai' && task.ai_config) {
+            // Populate AI task input fields
+            populateEditInputFields(task.ai_config.input_fields || []);
+        } else if (task.type === 'tool' && task.tool_config) {
+            // Select tool and populate tool inputs
+            const editToolSelect = document.getElementById('editToolSelect');
+            if (editToolSelect && task.tool_config.tool_uuid) {
+                editToolSelect.value = task.tool_config.tool_uuid;
+                loadEditToolInputFields(task.tool_config.inputs || {});
+            }
+        }
+    });
+}
+
+async function loadAvailableToolsForEditModal() {
+    try {
+        console.log('Loading tools for edit modal...');
+        const response = await fetch('/agents/api/tools');
+        console.log('Tools response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Tools data received:', data);
+        
+        if (data.success && data.tools) {
+            availableTools = data.tools;
+            console.log('Available tools loaded:', availableTools.length);
+            populateEditToolSelectModal();
+        } else {
+            console.error('Failed to load tools:', data.error || 'No tools data');
+            // Fallback: show error in select
+            const toolSelect = document.getElementById('editToolSelect');
+            if (toolSelect) {
+                toolSelect.innerHTML = '<option value="">Error loading tools</option>';
+            }
+        }
+    } catch (error) {
+        console.error('Error loading tools:', error);
+        // Fallback: show error in select
+        const toolSelect = document.getElementById('editToolSelect');
+        if (toolSelect) {
+            toolSelect.innerHTML = '<option value="">Error loading tools</option>';
+        }
+    }
+}
+
+function populateEditToolSelectModal() {
+    const toolSelect = document.getElementById('editToolSelect');
+    if (!toolSelect) {
+        console.error('editToolSelect element not found');
+        return;
+    }
+    
+    console.log('Populating tool select with', availableTools.length, 'tools');
+    
+    // Clear existing options except the first one
+    toolSelect.innerHTML = '<option value="">Choose a tool...</option>';
+    
+    if (!availableTools || availableTools.length === 0) {
+        toolSelect.innerHTML = '<option value="">No tools available</option>';
+        return;
+    }
+    
+    // Group tools by category
+    const aiTools = availableTools.filter(tool => tool.category === 'AI' || tool.node_type === 'Agent');
+    const otherTools = availableTools.filter(tool => tool.category !== 'AI' && tool.node_type !== 'Agent');
+    
+    console.log('AI Tools:', aiTools.length, 'Other Tools:', otherTools.length);
+    
+    // Add AI Tools group
+    if (aiTools.length > 0) {
+        const aiGroup = document.createElement('optgroup');
+        aiGroup.label = 'AI Tools';
+        aiTools.forEach(tool => {
+            const option = document.createElement('option');
+            option.value = tool.uuid;
+            option.textContent = `${tool.name} - ${(tool.description || '').substring(0, 50)}${(tool.description || '').length > 50 ? '...' : ''}`;
+            aiGroup.appendChild(option);
+        });
+        toolSelect.appendChild(aiGroup);
+    }
+    
+    // Add Other Tools group
+    if (otherTools.length > 0) {
+        const toolsGroup = document.createElement('optgroup');
+        toolsGroup.label = 'System Tools';
+        otherTools.forEach(tool => {
+            const option = document.createElement('option');
+            option.value = tool.uuid;
+            option.textContent = `${tool.name} - ${(tool.description || '').substring(0, 50)}${(tool.description || '').length > 50 ? '...' : ''}`;
+            toolsGroup.appendChild(option);
+        });
+        toolSelect.appendChild(toolsGroup);
+    }
+    
+    console.log('Tool select populated with options:', toolSelect.options.length);
+}
+
+function populateEditInputFields(inputFields) {
+    const container = document.getElementById('editInputFieldsContainer');
+    if (!container) return;
+    
+    editTaskInputFields = [];
+    
+    if (!inputFields || inputFields.length === 0) {
+        container.innerHTML = '<p class="text-sm text-gray-500">No input fields defined yet.</p>';
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    inputFields.forEach((field, index) => {
+        editTaskInputFields.push({ index, data: field });
+        const fieldHtml = `
+            <div class="border border-gray-200 rounded p-2 bg-gray-50" data-field-index="${index}">            <div class="flex justify-between items-start mb-2">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-medium text-gray-700">Field ${index + 1}</span>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="edit_input_field_required_${index}" 
+                               class="mr-1 text-xs" ${field.required ? 'checked' : ''}>
+                        <span class="text-xs text-gray-600">Required</span>
+                    </label>
+                </div>
+                <button type="button" onclick="removeEditInputField(${index})" 
+                        class="text-red-500 hover:text-red-700 text-xs">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+                <!-- Name, Type, Default in one row -->
+                <div class="grid grid-cols-3 gap-2 mb-2">
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">Name *</label>
+                        <input type="text" name="edit_input_field_name_${index}" 
+                               class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="field_name" value="${escapeHtml(field.field_name || '')}">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">Type</label>
+                        <select name="edit_input_field_type_${index}" 
+                                class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="text" ${field.field_type === 'text' ? 'selected' : ''}>Text</option>
+                            <option value="textarea" ${field.field_type === 'textarea' ? 'selected' : ''}>Textarea</option>
+                            <option value="number" ${field.field_type === 'number' ? 'selected' : ''}>Number</option>
+                            <option value="date" ${field.field_type === 'date' ? 'selected' : ''}>Date</option>
+                            <option value="select" ${field.field_type === 'select' ? 'selected' : ''}>Select</option>
+                            <option value="option" ${field.field_type === 'option' ? 'selected' : ''}>Radio</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">Default</label>
+                        <input type="text" name="edit_input_field_default_${index}" 
+                               class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Default value" value="${escapeHtml(field.default_value || '')}">
+                    </div>
+                </div>
+                <!-- Label and Description in one row -->
+                <div class="grid grid-cols-2 gap-2 mb-2">
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">Label</label>
+                        <input type="text" name="edit_input_field_label_${index}" 
+                               class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Display Label" value="${escapeHtml(field.display_label || '')}">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">Description</label>
+                        <input type="text" name="edit_input_field_description_${index}" 
+                               class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                               placeholder="Help text" value="${escapeHtml(field.description || '')}">
+                    </div>
+                </div>
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', fieldHtml);
+    });
+}
+
+function addEditInputField() {
+    const container = document.getElementById('editInputFieldsContainer');
+    if (!container) return;
+    
+    // Remove "no fields" message if present
+    const noFieldsMsg = container.querySelector('p');
+    if (noFieldsMsg && noFieldsMsg.textContent.includes('No input fields')) {
+        noFieldsMsg.remove();
+    }
+    
+    const fieldIndex = editTaskInputFields.length;
+    const fieldId = `edit_input_field_${fieldIndex}`;
+    
+    const fieldHtml = `
+        <div class="border border-gray-200 rounded p-2 bg-gray-50" data-field-index="${fieldIndex}">
+            <div class="flex justify-between items-start mb-2">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-medium text-gray-700">Field ${fieldIndex + 1}</span>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="edit_input_field_required_${fieldIndex}" 
+                               class="mr-1 text-xs">
+                        <span class="text-xs text-gray-600">Required</span>
+                    </label>
+                </div>
+                <button type="button" onclick="removeEditInputField(${fieldIndex})" 
+                        class="text-red-500 hover:text-red-700 text-xs">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+            <!-- Name, Type, Default in one row -->
+            <div class="grid grid-cols-3 gap-2 mb-2">
+                <div>
+                    <label class="block text-xs text-gray-600 mb-1">Name *</label>
+                    <input type="text" name="edit_input_field_name_${fieldIndex}" 
+                           class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="field_name" value="field_${fieldIndex + 1}">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-600 mb-1">Type</label>
+                    <select name="edit_input_field_type_${fieldIndex}" 
+                            class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="text">Text</option>
+                        <option value="textarea">Textarea</option>
+                        <option value="number">Number</option>
+                        <option value="date">Date</option>
+                        <option value="select">Select</option>
+                        <option value="option">Radio</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-600 mb-1">Default</label>
+                    <input type="text" name="edit_input_field_default_${fieldIndex}" 
+                           class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="Default value">
+                </div>
+            </div>
+            <!-- Label and Description in one row -->
+            <div class="grid grid-cols-2 gap-2 mb-2">
+                <div>
+                    <label class="block text-xs text-gray-600 mb-1">Label</label>
+                    <input type="text" name="edit_input_field_label_${fieldIndex}" 
+                           class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="Display Label" value="Field ${fieldIndex + 1}">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-600 mb-1">Description</label>
+                    <input type="text" name="edit_input_field_description_${fieldIndex}" 
+                           class="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="Help text">
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', fieldHtml);
+    editTaskInputFields.push({ index: fieldIndex });
+}
+
+function removeEditInputField(fieldIndex) {
+    const fieldElement = document.querySelector(`[data-field-index="${fieldIndex}"]`);
+    if (fieldElement) {
+        fieldElement.remove();
+        editTaskInputFields = editTaskInputFields.filter(f => f.index !== fieldIndex);
+        
+        // Show "no fields" message if no fields remain
+        const container = document.getElementById('editInputFieldsContainer');
+        if (container && container.children.length === 0) {
+            container.innerHTML = '<p class="text-sm text-gray-500">No input fields defined yet.</p>';
+        }
+    }
+}
+
+function loadEditToolInputFields(existingInputs = {}) {
+    const toolSelect = document.getElementById('editToolSelect');
+    const toolInputsContainer = document.getElementById('editToolInputsContainer');
+    
+    if (!toolSelect || !toolInputsContainer) return;
+    
+    const selectedToolUuid = toolSelect.value;
+    
+    if (!selectedToolUuid) {
+        toolInputsContainer.innerHTML = '<p class="text-sm text-gray-500">Select a tool to configure its inputs.</p>';
+        return;
+    }
+    
+    // Find the selected tool
+    const selectedTool = availableTools.find(tool => tool.uuid === selectedToolUuid);
+    if (!selectedTool) {
+        toolInputsContainer.innerHTML = '<p class="text-sm text-red-500">Tool not found.</p>';
+        return;
+    }
+    
+    // Display tool information
+    let toolInputsHtml = `
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+            <h6 class="font-medium text-blue-900">${selectedTool.name}</h6>
+            <p class="text-sm text-blue-700">${selectedTool.description || 'No description available'}</p>
+        </div>
+    `;
+    
+    // Load tool inputs from integration or tool definition
+    const toolInputs = selectedTool.inputs || [];
+    
+    if (toolInputs.length > 0) {
+        toolInputsHtml += '<div class="space-y-3">';
+        toolInputs.forEach((input, index) => {
+            const existingValue = existingInputs[input.name] || input.default || '';
+            toolInputsHtml += `
+                <div class="border border-gray-200 rounded-lg p-3">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        ${input.display_name || input.name}
+                        ${input.required ? '<span class="text-red-500">*</span>' : ''}
+                    </label>
+                    ${generateEditInputField(input, index, existingValue)}
+                    ${input.description ? `<p class="text-xs text-gray-500 mt-1">${input.description}</p>` : ''}
+                </div>
+            `;
+        });
+        toolInputsHtml += '</div>';
+    } else {
+        toolInputsHtml += '<p class="text-sm text-gray-500">This tool has no configurable inputs.</p>';
+    }
+    
+    toolInputsContainer.innerHTML = toolInputsHtml;
+}
+
+function generateEditInputField(input, index, value) {
+    const fieldName = `edit_tool_input_${index}`;
+    const fieldType = input.type || 'text';
+    const required = input.required ? 'required' : '';
+    
+    switch (fieldType) {
+        case 'textarea':
+            return `<textarea name="${fieldName}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" rows="3" ${required} placeholder="${input.placeholder || ''}">${escapeHtml(value)}</textarea>`;
+        
+        case 'number':
+            return `<input type="number" name="${fieldName}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" ${required} value="${escapeHtml(value)}" placeholder="${input.placeholder || ''}" ${input.min ? `min="${input.min}"` : ''} ${input.max ? `max="${input.max}"` : ''}>`;
+        
+        case 'date':
+            return `<input type="date" name="${fieldName}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" ${required} value="${escapeHtml(value)}">`;
+        
+        case 'select':
+            let selectHtml = `<select name="${fieldName}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" ${required}>`;
+            if (!required) {
+                selectHtml += '<option value="">Select an option...</option>';
+            }
+            if (input.options) {
+                input.options.forEach(option => {
+                    const selected = option.value === value ? 'selected' : '';
+                    selectHtml += `<option value="${option.value}" ${selected}>${option.label}</option>`;
+                });
+            }
+            selectHtml += '</select>';
+            return selectHtml;
+        
+        case 'option':
+        case 'radio':
+            let radioHtml = '<div class="space-y-2">';
+            if (input.options) {
+                input.options.forEach((option, optIndex) => {
+                    const checked = option.value === value ? 'checked' : '';
+                    radioHtml += `
+                        <label class="flex items-center">
+                            <input type="radio" name="${fieldName}" value="${option.value}" ${checked} ${required} class="mr-2">
+                            <span class="text-sm">${option.label}</span>
+                        </label>
+                    `;
+                });
+            }
+            radioHtml += '</div>';
+            return radioHtml;
+        
+        default: // text
+            return `<input type="text" name="${fieldName}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" ${required} value="${escapeHtml(value)}" placeholder="${input.placeholder || ''}">`;
+    }
+}
+
+function collectEditTaskFormData() {
+    const formData = {
+        name: document.getElementById('editTaskName').value,
+        type: document.getElementById('editTaskType').value,
+        description: document.getElementById('editTaskDescription').value,
+        output_variable: document.getElementById('editOutputVariable').value,
+        output_type: document.getElementById('editOutputType').value,
+        output_description: document.getElementById('editOutputDescription').value,
+        output_rendering: document.getElementById('editOutputRendering').value
+    };
+    
+    if (formData.type === 'ai') {
+        // Collect AI task configuration
+        formData.ai_config = {
+            instructions: document.getElementById('editAiInstructions').value,
+            goals: document.getElementById('editAiGoals').value,
+            input_fields: []
+        };
+        
+        // Collect input fields
+        editTaskInputFields.forEach(field => {
+            const fieldIndex = field.index;
+            const inputField = {
+                field_name: document.querySelector(`[name="edit_input_field_name_${fieldIndex}"]`)?.value || '',
+                field_type: document.querySelector(`[name="edit_input_field_type_${fieldIndex}"]`)?.value || 'text',
+                display_label: document.querySelector(`[name="edit_input_field_label_${fieldIndex}"]`)?.value || '',
+                description: document.querySelector(`[name="edit_input_field_description_${fieldIndex}"]`)?.value || '',
+                default_value: document.querySelector(`[name="edit_input_field_default_${fieldIndex}"]`)?.value || '',
+                required: document.querySelector(`[name="edit_input_field_required_${fieldIndex}"]`)?.checked || false
+            };
+            
+            if (inputField.field_name.trim()) {
+                formData.ai_config.input_fields.push(inputField);
+            }
+        });
+        
+    } else if (formData.type === 'tool') {
+        // Collect Tool task configuration
+        const selectedToolUuid = document.getElementById('editToolSelect').value;
+        const selectedTool = availableTools.find(tool => tool.uuid === selectedToolUuid);
+        
+        formData.tool_config = {
+            tool_uuid: selectedToolUuid,
+            tool_name: selectedTool ? selectedTool.name : '',
+            inputs: {}
+        };
+        
+        // Collect tool-specific inputs
+        if (selectedTool && selectedTool.inputs) {
+            selectedTool.inputs.forEach((input, index) => {
+                const fieldName = `edit_tool_input_${index}`;
+                const inputElement = document.querySelector(`[name="${fieldName}"]`);
+                if (inputElement) {
+                    formData.tool_config.inputs[input.name] = inputElement.value;
+                }
+            });
+        }
+    }
+    
+    return formData;
+}
+
+// Helper function to escape HTML
+function escapeHtml(text) {
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return (text || '').replace(/[&<>"']/g, m => map[m]);
+}
+
+// ===========================
 </script>
 {% endblock %}
