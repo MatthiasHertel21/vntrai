@@ -343,8 +343,20 @@ class OpenAIAssistantAPIImplementation(BaseImplementation):
                 'timestamp': datetime.now().isoformat()
             }
 
-    def execute(self, config_params: Dict[str, Any], input_params: Dict[str, Any], output_params: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute the implementation synchronously."""
+    async def execute(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute the implementation asynchronously to match base class."""
+        # Handle both old-style (config_params, input_params, output_params) and new-style (inputs) calls
+        if isinstance(inputs, dict) and 'config_params' in inputs:
+            # New unified inputs format
+            config_params = inputs.get('config_params', {})
+            input_params = inputs.get('input_params', {})
+            output_params = inputs.get('output_params', {})
+        else:
+            # Legacy format - inputs contains everything
+            config_params = inputs.get('config_params', inputs)
+            input_params = inputs.get('input_params', inputs)
+            output_params = inputs.get('output_params', {})
+        
         # Set configuration
         self.config_params = config_params
         
@@ -363,7 +375,19 @@ class OpenAIAssistantAPIImplementation(BaseImplementation):
             'OpenAI-Beta': 'assistants=v2'
         }
         
-        return asyncio.run(self.execute_async(input_params))
+        return await self.execute_async(input_params)
+    
+    def execute_legacy(self, config_params: Dict[str, Any], input_params: Dict[str, Any], output_params: Dict[str, Any]) -> Dict[str, Any]:
+        """Legacy execute method for backward compatibility."""
+        # Convert to new format
+        unified_inputs = {
+            'config_params': config_params,
+            'input_params': input_params,
+            'output_params': output_params
+        }
+        
+        # Run async method synchronously
+        return asyncio.run(self.execute(unified_inputs))
 
     async def _test_connection(self) -> Dict[str, Any]:
         """Test the connection to OpenAI Assistant API."""

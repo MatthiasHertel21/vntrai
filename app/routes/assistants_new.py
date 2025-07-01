@@ -124,7 +124,7 @@ def list_assistants():
                     api_request_debug['endpoint'] = '/assistants'
                     api_request_debug['headers_preview'] = f"Bearer {api_key[:8]}..."
                     
-                    result = api_impl.execute(
+                    result = api_impl.execute_legacy(
                         config_params=config_params,
                         input_params=input_params,
                         output_params={}

@@ -780,10 +780,11 @@ def test_assistant_connection(tool_id):
                 return jsonify({'success': False, 'message': 'OpenAI Assistant API implementation not found or configuration invalid'}), 500
             
             # Test connection with proper parameters
+            config_params = mapped_config
             input_params = {'action': 'test', 'test_connection': True}
             output_params = {'status': 'text', 'message': 'text'}
             
-            test_result = impl.execute(input_params, output_params)
+            test_result = impl.execute_legacy(config_params, input_params, output_params)
             
             return jsonify({
                 'success': test_result.get('success', False),

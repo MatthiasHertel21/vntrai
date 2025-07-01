@@ -805,6 +805,9 @@ class AgentsManager(DataManager):
         # Ensure task has required fields for Sprint 18
         if 'uuid' not in task:
             task['uuid'] = str(uuid.uuid4())
+        # Ensure both id and uuid exist for compatibility
+        if 'id' not in task:
+            task['id'] = task['uuid']  # Use uuid as id for validator compatibility
         if 'type' not in task:
             task['type'] = 'ai'  # Default to AI task
         if 'name' not in task:

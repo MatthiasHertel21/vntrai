@@ -7,15 +7,17 @@
     <link rel="icon" href="{{ url_for('static', filename='icons/Platform logo - blue.png') }}" type="image/png">
     
     <!-- Tailwind CSS - Production Version -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio"></script>
     <script>
         // Production-ready Tailwind CSS configuration
-        tailwind.config = {
-            theme: {
-                extend: {}
+        if (typeof tailwind !== 'undefined') {
+            tailwind.config = {
+                theme: {
+                    extend: {}
+                }
             }
         }
     </script>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio"></script>
     
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">

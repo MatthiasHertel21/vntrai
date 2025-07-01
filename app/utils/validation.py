@@ -296,6 +296,7 @@ class DataValidator:
         allowed_fields = {
             'id', 'name', 'category', 'description', 'status',
             'assistant_id', 'assistant_tool_id', 'ai_assistant_tool', 'model', 'instructions',
+            'assistant_tools',  # New field for Assistant Tools (file_search, code_interpreter, etc.)
             'use_as_agent', 'use_as_insight', 'quick_actions',  # New fields for insights functionality
             'tasks', 'knowledge_base', 'files', 'global_variables', 'system_prompt', 'metadata',
             'version', 'created_at', 'updated_at'
@@ -330,6 +331,22 @@ class DataValidator:
                 'color': 'blue',
                 'tags': []
             }
+        
+        # Ensure tasks have required id field (Sprint 18 compatibility fix)
+        if 'tasks' in sanitized and isinstance(sanitized['tasks'], list):
+            for task in sanitized['tasks']:
+                if isinstance(task, dict):
+                    # Ensure both id and uuid exist for compatibility
+                    if 'uuid' in task and 'id' not in task:
+                        task['id'] = task['uuid']
+                    elif 'id' in task and 'uuid' not in task:
+                        task['uuid'] = task['id']
+                    elif 'id' not in task and 'uuid' not in task:
+                        # Generate new UUID for task without any identifier
+                        import uuid as uuid_module
+                        new_uuid = str(uuid_module.uuid4())
+                        task['uuid'] = new_uuid
+                        task['id'] = new_uuid
         
         return sanitized
 

@@ -22,31 +22,28 @@
 
 #### Seite agents/edit
 
+- Alle kritischen Incidents sind gelöst! 🎉
 
-6. Stacke die beiden Buttons "test connection" und "test chat" so wie bei den cards der seite /assistants:
-zeige nur ein icon oben rechts an, und das kann man aufklappen um die möglichen aktionen zu zeigen
-
-13. ändere das icon in der seite zu einem agenten-icon (nimm das icon aus der sidebar)
-
-23. anzeige der Taskliste kompakter 
-- reduziere die höhe der einträge der tasks
-- ergänze ein ttoltip auf dem icon der task zur anzeige von detailinfos zur task
-
-24. JS Fehler beim Laden der Seite 
-29cfc1a8-1305-4314-a00f-dc4f3763a067:12 Uncaught ReferenceError: tailwind is not defined
-    at 29cfc1a8-1305-4314-a00f-dc4f3763a067:12:9
-(anonymous) @ 29cfc1a8-1305-4314-a00f-dc4f3763a067:12
-?plugins=forms,typography,aspect-ratio:68 cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation
-(anonymous) @ ?plugins=forms,typography,aspect-ratio:68
-(anonymous) @ ?plugins=forms,typography,aspect-ratio:68
-29cfc1a8-1305-4314-a00f-dc4f3763a067:643 Uncaught TypeError: Cannot read properties of null (reading 'value')
-    at initializeCategorySelection (29cfc1a8-1305-4314-a00f-dc4f3763a067:643:52)
-    at HTMLDocument.<anonymous> (29cfc1a8-1305-4314-a00f-dc4f3763a067:619:5)
-initializeCategorySelection @ 29cfc1a8-1305-4314-a00f-dc4f3763a067:643
-(anonymous) @ 29cfc1a8-1305-4314-a00f-dc4f3763a067:619
+24. refactoring der JS in der seite edit **erledigt**
+25. refactoring der agent.py: abtrennung der nicht agent-spezifischen funktionen und routenb
+26. UI polish der add task und edit task dialoge
+27. style die ToolTips (drei!)
 
 
 ### Resolved Incidents
+- **Agent Icon Update**: Agent-Icon zu Agenten-Icon geändert - Resolved in Sprint 18
+  - Problem: Icon sollte dem Icon aus der Sidebar entsprechen (Issue #13)
+  - Lösung: Icon von `bi-person-gear` zu `Agent - black.png` Image geändert mit weißem Filter
+- **Kompakte Taskliste**: Taskliste ultra-kompakt gestaltet - Resolved in Sprint 18
+  - Problem: Task-Einträge waren zu hoch und brauchten detailliertere Tooltips (Issue #23)
+  - Lösung: **Ultra-kompakte** Darstellung implementiert:
+    - Padding drastisch reduziert (`p-1` → `px-2 py-0.5`)
+    - Feste Höhe (`h-7`) für alle Task-Einträge  
+    - Icons minimiert (`w-5 h-5` → `w-4 h-4`)
+    - Move-Buttons horizontal statt vertikal angeordnet (`w-3 h-3`)
+    - Alle Icons auf 10px Größe reduziert
+    - Abstände zwischen Tasks minimiert (`space-y-1` → `space-y-0.5`)
+    - Detaillierte Tooltips mit Emojis und vollständigen Task-Informationen
 - **Test Button Positioning**: Test Connection und Test Chat Buttons in Container-Header - Resolved in Sprint 18
   - Problem: Buttons sollten in die Kopfzeile des "AI Assistant Configuration" Containers verschoben werden
   - Lösung: UI-Layout-Anpassungen implementiert
@@ -60,12 +57,12 @@ initializeCategorySelection @ 29cfc1a8-1305-4314-a00f-dc4f3763a067:643
 - **Template Routing Error**: Corrected Jinja2 routing from 'assistants.chat' to 'assistants.chat_interface' - Resolved in Sprint 17.5
 
 ---
-1. vervollständige die Implementierung der task-bearbeitung:
+1. vervollständige die Implementierung der task-bearbeitung: **erledigt**
 
 AI Task (für OpenAI Assistant)
 - instructions
 - goals
-- input_fields (jeweils field_name, field_type [text, textarea, date, number, select, option ], diaplay_label, description)
+- input_fields (jeweils field_name, field_type [text, textarea, date, number, select, option ], display_label, description)
 - output_description
 - output_variable
 - output_type (text, image, json)
@@ -78,6 +75,9 @@ Tool Task (für externe Tools)
 3. "Der Button Manage Task" öffnet eine seite task-editor, die nicht funktioniert - **BEHOBEN**
 Lösche den Button und alle verbundenen frontend-elemente - **ERLEDIGT**
 5. die buttons "Test Connection" und "Test chat" sollen in die Kopfzeile des Containers "AI Assisten Confoguration" - **BEHOBEN**
+6. Stacke die beiden Buttons "test connection" und "test chat" so wie bei den cards der seite /assistants:
+zeige nur ein icon oben rechts an, und das kann man aufklappen um die möglichen aktionen zu zeigen **BEHOBEN**
+
 7. Mache die Darstellung der Sektion "Basic Information" kompakter - **BEHOBEN**
 - nimm das statusfeld in die Überschrift des containers - **ERLEDIGT**
 - setzte die felder name und category in eine zeile - **ERLEDIGT**
@@ -109,7 +109,7 @@ Lösche den Button und alle verbundenen frontend-elemente - **ERLEDIGT**
 22. Auswahlliste der AI Modells - **BEHOBEN**
 - erweitere die möglichen werte der Auswahlliste "AI MOdell" auf alle Modell, die open ai assistence V2 unterstützt - **ERLEDIGT**
 
-
+24. JS Fehler beim Laden der Seite **ERLEDIGT**
 
 
 ## 📋 Current Sprint Requests & Features
