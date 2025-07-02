@@ -117,23 +117,25 @@ function updateTestButtonsState() {
         const assistantTool = document.getElementById('ai_assistant_tool');
         const testConnectionBtn = document.getElementById('testConnectionBtn');
         const testChatBtn = document.getElementById('testChatBtn');
+        const reassignAssistantBtn = document.getElementById('reassignAssistantBtn');
         
         if (!assistantTool) return;
         
         const hasValidTool = assistantTool.value && assistantTool.value.startsWith('tool:');
+        const hasAssistantId = window.agentData?.assistant_id;
         
+        // Enable/disable test buttons based on tool selection
         if (testConnectionBtn) {
             testConnectionBtn.disabled = !hasValidTool;
-            testConnectionBtn.className = hasValidTool 
-                ? 'px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600'
-                : 'px-3 py-1 text-sm bg-gray-300 text-gray-500 rounded cursor-not-allowed';
         }
         
         if (testChatBtn) {
             testChatBtn.disabled = !hasValidTool;
-            testChatBtn.className = hasValidTool 
-                ? 'px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600'
-                : 'px-3 py-1 text-sm bg-gray-300 text-gray-500 rounded cursor-not-allowed';
+        }
+        
+        // Enable reassign button if agent has an assistant ID (regardless of tool selection)
+        if (reassignAssistantBtn) {
+            reassignAssistantBtn.disabled = !hasAssistantId;
         }
     } catch (error) {
         console.warn('Error updating test button states:', error);
@@ -226,6 +228,67 @@ async function chatWithAssistant() {
     }
 }
 
+// Reassign assistant to agent
+async function reassignAssistant() {
+    const agentId = window.agentData?.id;
+    if (!agentId) {
+        showNotificationSafe('Agent ID not found', false);
+        return;
+    }
+    
+    // Get current assistant ID
+    const currentAssistantId = window.agentData?.assistant_id;
+    
+    // Prompt for new assistant ID
+    const newAssistantId = prompt(
+        `Current Assistant ID: ${currentAssistantId || 'None'}\n\nEnter new Assistant ID to reassign:`,
+        currentAssistantId || ''
+    );
+    
+    if (!newAssistantId || newAssistantId === currentAssistantId) {
+        return; // User cancelled or didn't change the ID
+    }
+    
+    try {
+        const response = await fetch(`/agents/api/${agentId}/reassign_assistant`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                new_assistant_id: newAssistantId
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotificationSafe('Assistant reassigned successfully', true);
+            
+            // Update the agent data
+            if (window.agentData) {
+                window.agentData.assistant_id = newAssistantId;
+            }
+            
+            // Update the assistant status display
+            updateAssistantStatus();
+            updateTestButtonsState();
+            
+            // Optional: Reload the page after a short delay to ensure all data is refreshed
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+            
+        } else {
+            showNotificationSafe(data.message || 'Failed to reassign assistant', false);
+        }
+        
+    } catch (error) {
+        console.error('Error reassigning assistant:', error);
+        showNotificationSafe('Error reassigning assistant: ' + error.message, false);
+    }
+}
+
 // ===========================
 // UTILITY FUNCTIONS
 // ===========================
@@ -259,7 +322,8 @@ window.AssistantConfiguration = {
     updateStatus: updateAssistantStatus,
     updateTestButtons: updateTestButtonsState,
     testConnection: testAssistantConnection,
-    testChat: chatWithAssistant
+    testChat: chatWithAssistant,
+    reassignAssistant: reassignAssistant
 };
 
 // Make functions globally available for onclick handlers
@@ -267,3 +331,4 @@ window.onAssistantToolChange = onAssistantToolChange;
 window.testAssistantConnection = testAssistantConnection;
 window.chatWithAssistant = chatWithAssistant;
 window.updateTestButtonsState = updateTestButtonsState;
+window.reassignAssistant = reassignAssistant;

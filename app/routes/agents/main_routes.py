@@ -209,17 +209,30 @@ def edit_agent(agent_id):
                         # No assistant exists, create a new one
                         try:
                             new_assistant_id = assistant_manager.create_assistant_for_agent(agent)
-                            agent['assistant_id'] = new_assistant_id
-                            flash(f'Created new OpenAI Assistant {new_assistant_id[:8]}... for agent', 'success')
+                            if new_assistant_id:
+                                agent['assistant_id'] = new_assistant_id
+                                flash(f'Created new OpenAI Assistant {new_assistant_id[:8]}... for agent', 'success')
+                            else:
+                                flash('Could not create OpenAI Assistant. Please check your configuration.', 'warning')
                         except Exception as e:
+                            current_app.logger.error(f"Error creating assistant for agent {agent_id}: {e}")
                             flash(f'Warning: Could not create OpenAI Assistant: {str(e)}', 'warning')
                     else:
                         # Assistant exists, synchronize configuration
                         try:
-                            assistant_manager.update_assistant_for_agent(agent)
-                            flash(f'Synchronized agent configuration with OpenAI Assistant {current_assistant_id[:8]}...', 'info')
+                            success = assistant_manager.update_assistant_for_agent(agent)
+                            if success:
+                                flash(f'Synchronized agent configuration with OpenAI Assistant {current_assistant_id[:8]}...', 'info')
+                            else:
+                                flash('Could not synchronize with OpenAI Assistant. Please check the configuration.', 'warning')
                         except Exception as e:
+                            current_app.logger.error(f"Error updating assistant for agent {agent_id}: {e}")
                             flash(f'Warning: Could not sync with OpenAI Assistant: {str(e)}', 'warning')
+                else:
+                    # AI assistant tool not configured or different tool selected
+                    if agent.get('assistant_id'):
+                        # Agent had an assistant but AI tool was removed/changed
+                        flash('AI Assistant tool was removed. The existing Assistant connection remains but won\'t be updated.', 'info')
                             
             except Exception as e:
                 current_app.logger.error(f"Error handling OpenAI Assistant for agent {agent_id}: {str(e)}")

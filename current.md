@@ -27,6 +27,7 @@
    - **Solution**: Added missing `new_session` and `open_session` routes to `app/routes/agents.py`
    - **Status**: Fixed - routes now properly handle agent session creation and opening
 
+
 2. ✅ **RESOLVED** - die agents.py wird gerade sehr groß. Entwickle einen ansatz sie zu refactoren und in mehrere dateien aufzuteilen. teste die anwendung und beseitige die incidents
    - **Solution**: Successfully refactored agents.py into modular structure: main_routes.py, api_routes.py, session_routes.py, task_routes.py, error_handlers.py
    - **Status**: Fixed - clean separation of concerns implemented
@@ -34,9 +35,13 @@
 
 #### /agents/edit
 
-3. Für einen Agenten soll beim Speichern ein openai Assistent erzeugt werden falls noch keiner mit dem agenten verbunden ist und in der assistent_id des agenten gespeichert werden. weiterhin sollen beim speichern eines agenten die parameter (model,m instruction, tool, files, ...) aktuaisiert werden mit den werten des agenten
+3. ✅ **RESOLVED** - Für einen Agenten soll beim Speichern ein openai Assistent erzeugt werden falls noch keiner mit dem agenten verbunden ist und in der assistent_id des agenten gespeichert werden. weiterhin sollen beim speichern eines agenten die parameter (model, instruction, tool, files, ...) aktualisiert werden mit den werten des agenten
+   - **Solution**: Enhanced assistant_manager with comprehensive agent-to-assistant synchronization including knowledge base, files, tools, and model parameters
+   - **Status**: Fixed - OpenAI Assistant is automatically created/updated when saving agents with AI Assistant tool configured
 
-4. ergänze im Aktionsmenu der Sektion "AI Assistent Configuration" eine Aktionen zum Neuzuweisen eines Assistenten 
+4. ✅ **RESOLVED** - ergänze im Aktionsmenu der Sektion "AI Assistent Configuration" eine Aktionen zum Neuzuweisen eines Assistenten
+   - **Solution**: Added "Reassign Assistant" action to the dropdown menu with backend API support
+   - **Status**: Fixed - users can now reassign assistants via the actions menu 
 
 6. erstelle einen container "Sessions" rechts unterhalb von knowledge base, der die zu dem agenten gehörenden AgentRuns als liste darstellt:
 - "Status Icon" (active / geschlossene session)
@@ -55,6 +60,10 @@ Der Container-Header soll eine filter option haben nach status des agent runs.
 9. ✅ **RESOLVED** - Bei der Auswahl eines Assistenten wird die seite geschlossen
    - **Solution**: Removed auto-submit functionality from agent edit forms and fixed JavaScript alert issues
    - **Status**: Fixed - page stays open when selecting assistant tools
+
+10. ✅ **RESOLVED** - stelle layout der "Actions" im container AI Assistant Configuration um von farbigen buttons auf normale menüeinträge
+   - **Solution**: Converted colored action buttons to neutral menu entries with consistent styling
+   - **Status**: Fixed - actions now use standard menu styling instead of colored buttons
 
 #### /assistence
 5. Layout Polishing

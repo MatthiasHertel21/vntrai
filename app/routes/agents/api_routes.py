@@ -268,3 +268,47 @@ def api_get_tools():
             'error': str(e),
             'tools': []
         }), 500
+
+@agents_bp.route('/api/<agent_id>/reassign_assistant', methods=['POST'])
+def api_reassign_assistant(agent_id):
+    """Reassign assistant to an agent"""
+    try:
+        data = request.get_json()
+        new_assistant_id = data.get('new_assistant_id')
+        
+        if not new_assistant_id:
+            return jsonify({
+                'success': False,
+                'message': 'New assistant ID is required'
+            }), 400
+        
+        # Load the agent
+        agent = agents_manager.load(agent_id)
+        if not agent:
+            return jsonify({
+                'success': False,
+                'message': 'Agent not found'
+            }), 404
+        
+        # Use assistant manager to reassign the assistant
+        from app.utils.assistant_manager import assistant_manager
+        success = assistant_manager.reassign_assistant(agent, new_assistant_id)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': f'Assistant successfully reassigned to {new_assistant_id}',
+                'assistant_id': new_assistant_id
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Failed to reassign assistant. Please check the assistant ID and try again.'
+            }), 400
+            
+    except Exception as e:
+        current_app.logger.error(f"Error reassigning assistant for agent {agent_id}: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': f'Internal error: {str(e)}'
+        }), 500
