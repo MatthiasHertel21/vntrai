@@ -28,14 +28,9 @@
    - **Status**: Fixed - routes now properly handle agent session creation and opening
 
 2. ✅ **RESOLVED** - die agents.py wird gerade sehr groß. Entwickle einen ansatz sie zu refactoren und in mehrere dateien aufzuteilen. teste die anwendung und beseitige die incidents
-   - **Solution**: Successfully refactored monolithic `agents.py` (1108 lines) into modular structure:
-     - `main_routes.py` - Core CRUD operations (list, create, view, edit, delete agents)
-     - `api_routes.py` - RESTful API endpoints for external access 
-     - `task_routes.py` - Specialized task management operations
-     - `session_routes.py` - Agent session creation and management
-     - `error_handlers.py` - Centralized error handling
-   - **Benefits**: Improved code maintainability, better separation of concerns, easier testing
-   - **Status**: Completed - All routes working correctly, no breaking changes 
+   - **Solution**: Successfully refactored agents.py into modular structure: main_routes.py, api_routes.py, session_routes.py, task_routes.py, error_handlers.py
+   - **Status**: Fixed - clean separation of concerns implemented
+
 
 #### /agents/edit
 
@@ -43,8 +38,23 @@
 
 4. ergänze im Aktionsmenu der Sektion "AI Assistent Configuration" eine Aktionen zum Neuzuweisen eines Assistenten 
 
-6. erstelle einen container "Sessions" recht unterhalb von knowledge base. der due zu dem agenten gehörenden AgentRuns 
+6. erstelle einen container "Sessions" rechts unterhalb von knowledge base, der die zu dem agenten gehörenden AgentRuns als liste darstellt:
+- "Status Icon" (active / geschlossene session)
+- Alter der session (in Tagen)
+- Datum der letzten Benutzung der Session
+Der Container-Header soll eine filter option haben nach status des agent runs. 
 
+7. polish 
+- verwende eine kompaktere Darstellung der seite und der container. 
+- alle container sollen auf- und zuklappbar sein durch klick auf die überschrift des containers
+
+8. ✅ **RESOLVED** - in agents/edit kann ich keinen AI Assistant tool auswählen, die liste ist leer
+   - **Solution**: Fixed filtering logic to only show tools with "Enable AI Assistant Integration" option enabled
+   - **Status**: Fixed - assistant tools dropdown now properly populated
+
+9. ✅ **RESOLVED** - Bei der Auswahl eines Assistenten wird die seite geschlossen
+   - **Solution**: Removed auto-submit functionality from agent edit forms and fixed JavaScript alert issues
+   - **Status**: Fixed - page stays open when selecting assistant tools
 
 #### /assistence
 5. Layout Polishing
@@ -54,7 +64,7 @@
 
 
 ### From Previous Sprint (High Priority)
-- [x] **Agent.py Refactoring** - Separation of non-agent-specific functions and routes (Issue #25) ✅ **COMPLETED**
+- [ ] **Agent.py Refactoring** - Separation of non-agent-specific functions and routes (Issue #25)
 - [ ] **Task Dialog UI Polish** - UI improvements for add task and edit task dialogs (Issue #26) 
 - [ ] **Advanced Tooltip Styling** - Enhanced styling for all three tooltip types (Issue #27)
 
