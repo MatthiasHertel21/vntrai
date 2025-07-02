@@ -1326,6 +1326,18 @@ class AgentRunManager(DataManager):
         agent_run['updated_at'] = datetime.now().isoformat()
         return self.save(agent_run)
 
+    def get_agent_runs(self, agent_uuid: str) -> List[Dict[str, Any]]:
+        """Get all agent runs for a specific agent"""
+        all_runs = self.get_all()
+        agent_runs = [run for run in all_runs if run.get('agent_uuid') == agent_uuid]
+        # Sort by created_at timestamp (newest first)
+        return sorted(agent_runs, key=lambda x: x.get('created_at', ''), reverse=True)
+    
+    def get_most_recent_run(self, agent_uuid: str) -> Optional[Dict[str, Any]]:
+        """Get the most recent agent run for a specific agent"""
+        agent_runs = self.get_agent_runs(agent_uuid)
+        return agent_runs[0] if agent_runs else None
+
 # Global instances for Sprint 18
 integrations_manager = IntegrationsManager()
 tools_manager = ToolsManager()

@@ -1,0 +1,808 @@
+{% extends "base.html" %}
+
+{% block title %}{{ agent.name }} (Run {{ agent_run.uuid[:8] }}){% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Standard Bootstrap layout like edit page */
+    .container .row {
+        margin-left: -15px;
+        margin-right: -15px;
+    }
+    
+    .container .col-lg-8,
+    .container .col-lg-4 {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+    
+    /* Flash messages container width */
+    .alert {
+        max-width: 100%;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    /* Visual feedback for loading states */
+    .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+    
+    .loading-spinner {
+        text-align: center;
+    }
+    
+    /* Chat message styling */
+    .message-bubble {
+        padding: 10px 15px;
+        border-radius: 12px;
+        margin-bottom: 10px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    .user-message {
+        background-color: #fff;
+        color: #000;
+        border: 1px solid #dee2e6;
+    }
+    .assistant-message {
+        background-color: #f8f9fa;
+        color: #212529;
+        border-left: 3px solid #0d6efd;
+    }
+    
+    /* Limit output height */
+    #outputDisplay {
+        max-height: 350px;
+        overflow-y: auto;
+        transition: max-height 0.3s ease;
+    }
+    
+    /* Fixed height during streaming to prevent layout shifts */
+    #outputDisplay.streaming {
+        height: 350px;
+        max-height: 350px;
+        min-height: 350px;
+    }
+    
+    /* Türkiser Spinner für Loading-Anzeigen */
+    .spinner-primary {
+        color: #0cc0df !important;
+    }
+    
+    /* Task Outputs Section Styling - simplified */
+    .task-output-item {
+        border: none;
+        border-radius: 0;
+        margin-bottom: 1rem;
+        background: none;
+        transition: none;
+        overflow: visible;
+    }
+
+    .task-output-header {
+        background: none;
+        border-bottom: 1px solid #dee2e6;
+        padding: 0.75rem 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: none;
+    }
+
+    .task-output-header.streaming,
+    .task-output-header.completed,
+    .task-output-header.error {
+        background: none;
+        border-bottom: 1px solid #dee2e6;
+    }
+
+    .task-output-content {
+        padding: 1rem;
+        max-height: 400px;
+        overflow-y: auto;
+        background: none;
+        transition: none;
+    }
+
+    .task-output-content.streaming {
+        background: none;
+        border-left: none;
+    }
+
+    .task-output-placeholder {
+        color: #6c757d;
+        font-style: italic;
+        text-align: center;
+        padding: 2rem;
+        background: none;
+        border-radius: 0;
+    }
+    
+    .task-output-status {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        font-weight: 500;
+    }
+    
+    .task-output-status.pending {
+        background-color: #e9ecef;
+        color: #6c757d;
+    }
+    
+    .task-output-status.running {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+    
+    .task-output-status.completed {
+        background-color: #d1edff;
+        color: #0c5460;
+    }
+    
+    .task-output-status.error {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    /* Task Outputs Card Header Styling */
+    #taskOutputsCard .card-header {
+        transition: background-color 0.3s ease;
+    }
+    
+    #taskOutputsCard .card-header.has-streaming {
+        background: linear-gradient(135deg, #e3f2fd 0%, #f0f8ff 100%);
+        border-bottom-color: #0cc0df;
+    }
+    
+    #taskOutputsCard .card-header.has-completed {
+        background: linear-gradient(135deg, #e8f5e8 0%, #f0fff0 100%);
+        border-bottom-color: #28a745;
+    }
+    
+    #taskOutputsCard .card-header.has-errors {
+        background: linear-gradient(135deg, #ffeaea 0%, #fff5f5 100%);
+        border-bottom-color: #dc3545;
+    }
+    
+    /* Multi-Task UI Styling */
+    .task-item {
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+    
+    .task-item:hover {
+        background-color: #f8f9fa !important;
+        border-color: #0cc0df !important;
+    }
+    
+    .task-item.selected {
+        background-color: #e7f3ff !important;
+        border-color: #0cc0df !important;
+        box-shadow: 0 0 0 2px rgba(12, 192, 223, 0.2);
+    }
+    
+    .task-status-icon {
+        width: 20px;
+        text-align: center;
+    }
+    
+    .task-controls .btn-xs {
+        padding: 0.1rem 0.25rem;
+        font-size: 0.65rem;
+        margin-left: 2px;
+    }
+    
+    .task-progress-details {
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        border-left: 3px solid #0cc0df;
+    }
+    
+    #overallProgress .progress {
+        background-color: #e9ecef;
+    }
+    
+    #overallProgress .progress-bar {
+        background-color: #0cc0df;
+        transition: width 0.3s ease;
+    }
+    
+    /* Loading states for task execution */
+    .task-item.executing {
+        background-color: #fff3cd;
+        border-color: #ffc107;
+    }
+    
+    .task-item.completed {
+        background-color: #d1edff;
+        border-color: #0cc0df;
+    }
+    
+    .task-item.error {
+        background-color: #f8d7da;
+        border-color: #dc3545;
+    }
+    
+    /* Notification styling */
+    .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 300px;
+        max-width: 500px;
+    }
+    
+    /* Markdown content styling */
+    .markdown-content {
+        line-height: 1.6;
+    }
+    
+    .markdown-content h1, .markdown-content h2, .markdown-content h3,
+    .markdown-content h4, .markdown-content h5, .markdown-content h6 {
+        margin-top: 1.5rem;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+    }
+    
+    .markdown-content h1 { color: #0cc0df; border-bottom: 2px solid #0cc0df; padding-bottom: 0.3rem; }
+    .markdown-content h2 { color: #0cc0df; border-bottom: 1px solid #dee2e6; padding-bottom: 0.2rem; }
+    .markdown-content h3, .markdown-content h4, .markdown-content h5, .markdown-content h6 { color: #0cc0df; }
+    
+    .markdown-content p {
+        margin-bottom: 1rem;
+    }
+    
+    .markdown-content ul, .markdown-content ol {
+        margin-bottom: 1rem;
+        padding-left: 1.5rem;
+    }
+    
+    .markdown-content li {
+        margin-bottom: 0.25rem;
+    }
+    
+    .markdown-content blockquote {
+        border-left: 4px solid #0d6efd;
+        margin: 1rem 0;
+        padding: 0.5rem 1rem;
+        background-color: #f8f9fa;
+        font-style: italic;
+    }
+    
+    .markdown-content code {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        padding: 0.125rem 0.25rem;
+        font-size: 0.875em;
+        color: #e83e8c;
+    }
+    
+    .markdown-content pre {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        overflow-x: auto;
+        margin: 1rem 0;
+    }
+    
+    .markdown-content pre code {
+        background-color: transparent;
+        border: none;
+        padding: 0;
+        color: inherit;
+    }
+    
+    /* Improve text output display */
+    .text-content {
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+    
+    /* Remove excess whitespace at the start and end */
+    .output-content {
+        margin-bottom: 0;
+        padding: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        background-color: transparent !important;
+        font-family: inherit;
+    }
+    
+    /* Extra small button styling */
+    .btn-xs {
+        padding: 0.15rem 0.3rem;
+        font-size: 0.7rem;
+        line-height: 1.2;
+        border-radius: 0.2rem;
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('agents.list_agents') }}">Agents</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('agents.view_agent', agent_id=agent.id) }}">{{ agent.name }}</a></li>
+<li class="breadcrumb-item active">Run {{ agent_run.uuid[:8] }}</li>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div class="d-flex align-items-center">
+            <img src="{{ url_for('static', filename='icons/Agent - blue.png') }}" alt="Agent Run" class="page-icon me-3">
+            <div>
+                <h2 class="mb-0" data-bs-toggle="tooltip" data-bs-placement="right" data-bs-html="true" 
+                   title="<div class='text-start small p-2'>
+                   <strong>Run ID:</strong> {{ agent_run.uuid }}<br>
+                   <strong>Created:</strong> {{ agent_run.created_at }}<br>
+                   <strong>Status:</strong> {{ agent_run.status.title() }}<br>
+                   <strong>Thread ID:</strong> {{ agent_run.thread_id[:8] if agent_run.thread_id else 'N/A' }}<br>
+                   <strong>Messages:</strong> {{ agent_run.chat_session|length }}<br>
+                   <strong>Tool Executions:</strong> {{ agent_run.tool_logs|length }}<br>
+                   {% if agent_run.total_tokens %}<strong>Total Tokens:</strong> {{ agent_run.total_tokens }}<br>{% endif %}
+                   {% if agent_run.total_cost %}<strong>Estimated Cost:</strong> ${{ '%.4f'|format(agent_run.total_cost) }}<br>{% endif %}
+                   {% if agent_run.closed_at %}<strong>Closed:</strong> {{ agent_run.closed_at }}<br>{% endif %}
+                   </div>">{{ agent.name }} (Run)</h2>
+                <p class="text-muted mb-0">{{ agent.description }}</p>
+            </div>
+        </div>
+        <div class="btn-group">
+            <a href="{{ url_for('agents.view_agent', agent_id=agent.id) }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Agent
+            </a>
+            {% if agent_run.status == 'open' or agent_run.status == 'created' %}
+            <form method="POST" action="{{ url_for('agents.close_agent_run', agent_id=agent.id, run_uuid=agent_run.uuid) }}" class="d-inline">
+                <input type="hidden" name="csrf_token" value="dummy_token">
+                <button type="submit" class="btn btn-primary" onclick="return confirm('Are you sure you want to close this agent run?')">
+                    <i class="fas fa-stop"></i> Close Run
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- MAIN COLUMN - LEFT SIDE -->
+            
+            {% if agent_run.complete_prompt %}
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-magic me-2"></i>Complete Prompt (OpenAI)
+                    </h5>
+                    <div class="d-flex gap-2">
+                        <small class="text-muted">
+                            {% if agent_run.prompt_generated_at %}
+                                Generated {{ agent_run.prompt_generated_at }}
+                            {% endif %}
+                            {% if agent_run.prompt_tokens %}
+                                | {{ agent_run.prompt_tokens }} tokens
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+            </div>
+            {% elif agent_run.generated_prompt %}
+            <!-- Fallback for legacy generated_prompt -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-magic me-2"></i>Generated Prompt (Legacy)
+                    </h5>
+                    <div class="d-flex gap-2">
+                        <small class="text-muted">
+                            {% if agent_run.prompt_generated_at %}
+                                Generated {{ agent_run.prompt_generated_at }}
+                            {% endif %}
+                        </small>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" 
+                                data-bs-toggle="collapse" data-bs-target="#promptCollapse">
+                            <i class="fas fa-eye"></i> Toggle
+                        </button>
+                    </div>
+                </div>
+                <div class="collapse" id="promptCollapse">
+                    <div class="card-body">
+                        <div class="prompt-display">
+                            <pre class="bg-light p-3 rounded border-start border-4 border-primary">{{ agent_run.generated_prompt }}</pre>
+                            {% if agent_run.prompt_tokens %}
+                            <div class="mt-2 small text-muted">
+                                <i class="fas fa-info-circle"></i> 
+                                Tokens: {{ agent_run.prompt_tokens }} | 
+                                Characters: {{ agent_run.generated_prompt|length }}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Task Outputs Section (moved up) -->
+            <div class="card mb-4" id="taskOutputsCard">
+                <div class="card-header" style="background-color: #0CC0DF !important; color: white !important;">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <h5 class="mb-0" style="color: white !important; cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#taskOutputsCollapse" aria-expanded="true">
+                            <i class="fas fa-tasks me-2"></i>Task Outputs
+                            <span class="badge bg-secondary ms-2" id="taskOutputsBadge">{{ agent.tasks|length if agent.tasks else 0 }}</span>
+                        </h5>
+                        <div class="d-flex align-items-center gap-2 output-header-buttons">
+                            <!-- Language Selector -->
+                            <div class="language-selector" style="display: none;">
+                                <select class="form-select form-select-sm" id="taskOutputLanguage" style="min-width: 120px;">
+                                    <option value="auto">Auto-detect</option>
+                                    <option value="en">English</option>
+                                    <option value="de">German</option>
+                                    <option value="es">Spanish</option>
+                                    <option value="fr">French</option>
+                                    <option value="it">Italian</option>
+                                    <option value="pt">Portuguese</option>
+                                    <option value="ru">Russian</option>
+                                    <option value="zh">Chinese</option>
+                                    <option value="ja">Japanese</option>
+                                    <option value="ko">Korean</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="collapse show" id="taskOutputsCollapse">
+                    <div class="card-body">
+                        <div id="taskOutputsContainer">
+                            <!-- Task output fields will be dynamically generated here -->
+                            <div class="text-center text-muted py-4">
+                                <i class="fas fa-info-circle fa-2x mb-3"></i>
+                                <h6>No Task Outputs Yet</h6>
+                                <p class="mb-0">Task outputs will appear here when tasks are executed</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </div><!-- End col-lg-8 -->
+        <div class="col-lg-4">
+            <!-- SIDEBAR - RIGHT SIDE -->
+            
+            <!-- 1. Multi-Task Control Panel (Tasks) -->
+            <div class="card mb-4" id="taskControlPanel">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="fas fa-tasks me-2"></i>Tasks
+                        <span class="badge bg-secondary ms-2" id="taskCountBadge">{{ agent.tasks|length if agent.tasks else 0 }}</span>
+                    </h6>
+                    <div class="btn-group btn-group-sm">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="reloadTasksBtn" 
+                                title="Reload task definitions from agent">
+                            <i class="fas fa-sync-alt"></i> Reload
+                        </button>
+                        <button type="button" class="btn btn-success btn-sm" id="executeAllTasksBtn" 
+                                title="Execute All Tasks" {{ 'disabled' if agent_run.status not in ['open', 'created'] else '' }}>
+                            <i class="fas fa-play"></i> Run All
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-2">
+                    <!-- Overall Progress Bar -->
+                    <div class="mb-3" id="overallProgress" style="display: block;">
+                        <small class="text-muted">Overall Progress</small>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-success" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <small class="text-muted">
+                            <span id="completedTasks">0</span> of <span id="totalTasks">{{ agent.tasks|length if agent.tasks else 0 }}</span> tasks completed
+                        </small>
+                    </div>
+                    
+                    <!-- Task List -->
+                    <div id="taskList">
+                        {% if agent.tasks %}
+                        {% for task in agent.tasks %}
+                        <div class="task-item mb-2 p-2 border rounded" 
+                             data-task-index="{{ loop.index0 }}" 
+                             data-task-id="{{ task.id }}"
+                             data-bs-toggle="tooltip" 
+                             data-bs-placement="left" 
+                             data-bs-html="true" 
+                             title="<div class='text-start small p-1'>
+                                    <strong>{{ task.name or 'Unnamed Task' }}</strong><br>
+                                    <strong>Type:</strong> {{ task.type|title }}<br>
+                                    {% if task.description %}<strong>Description:</strong> {{ task.description|truncate(100) }}<br>{% endif %}
+                                    {% if task.output_var %}<strong>Output Variable:</strong> {{ task.output_var }}<br>{% endif %}
+                                    {% if task.output_type %}<strong>Output Type:</strong> {{ task.output_type }}<br>{% endif %}
+                                    {% if task.ai_config and task.ai_config.instructions %}<strong>Instructions:</strong> {{ task.ai_config.instructions|truncate(150) }}<br>{% endif %}
+                                    {% if task.ai_config and task.ai_config.goals %}<strong>Goals:</strong> {{ task.ai_config.goals|truncate(100) }}<br>{% endif %}
+                                    {% if task.tool_config and task.tool_config.tool_name %}<strong>Tool:</strong> {{ task.tool_config.tool_name }}<br>{% endif %}
+                                    </div>">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <span class="task-status-icon me-2">
+                                            <i class="fas fa-circle text-secondary" title="Pending"></i>
+                                        </span>
+                                        <div>
+                                            <div class="fw-semibold small">{{ task.name or 'Unnamed Task' }}</div>
+                                            <div class="text-muted" style="font-size: 0.75rem;">
+                                                {{ task.type|title }} Task
+                                                {% if task.output_var %} → {{ task.output_var }}{% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% if task.description %}
+                                    <div class="text-muted small">{{ task.description|truncate(80) }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="task-controls">
+                                    <button type="button" class="btn btn-outline-primary btn-xs execute-task-btn" 
+                                            data-task-index="{{ loop.index0 }}" title="Execute Task" style="display: none;">
+                                        <i class="fas fa-play"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-xs select-task-btn" 
+                                            data-task-index="{{ loop.index0 }}" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Task Progress Details (hidden by default) -->
+                            <div class="task-progress-details mt-2 small" style="display: none;">
+                                <div class="execution-time text-muted"></div>
+                                <div class="error-message text-danger"></div>
+                                <div class="task-feedback mt-2"></div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <div class="text-center text-muted py-3">
+                            <i class="fas fa-info-circle mb-2"></i>
+                            <div>No tasks configured</div>
+                            <small>This agent uses legacy single-task mode</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 4. Chat Interface (Feedback) -->
+            <div class="card mb-4" style="display: flex; flex-direction: column;">
+                <div class="card-header d-flex justify-content-between align-items-center" 
+                     style="cursor: pointer" data-bs-toggle="collapse" data-bs-target="#feedbackCollapse">
+                    <h5 class="mb-0">
+                        <i class="fas fa-comments me-2"></i>Feedback
+                    </h5>
+                    <div class="d-flex align-items-center gap-3">
+                        {% if agent_run.chat_session %}
+                        <small class="text-muted">
+                            {{ agent_run.chat_session|length }} messages
+                        </small>
+                        {% endif %}
+                        <span class="badge bg-{{ 'success' if agent_run.status == 'open' else 'secondary' if agent_run.status == 'closed' else 'primary' }}">
+                            {{ agent_run.status.title() }}
+                        </span>
+                    </div>
+                </div>
+                <div class="collapse show" id="feedbackCollapse">
+                <div class="card-body flex-grow-1 overflow-auto chat-container" id="chatContainer">
+                    {% if not agent_run.chat_session %}
+                    <div class="text-center text-muted mt-5">
+                        <i class="fas fa-comments fa-3x mb-3"></i>
+                        <h6>Agent run started</h6>
+                        <p>The agent is ready to assist. Send a message to begin the conversation.</p>
+                    </div>
+                    {% else %}
+                    {% for message in agent_run.chat_session %}
+                    <div class="d-flex mb-3 {{ 'justify-content-end' if message.role == 'user' else 'justify-content-start' }}">
+                        {% if message.role == 'user' %}
+                            <div class="message-bubble user-message" style="max-width: 70%; background-color: #fff; color: #000; border: 1px solid #dee2e6;">
+                        {% else %}
+                            <div class="message-bubble assistant-message" style="max-width: 70%; border-left: none;">
+                        {% endif %}
+                            <div class="message-header d-flex justify-content-between align-items-center mb-2">
+                                <div class="d-flex align-items-center gap-2">
+                                    {% if message.role == 'assistant' and message.model %}
+                                    <span class="badge badge-sm bg-secondary">{{ message.model }}</span>
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">{{ message.timestamp }}</small>
+                            </div>
+                            
+                            <!-- Main message content -->
+                            <div class="message-content">
+                                {{ message.message }}
+                            </div>
+                            
+                            <!-- Output metadata for assistant messages -->
+                            {% if message.role == 'assistant' and (message.tokens_used or message.processing_time or message.output_format) %}
+                            <div class="message-metadata mt-2 pt-2 border-top">
+                                <div class="d-flex flex-wrap gap-3 small text-muted">
+                                    {% if message.tokens_used %}
+                                    <span><i class="fas fa-coins me-1"></i>{{ message.tokens_used }} tokens</span>
+                                    {% endif %}
+                                    {% if message.processing_time %}
+                                    <span><i class="fas fa-clock me-1"></i>{{ message.processing_time }}ms</span>
+                                    {% endif %}
+                                    {% if message.output_format %}
+                                    <span><i class="fas fa-file-code me-1"></i>{{ message.output_format }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                </div>
+                {% if agent_run.status in ['open', 'created'] %}
+                <div class="card-footer feedback-input-area">
+                    <form method="POST" action="{{ url_for('agents.send_chat_message', agent_id=agent.id, run_uuid=agent_run.uuid) }}" id="chatForm">
+                        {{ form.hidden_tag() }}
+                        <div class="input-group">
+                            {{ form.message(class="form-control chat-message-input", placeholder="Type your message here and press Enter to send...", rows="1") }}
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Send
+                            </button>
+                        </div>
+                        <small class="text-muted mt-1 d-block">
+                            <i class="fas fa-info-circle"></i> Press <kbd>Enter</kbd> to send, <kbd>Shift+Enter</kbd> for new line
+                        </small>
+                    </form>
+                </div>
+                {% endif %}
+                </div><!-- End of collapse div -->
+            </div><!-- End of feedback card -->
+            
+            <!-- Knowledge Base Section - Separate -->
+            {% if agent.knowledge_base %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-database me-2"></i>Knowledge Base
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="small">
+                        <div class="mb-2">
+                            <strong>Name:</strong> {{ agent.knowledge_base.name }}
+                        </div>
+                        {% if agent.knowledge_base.description %}
+                        <div class="mb-2">
+                            <strong>Description:</strong> {{ agent.knowledge_base.description }}
+                        </div>
+                        {% endif %}
+                        {% if agent.knowledge_base.files %}
+                        <div class="mb-2">
+                            <strong>Files:</strong>
+                            {% for file in agent.knowledge_base.files %}
+                            <div class="file-item d-flex align-items-center mb-1 p-1 bg-light rounded">
+                                <i class="fas fa-file me-2 text-info"></i>
+                                <span class="flex-grow-1">{{ file.filename }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Context Variables -->
+            {% if agent_run.context.variables %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-cogs me-2"></i>Context Variables
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="small">
+                        {% for key, value in agent_run.context.variables.items() %}
+                        <div class="context-item mb-2 pb-2 {{ 'border-bottom' if not loop.last }}">
+                            <div class="fw-semibold text-success mb-1"><code>{{ key }}</code></div>
+                            <div class="text-muted">{{ value }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+        </div><!-- End col-lg-4 -->
+    </div><!-- End row -->
+</div><!-- End container -->
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  window.AGENT_RUN_GENERATE_URL = "{{ url_for('task_management.execute_task', run_uuid=agent_run.uuid, task_uuid='TASK_UUID') }}";
+  window.CSRF_TOKEN = "dummy_token";
+  window.agentRunUUID = "{{ agent_run.uuid }}";
+  window.agentUuid = "{{ agent.uuid }}";
+  
+  // Initialize agent tasks data
+  window.AGENT_TASKS = {{ agent.tasks|tojson|default('[]', true)|safe }};
+  // Provide per-task progress/output data for JS
+  window.AGENT_TASK_PROGRESS = {{ agent_run.task_progress|tojson|default('[]', true)|safe }};
+
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips for task items
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl, {
+            html: true,
+            placement: 'left'
+        });
+    });
+    
+    // Add execute button handlers
+    document.addEventListener('click', function(e) {
+        // Execute task button
+        if (e.target.closest('.execute-task-btn')) {
+            const taskIndex = parseInt(e.target.closest('.execute-task-btn').dataset.taskIndex);
+            showNotification(`Execute Task ${taskIndex + 1} (Demo)`, 'info');
+        }
+        
+        // Select task button
+        if (e.target.closest('.select-task-btn')) {
+            const taskIndex = parseInt(e.target.closest('.select-task-btn').dataset.taskIndex);
+            showNotification(`View Task ${taskIndex + 1} Details (Demo)`, 'info');
+        }
+    });
+    
+    // Execute All Tasks button
+    const executeAllBtn = document.getElementById('executeAllTasksBtn');
+    if (executeAllBtn) {
+        executeAllBtn.addEventListener('click', function() {
+            showNotification('Execute All Tasks (Demo)', 'info');
+        });
+    }
+    
+    // Reload Tasks button
+    const reloadBtn = document.getElementById('reloadTasksBtn');
+    if (reloadBtn) {
+        reloadBtn.addEventListener('click', function() {
+            showNotification('Tasks Reloaded (Demo)', 'success');
+        });
+    }
+  });
+
+  // Utility function to show notifications
+  function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show`;
+    notification.style.position = 'fixed';
+    notification.style.top = '20px';
+    notification.style.right = '20px';
+    notification.style.zIndex = '9999';
+    notification.style.minWidth = '300px';
+    
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 5000);
+  }
+</script>
+
+{% endblock %}

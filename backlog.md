@@ -3,8 +3,17 @@
 ## Neue Anforderungen (zu qualifizieren)
 
 ### Noch zu kategorisieren
+-  in der seite /agents/edit soll im container AI Assistent Configuratation eine Aktion hinzugefügt werden, mit der man die Webseite des assistenten beim vender des tools (also z.B. openai) öffnen kann
+
+
 - [ ] **Testbuttons zur Assistent Configuration** - Buttons sollen in den Header des Containers verschoben werden
 - [ ] **Dynamische Implementations-Auswahl in /test** - API-basierte Dropdown-Population statt hartkodierte Liste
+
+
+### Sprint 18 Open Issues (moved from current sprint)
+- [ ] **Agent.py Refactoring** - Separation of non-agent-specific functions and routes (Issue #25)
+- [ ] **Task Dialog UI Polish** - UI improvements for add task and edit task dialogs (Issue #26) 
+- [ ] **Advanced Tooltip Styling** - Enhanced styling for all three tooltip types (Issue #27)
 
 ---
 
@@ -21,14 +30,25 @@
 - [x] **Knowledge Base Integration** - Knowledge Items in Agent-Kontext
 - [x] **Legacy Migration Support** - Automatische Migration alter Agents
 
-### Agent Run System ✅ Implementiert  
-- [x] **AgentRun CRUD** - Create Agent Runs from Agents
+### Agent Run System ✅ Implementiert (Sprint 19)
+- [x] **AgentRunManager Backend** - DataManager für AgentRuns in `data_manager.py`
 - [x] **Task Execution State Management** - `task_states: [{"task_uuid": "...", "status": "pending|running|completed|error|skipped", "inputs": {...}, "results": {...}}]`
 - [x] **Task-Status Management** - Status-Tracking in agentrun.json
-- [x] **Task Progress Tracking** - Gesamtfortschritt eines Agent Runs
-- [x] **Task Definition Sync** - Sync zwischen Agent und AgentRun Task-Definitionen
+- [x] **Task Progress Tracking API** - Backend-API für Gesamtfortschritt
+- [x] **Task Management API Routes** - API-Endpunkte in `task_management.py`
+- [x] **AgentRun Frontend UI** - Vollständige UI für AgentRun-Erstellung und -Anzeige implementiert
+- [x] **AgentRun CRUD Routes** - `/agents/{uuid}/runs/{run_uuid}` Frontend-Routen implementiert
+- [x] **"New Session" & "Open Session" Integration** - Buttons in Agent-Kacheln, Agent-View und Agent-Edit
+- [x] **AgentRun View Pages** - Template `run_view.html` basierend auf v036-Layout implementiert
+- [x] **Session Management** - Neue Session-Erstellung und neueste Session öffnen
+- [x] **get_most_recent_run** - Backend-Methode für neueste Session implementiert
 
 ### Agent Features (Backlog)
+- [ ] **AgentRun Frontend-Integration** - Vollständige UI für AgentRun-System
+  - [ ] AgentRun-Erstellung von Agent-Seite aus
+  - [ ] AgentRun-Liste und -Übersicht 
+  - [ ] AgentRun-Detail-Ansicht mit Task-Execution
+  - [ ] "New Run" und "Open Latest Run" Buttons
 - [ ] **Agent Run Page mit Sprint 18 Integration** - Agent Run View für Task-Execution
 - [ ] **Task-Liste mit Status-Anzeige** - Progress-Tracking für Tasks
 - [ ] **Real-time Task-Execution** - Streaming-Support für Task-Ausführung  
@@ -344,3 +364,32 @@
 - [ ] **Performance bottlenecks** - Identifizierung langsamerer Bereiche
 - [ ] **Memory usage** - Docker Container Memory Monitoring
 - [ ] **API response times** - Tracking von API-Response-Zeiten
+
+---
+
+## Sprint 18 - Abgeschlossene Features ✅
+- [x] **Task ID Kompatibilität** - Fehler "Task 0 missing required field: id" behoben
+- [x] **Ultra-kompakte Taskliste** - Optimierte Darstellung mit Tooltips
+- [x] **Assistant Tools Integration** - File Search, Code Interpreter, Functions, Web Browsing
+- [x] **Layout-Optimierungen** - AI Assistant Tool und Model in einer Zeile
+- [x] **Agent Icon Update** - Einheitliche Icons zwischen Sidebar und Edit-Page
+- [x] **Configuration Details Container entfernt** - Aufgeräumte UI
+
+### Agent UI/UX (aus Sprint 18)
+- [ ] **UI Polish für Add/Edit Task Dialoge** - Verbesserte Benutzerführung und Styling
+- [ ] **Tooltip Styling** - Verbessertes Design für Tooltips (drei verschiedene Styles)
+
+---
+
+## Implementierungsstand-Klarstellung (Juli 2025)
+
+**❌ AgentRun System:** Im Backlog als "✅ Implementiert" markiert, aber tatsächlich nur **Backend teilweise vorhanden**:
+- ✅ `AgentRunManager` und `task_management.py` APIs existieren
+- ❌ **Keine Frontend-UI** für AgentRun-Erstellung oder -Verwaltung  
+- ❌ **Keine AgentRun-Routes** im Hauptsystem (`/agents/{uuid}/runs/`)
+- ❌ **Keine Integration** zwischen Agent-Seiten und AgentRun-System
+- ❌ **Leeres** `/data/agentrun/` Verzeichnis - kein funktionales System
+
+**Vollständige v036-Implementation:** Das Archiv-Verzeichnis `/v036/` enthält eine vollständig implementierte AgentRun-System, aber diese wurde **nicht in das Hauptsystem portiert**.
+
+---

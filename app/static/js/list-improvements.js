@@ -55,8 +55,14 @@ function applyFilters() {
         }, 500));
     }
     
-    // Auto-Submit für alle Select-Filter
+    // Auto-Submit für alle Select-Filter (nur in Listenansichten, nicht in Edit-Formularen)
     filters.forEach(filter => {
+        // Skip auto-submit for edit forms
+        const form = filter.closest('form');
+        if (form && (form.id === 'agentEditForm' || form.classList.contains('edit-form'))) {
+            return;
+        }
+        
         filter.addEventListener('change', function() {
             this.closest('form').submit();
         });

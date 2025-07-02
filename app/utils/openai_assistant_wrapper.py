@@ -129,9 +129,21 @@ class OpenAIAssistantAPI:
                 logging.error(f"Direct deletion also failed: {direct_error}")
                 return {'success': False, 'message': f'Failed to delete assistant: {str(e)} (direct: {str(direct_error)})'}
     
-    def create_assistant(self, name, description="", model="gpt-4-turbo-preview", instructions=""):
-        """Create new assistant"""
+    def create_assistant(self, config_or_name, description="", model="gpt-4-turbo-preview", instructions=""):
+        """Create new assistant - accepts either config dict or individual parameters for backward compatibility"""
         try:
+            # Handle both dict config and individual parameters
+            if isinstance(config_or_name, dict):
+                config = config_or_name
+                name = config.get('name', 'Unnamed Assistant')
+                description = config.get('description', '')
+                model = config.get('model', 'gpt-4-turbo-preview')
+                instructions = config.get('instructions', '')
+                tools = config.get('tools', [])
+            else:
+                name = config_or_name
+                tools = []
+            
             result = self.api.execute(
                 config_params=self.integration.get('config_params', {}),
                 input_params={
@@ -139,7 +151,8 @@ class OpenAIAssistantAPI:
                     'name': name,
                     'description': description,
                     'model': model,
-                    'instructions': instructions
+                    'instructions': instructions,
+                    'tools': tools
                 },
                 output_params={}
             )
@@ -148,6 +161,29 @@ class OpenAIAssistantAPI:
             
         except Exception as e:
             logging.error(f"Error creating assistant: {e}")
+            return {'success': False, 'message': str(e)}
+
+    def update_assistant(self, assistant_id, config):
+        """Update existing assistant"""
+        try:
+            result = self.api.execute(
+                config_params=self.integration.get('config_params', {}),
+                input_params={
+                    'action': 'update_assistant',
+                    'assistant_id': assistant_id,
+                    'name': config.get('name'),
+                    'description': config.get('description'),
+                    'model': config.get('model'),
+                    'instructions': config.get('instructions'),
+                    'tools': config.get('tools', [])
+                },
+                output_params={}
+            )
+            
+            return result
+            
+        except Exception as e:
+            logging.error(f"Error updating assistant {assistant_id}: {e}")
             return {'success': False, 'message': str(e)}
 
     def create_thread(self):

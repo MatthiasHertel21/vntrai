@@ -9,29 +9,48 @@
 
 // Initialize assistant configuration system
 function initializeAssistantConfiguration() {
-    // Use assistant tools from window object (injected from template)
-    // const assistantTools = window.assistantTools || []; // Removed to avoid conflicts - use window.assistantTools directly
-    
-    // Update initial assistant status
-    updateAssistantStatus();
-    
-    // Set up event listeners
-    const assistantToolSelect = document.getElementById('ai_assistant_tool');
-    if (assistantToolSelect) {
-        assistantToolSelect.addEventListener('change', function() {
-            onAssistantToolChange(this.value);
-            updateAssistantStatus();
-            updateTestButtonsState();
-        });
+    try {
+        // Update initial assistant status
+        updateAssistantStatus();
         
-        // Trigger initial configuration details display
-        onAssistantToolChange(assistantToolSelect.value);
-        updateTestButtonsState(); // Initial state
+        // Set up event listeners
+        const assistantToolSelect = document.getElementById('ai_assistant_tool');
+        if (assistantToolSelect) {
+            // Remove any existing event listeners to prevent duplicates
+            assistantToolSelect.removeEventListener('change', handleAssistantToolChange);
+            
+            // Add the event listener
+            assistantToolSelect.addEventListener('change', handleAssistantToolChange);
+            
+            // Trigger initial configuration details display
+            onAssistantToolChange(assistantToolSelect.value);
+            updateTestButtonsState(); // Initial state
+        }
+    } catch (error) {
+        console.warn('Error initializing assistant configuration:', error);
+    }
+}
+
+// Event handler for assistant tool changes
+function handleAssistantToolChange(event) {
+    try {
+        onAssistantToolChange(event.target.value);
+    } catch (error) {
+        console.error('Error handling assistant tool change:', error);
+        // Don't show alert to user, just log the error
     }
 }
 
 // Handle assistant tool selection changes
 function onAssistantToolChange(value) {
+    // Safely update assistant status and test buttons
+    try {
+        updateAssistantStatus();
+        updateTestButtonsState();
+    } catch (error) {
+        console.warn('Error updating assistant status:', error);
+    }
+    
     // Configuration details container was removed - skip details display
     const detailsPanel = document.getElementById('assistant_config_details');
     if (!detailsPanel) {
@@ -74,36 +93,50 @@ function onAssistantToolChange(value) {
 
 // Update assistant status indicator
 function updateAssistantStatus() {
-    const assistantTool = document.getElementById('ai_assistant_tool');
-    const statusElement = document.getElementById('assistantStatus');
-    
-    if (!assistantTool || !statusElement) return;
-    
-    if (assistantTool.value && assistantTool.value !== '') {
-        statusElement.textContent = 'Configured';
-        statusElement.className = 'ml-2 px-2 py-1 text-xs rounded-full bg-green-100 text-green-600';
-    } else {
-        statusElement.textContent = 'Not Configured';
-        statusElement.className = 'ml-2 px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600';
+    try {
+        const assistantTool = document.getElementById('ai_assistant_tool');
+        const statusElement = document.getElementById('assistantStatus');
+        
+        if (!assistantTool || !statusElement) return;
+        
+        if (assistantTool.value && assistantTool.value !== '') {
+            statusElement.textContent = 'Configured';
+            statusElement.className = 'ml-2 px-2 py-1 text-xs rounded-full bg-green-100 text-green-600';
+        } else {
+            statusElement.textContent = 'Not Configured';
+            statusElement.className = 'ml-2 px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600';
+        }
+    } catch (error) {
+        console.warn('Error updating assistant status:', error);
     }
 }
 
 // Update test button states
 function updateTestButtonsState() {
-    const assistantTool = document.getElementById('ai_assistant_tool');
-    const testConnectionBtn = document.getElementById('testConnectionBtn');
-    const testChatBtn = document.getElementById('testChatBtn');
-    
-    if (!assistantTool) return;
-    
-    const hasValidTool = assistantTool.value && assistantTool.value.startsWith('tool:');
-    
-    if (testConnectionBtn) {
-        testConnectionBtn.disabled = !hasValidTool;
-    }
-    
-    if (testChatBtn) {
-        testChatBtn.disabled = !hasValidTool;
+    try {
+        const assistantTool = document.getElementById('ai_assistant_tool');
+        const testConnectionBtn = document.getElementById('testConnectionBtn');
+        const testChatBtn = document.getElementById('testChatBtn');
+        
+        if (!assistantTool) return;
+        
+        const hasValidTool = assistantTool.value && assistantTool.value.startsWith('tool:');
+        
+        if (testConnectionBtn) {
+            testConnectionBtn.disabled = !hasValidTool;
+            testConnectionBtn.className = hasValidTool 
+                ? 'px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600'
+                : 'px-3 py-1 text-sm bg-gray-300 text-gray-500 rounded cursor-not-allowed';
+        }
+        
+        if (testChatBtn) {
+            testChatBtn.disabled = !hasValidTool;
+            testChatBtn.className = hasValidTool 
+                ? 'px-3 py-1 text-sm bg-green-500 text-white rounded hover:bg-green-600'
+                : 'px-3 py-1 text-sm bg-gray-300 text-gray-500 rounded cursor-not-allowed';
+        }
+    } catch (error) {
+        console.warn('Error updating test button states:', error);
     }
 }
 
@@ -179,7 +212,7 @@ async function chatWithAssistant() {
             
             if (data.success) {
                 const responseMessage = data.message || data.data?.message || 'No response';
-                alert('Assistant Response: ' + responseMessage);
+                showNotificationSafe('Assistant Response: ' + responseMessage, true);
             } else {
                 showNotificationSafe('Chat failed: ' + data.message, false);
             }

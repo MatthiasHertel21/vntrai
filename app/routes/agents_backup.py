@@ -203,17 +203,15 @@ def edit_agent(agent_id):
         agent['use_as_agent'] = 'use_as_agent' in request.form
         agent['use_as_insight'] = 'use_as_insight' in request.form
         
-        # Update Assistant Tools - handle checkbox behavior  
-        assistant_tools = {
-            'file_search': 'assistant_tools' in request.form and 'file_search' in request.form.getlist('assistant_tools'),
-            'code_interpreter': 'assistant_tools' in request.form and 'code_interpreter' in request.form.getlist('assistant_tools'),
-            'function_calling': 'assistant_tools' in request.form and 'function_calling' in request.form.getlist('assistant_tools'),
-            'web_browsing': 'assistant_tools' in request.form and 'web_browsing' in request.form.getlist('assistant_tools')
-        }
-        agent['assistant_tools'] = assistant_tools
+        # Debug: Log the form data and resulting values
+        print(f"DEBUG: Form data: use_as_agent={'use_as_agent' in request.form}, use_as_insight={'use_as_insight' in request.form}")
+        print(f"DEBUG: Agent values: use_as_agent={agent['use_as_agent']}, use_as_insight={agent['use_as_insight']}")
         
-        # Debug: Log assistant tools
-        print(f"DEBUG: Assistant tools: {assistant_tools}")
+        # Debug: Log the form data
+        print(f"DEBUG: Form data contains use_as_agent: {'use_as_agent' in request.form}")
+        print(f"DEBUG: Form data contains use_as_insight: {'use_as_insight' in request.form}")
+        print(f"DEBUG: Agent use_as_agent set to: {agent.get('use_as_agent')}")
+        print(f"DEBUG: Agent use_as_insight set to: {agent.get('use_as_insight')}")
         
         # Sanitize and validate agent data
         sanitized_agent = DataValidator.sanitize_agent_data(agent)
@@ -830,41 +828,6 @@ def api_reorder_agent_tasks(agent_id):
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
-@agents_bp.route('/api/tools', methods=['GET'])
-def api_get_all_tools():
-    """API endpoint to get all available tools"""
-    try:
-        # Get all tools from tools_manager
-        all_tools = tools_manager.load_all()
-        
-        # Filter and format tools for frontend consumption
-        formatted_tools = []
-        for tool in all_tools:
-            formatted_tool = {
-                'id': tool.get('id'),
-                'uuid': tool.get('uuid'),
-                'name': tool.get('name'),
-                'description': tool.get('description'),
-                'category': tool.get('category', 'Other'),
-                'tool_definition': tool.get('tool_definition'),
-                'status': tool.get('status', 'active'),
-                'node_type': tool.get('node_type'),
-                'inputs': tool.get('inputs', []),
-                'integration_id': tool.get('integration_id'),
-                'options': tool.get('options', {})
-            }
-            formatted_tools.append(formatted_tool)
-        
-        return jsonify({
-            'success': True,
-            'tools': formatted_tools,
-            'count': len(formatted_tools)
-        })
-    
-    except Exception as e:
-        current_app.logger.error(f"Error loading tools: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)}), 500
-
 @agents_bp.route('/api/tools/assistant-enabled', methods=['GET'])
 def api_get_assistant_enabled_tools():
     """API endpoint to get tools with assistant option enabled (Sprint 18)"""
@@ -920,6 +883,42 @@ def debug_create_agent_task(agent_id):
             'debug': True,
             'error': str(e)
         }), 500
+
+# Session Management Routes (Expected by templates)
+
+@agents_bp.route('/new_session/<agent_id>', methods=['POST'])
+def new_session(agent_id):
+    """Create a new session/run for an agent"""
+    try:
+        agent = agents_manager.load(agent_id)
+        if not agent:
+            flash('Agent not found', 'error')
+            return redirect(url_for('agents.list_agents'))
+        
+        # For now, redirect to view agent - can be enhanced to create actual sessions
+        flash('New session created', 'success')
+        return redirect(url_for('agents.view_agent', agent_id=agent_id))
+        
+    except Exception as e:
+        flash(f'Error creating new session: {str(e)}', 'error')
+        return redirect(url_for('agents.view_agent', agent_id=agent_id))
+
+@agents_bp.route('/open_session/<agent_id>', methods=['POST'])
+def open_session(agent_id):
+    """Open existing session for an agent"""
+    try:
+        agent = agents_manager.load(agent_id)
+        if not agent:
+            flash('Agent not found', 'error')
+            return redirect(url_for('agents.list_agents'))
+        
+        # For now, redirect to view agent - can be enhanced to open latest session
+        flash('Session opened', 'success')
+        return redirect(url_for('agents.view_agent', agent_id=agent_id))
+        
+    except Exception as e:
+        flash(f'Error opening session: {str(e)}', 'error')
+        return redirect(url_for('agents.view_agent', agent_id=agent_id))
 
 # Task reordering endpoints
 @agents_bp.route('/api/<agent_id>/tasks/<task_uuid>/move-up', methods=['POST'])

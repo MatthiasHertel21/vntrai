@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}{{ agent.name }} - Runs{% endblock %}
+
+{% block extra_css %}
+<style>
+    .run-item {
+        transition: all 0.2s ease;
+    }
+    
+    .run-item:hover {
+        background-color: #f8f9fa !important;
+        border-color: #0cc0df !important;
+    }
+    
+    .run-status-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        font-weight: 500;
+    }
+    
+    .run-status-created {
+        background-color: #e9ecef;
+        color: #6c757d;
+    }
+    
+    .run-status-open {
+        background-color: #d1edff;
+        color: #0c5460;
+    }
+    
+    .run-status-closed {
+        background-color: #d1edff;
+        color: #0c5460;
+    }
+    
+    .run-status-error {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+</style>
+{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{{ url_for('agents.list_agents') }}">Agents</a></li>
+<li class="breadcrumb-item"><a href="{{ url_for('agents.view_agent', agent_id=agent.id) }}">{{ agent.name }}</a></li>
+<li class="breadcrumb-item active">Runs</li>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div class="d-flex align-items-center">
+            <img src="{{ url_for('static', filename='icons/Agent - blue.png') }}" alt="Agent Runs" class="page-icon me-3">
+            <div>
+                <h2 class="mb-0">{{ agent.name }} - Runs</h2>
+                <p class="text-muted mb-0">{{ agent.description }}</p>
+            </div>
+        </div>
+        <div class="btn-group">
+            <a href="{{ url_for('agents.view_agent', agent_id=agent.id) }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Agent
+            </a>
+            <a href="{{ url_for('agents.new_agent_run', agent_id=agent.id) }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> New Run
+            </a>
+        </div>
+    </div>
+
+    {% if agent_runs %}
+    <div class="row">
+        {% for run in agent_runs %}
+        <div class="col-lg-6 mb-3">
+            <div class="card run-item h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <h5 class="card-title mb-0">{{ run.name }}</h5>
+                        <span class="run-status-badge run-status-{{ run.status }}">{{ run.status.title() }}</span>
+                    </div>
+                    <div class="text-muted small mb-3">
+                        <i class="fas fa-calendar me-1"></i> Created: {{ run.created_at }}
+                        {% if run.updated_at != run.created_at %}
+                        <br><i class="fas fa-clock me-1"></i> Updated: {{ run.updated_at }}
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row text-center mb-3">
+                        <div class="col-4">
+                            <div class="fw-semibold">{{ run.task_progress|length }}</div>
+                            <div class="small text-muted">Tasks</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="fw-semibold">{{ run.chat_session|length if run.chat_session else 0 }}</div>
+                            <div class="small text-muted">Messages</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="fw-semibold">{{ run.tool_logs|length if run.tool_logs else 0 }}</div>
+                            <div class="small text-muted">Tools</div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            ID: {{ run.uuid[:8] }}...
+                        </small>
+                        <a href="{{ url_for('agents.view_agent_run', agent_id=agent.id, run_uuid=run.uuid) }}" 
+                           class="btn btn-primary btn-sm">
+                            <i class="fas fa-eye"></i> View Run
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-play-circle fa-5x text-muted mb-3"></i>
+        <h4>No Runs Yet</h4>
+        <p class="text-muted mb-4">This agent hasn't been executed yet. Create a new run to get started.</p>
+        <a href="{{ url_for('agents.new_agent_run', agent_id=agent.id) }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Create First Run
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

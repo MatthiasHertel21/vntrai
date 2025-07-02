@@ -26,10 +26,25 @@
                 <i class="bi bi-files"></i>
                 Duplicate
             </a>
-            <button class="btn btn-primary" onclick="runAgent()">
-                <i class="bi bi-play-fill"></i>
-                Run Agent
-            </button>
+            <a href="{{ url_for('agents.view_agent', agent_id=agent.id) }}" 
+               class="btn btn-outline">
+                <i class="bi bi-activity"></i>
+                Activity
+            </a>
+            <form method="POST" action="{{ url_for('agents.open_session', agent_id=agent.id) }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="btn btn-outline">
+                    <i class="bi bi-folder2-open"></i>
+                    Open Session
+                </button>
+            </form>
+            <form method="POST" action="{{ url_for('agents.new_session', agent_id=agent.id) }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i>
+                    New Session
+                </button>
+            </form>
         </div>
     </div>
 </div>
