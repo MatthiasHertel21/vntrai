@@ -54,7 +54,9 @@
 - graue Linie als sektions-trennstrich
 - ausgabefeld für das ergebnis der task zur anzeige von html (ohne ran, ohne hintergrundfarbe)
 
-16. ergänze im headerbereich des containers "Result": Auswahlfeld für eine Sprache (german, english, french, ...) und ein Icon zum Ausklappen für verschiedene Export-Aktionen (Clipboard, Text, markdown, word, pdf )
+16. ergänze im headerbereich des containers "Result": Auswahlfeld für eine Sprache (german, english, french, ...) und ein menü-icon für verschiedene gestapelte Export-Aktionen (Clipboard, Text, markdown, word, pdf )
+
+21. entferne die Auwahlliste "HTML, TEXT, MARKDOWN aus der Kopfzeile des Output-Segements für die task
 
 
 ##### Tasks
@@ -91,6 +93,17 @@
 9. ✅ **COMPLETED** Ein Button "save" --> speichert die Feldwerte der task im json des agent-run
 
 10. Autosave: beim verlassen eines feldes oder nach ablauf von drei sekunden sollen per autosave die eingabewerte der aktuellen task gespeichert werden
+
+###### execute einer task
+19. ✅ **COMPLETED** erstelle beim aufruf von execute für die betreffende task einen context-prompt und streame als ergebnis statt des der taskinfo die ergebnisse des context-prompts aus einer user-session. der context-prompt soll serverseitig erzeugt werden
+
+**Implementation Details:**
+- Erstellt eine User Session im OpenAI Assistant für jede Task (gespeichert als `user_session_id` in der AgentRun)
+- Baut einen Context-Prompt aus Task-Definition, Eingaben und Agent-Daten
+- Führt den Prompt in der OpenAI Assistant API aus
+- Streamt HTML-Chunks in Echtzeit und speichert Ergebnisse (HTML + Raw Response) in der AgentRun JSON
+- Unterstützt verschiedene Output-Formate (text, markdown, html) basierend auf Task-Definition
+---
 
 ### Critical Issues (Migrated from Sprint 19)
 

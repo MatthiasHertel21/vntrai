@@ -1102,6 +1102,7 @@ class AgentRunManager(DataManager):
     
     def __init__(self):
         super().__init__('agentrun')
+        self._save_locks = {}  # Track save operations to prevent concurrent writes
     
     def save(self, item: Dict[str, Any]) -> bool:
         """Save agent run using uuid instead of id"""
@@ -1120,12 +1121,28 @@ class AgentRunManager(DataManager):
             item['created_at'] = item['updated_at']
         
         file_path = self.data_dir / f"{uuid_val}.json"
+        
+        # Safe write with temporary file to prevent corruption
+        temp_path = file_path.with_suffix('.tmp')
         try:
-            with open(file_path, 'w', encoding='utf-8') as f:
+            # Write to temporary file first
+            with open(temp_path, 'w', encoding='utf-8') as f:
                 json.dump(item, f, indent=2, ensure_ascii=False)
+            
+            # Validate JSON by reading it back
+            with open(temp_path, 'r', encoding='utf-8') as f:
+                json.load(f)  # This will raise an exception if JSON is invalid
+            
+            # If validation passes, move temp file to final location
+            import shutil
+            shutil.move(str(temp_path), str(file_path))
             return True
-        except IOError as e:
+            
+        except (IOError, json.JSONDecodeError) as e:
             print(f"Error saving {self.data_type} {uuid_val}: {e}")
+            # Clean up temp file if it exists
+            if temp_path.exists():
+                temp_path.unlink()
             return False
     
     def load(self, uuid_val: str) -> Optional[Dict[str, Any]]:
@@ -1209,50 +1226,63 @@ class AgentRunManager(DataManager):
         """Update task execution state in agent run (Sprint 18)"""
         print(f"[DEBUG] update_task_state called with run_id={run_id}, task_uuid={task_uuid}, state_data={state_data}")
         
-        agent_run = self.load(run_id)
-        if not agent_run:
-            print(f"[DEBUG] Agent run not found: {run_id}")
+        # Prevent concurrent modifications of the same run
+        if run_id in self._save_locks:
+            print(f"[DEBUG] Save operation already in progress for run_id={run_id}, skipping")
             return False
             
-        if 'task_states' not in agent_run:
-            print(f"[DEBUG] No task_states in agent run: {run_id}, creating empty list")
-            agent_run['task_states'] = []
+        self._save_locks[run_id] = True
         
-        print(f"[DEBUG] Found {len(agent_run['task_states'])} task states")
-        
-        # Look for existing task state
-        for i, task_state in enumerate(agent_run['task_states']):
-            print(f"[DEBUG] Checking task state {i}: task_uuid={task_state.get('task_uuid')}")
-            if task_state.get('task_uuid') == task_uuid:
-                print(f"[DEBUG] Found matching task state at index {i}")
-                # Update state data while preserving task_uuid
-                updated_state = {**task_state, **state_data}
-                updated_state['task_uuid'] = task_uuid
-                updated_state['updated_at'] = datetime.now().isoformat()
+        try:
+            agent_run = self.load(run_id)
+            if not agent_run:
+                print(f"[DEBUG] Agent run not found: {run_id}")
+                return False
                 
-                agent_run['task_states'][i] = updated_state
-                agent_run['updated_at'] = datetime.now().isoformat()
-                
-                result = self.save(agent_run)
-                print(f"[DEBUG] Save result: {result}")
-                return result
-        
-        # No existing task state found, create a new one
-        print(f"[DEBUG] No matching task state found for task_uuid: {task_uuid}, creating new one")
-        new_task_state = {
-            'task_uuid': task_uuid,
-            'status': 'pending',
-            'created_at': datetime.now().isoformat(),
-            'updated_at': datetime.now().isoformat(),
-            **state_data  # Add the provided state data
-        }
-        
-        agent_run['task_states'].append(new_task_state)
-        agent_run['updated_at'] = datetime.now().isoformat()
-        
-        result = self.save(agent_run)
-        print(f"[DEBUG] Created new task state, save result: {result}")
-        return result
+            if 'task_states' not in agent_run:
+                print(f"[DEBUG] No task_states in agent run: {run_id}, creating empty list")
+                agent_run['task_states'] = []
+            
+            print(f"[DEBUG] Found {len(agent_run['task_states'])} task states")
+            
+            # Look for existing task state
+            for i, task_state in enumerate(agent_run['task_states']):
+                print(f"[DEBUG] Checking task state {i}: task_uuid={task_state.get('task_uuid')}")
+                if task_state.get('task_uuid') == task_uuid:
+                    print(f"[DEBUG] Found matching task state at index {i}")
+                    # Update state data while preserving task_uuid
+                    updated_state = {**task_state, **state_data}
+                    updated_state['task_uuid'] = task_uuid
+                    updated_state['updated_at'] = datetime.now().isoformat()
+                    
+                    agent_run['task_states'][i] = updated_state
+                    agent_run['updated_at'] = datetime.now().isoformat()
+                    
+                    result = self.save(agent_run)
+                    print(f"[DEBUG] Save result: {result}")
+                    return result
+            
+            # No existing task state found, create a new one
+            print(f"[DEBUG] No matching task state found for task_uuid: {task_uuid}, creating new one")
+            new_task_state = {
+                'task_uuid': task_uuid,
+                'status': 'pending',
+                'created_at': datetime.now().isoformat(),
+                'updated_at': datetime.now().isoformat(),
+                **state_data  # Add the provided state data
+            }
+            
+            agent_run['task_states'].append(new_task_state)
+            agent_run['updated_at'] = datetime.now().isoformat()
+            
+            result = self.save(agent_run)
+            print(f"[DEBUG] Created new task state, save result: {result}")
+            return result
+            
+        finally:
+            # Always release the lock
+            if run_id in self._save_locks:
+                del self._save_locks[run_id]
     
     def set_task_status(self, run_id: str, task_uuid: str, status: str, error: str = None) -> bool:
         """Set task status (Sprint 18)"""
