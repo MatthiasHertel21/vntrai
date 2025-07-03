@@ -62,30 +62,38 @@ function showActiveTaskDetails(taskIndex) {
         return;
     }
     
-    // Show the details container
     detailsContainer.classList.remove('hidden');
     
-    // Handle description as simple text (no label as requested)
-    const description = task.description || task.definition?.description || '';
+    // Handle different task data structures
+    const description = task.description || task.definition?.description || 'No description available';
     descriptionContainer.textContent = description;
     
-    // Clear previous input fields
     inputFieldsContainer.innerHTML = '';
     
-    // Render only the defined input fields based on task type
-    if (task.type === 'ai') {
-        // For AI tasks: render input fields from agent definition
-        renderAITaskInputs(inputFieldsContainer, task);
+    // Check for input schema in different locations
+    let inputSchema = null;
+    if (task.definition && task.definition.input_schema) {
+        inputSchema = task.definition.input_schema;
+    } else if (task.input_schema) {
+        inputSchema = task.input_schema;
+    } else if (task.config && task.config.input_schema) {
+        inputSchema = task.config.input_schema;
+    }
+    
+    if (inputSchema) {
+        for (const [fieldName, fieldConfig] of Object.entries(inputSchema)) {
+            createInputField(inputFieldsContainer, fieldName, fieldConfig, task);
+        }
+    } else if (task.type === 'ai') {
+        createDefaultAIInputs(inputFieldsContainer, task);
     } else {
-        // For tool tasks: render input fields from tool config
-        renderToolTaskInputs(inputFieldsContainer, task);
+        console.log('No input schema found, task type:', task.type);
     }
 }
 
 function createInputField(container, fieldName, fieldConfig, task) {
     const fieldDiv = document.createElement('div');
     fieldDiv.className = 'space-y-1';
-    
     const label = document.createElement('label');
     label.className = 'block text-xs font-medium text-gray-600';
     label.textContent = fieldConfig.label || fieldName;
@@ -104,13 +112,13 @@ function createInputField(container, fieldName, fieldConfig, task) {
     
     if (fieldConfig.type === 'textarea') {
         input = document.createElement('textarea');
-        input.className = 'w-full text-xs border border-gray-300 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-vertical';
-        input.rows = 2; // Reduced from 3 for more compact layout
+        input.className = 'w-full text-xs border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
+        input.rows = 3;
         input.value = savedValue;
     } else {
         input = document.createElement('input');
         input.type = fieldConfig.type || 'text';
-        input.className = 'w-full text-xs border border-gray-300 rounded px-2 py-1 focus:ring-1 focus:ring-blue-500 focus:border-blue-500';
+        input.className = 'w-full text-xs border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
         input.value = savedValue;
     }
     
@@ -122,10 +130,8 @@ function createInputField(container, fieldName, fieldConfig, task) {
         label.innerHTML += ' <span class="text-red-500">*</span>';
     }
     
-    // Add autosave functionality (3-second timeout and on blur)
     input.addEventListener('input', scheduleAutoSave);
     input.addEventListener('blur', autoSaveTaskInputs);
-    
     fieldDiv.appendChild(label);
     fieldDiv.appendChild(input);
     container.appendChild(fieldDiv);
@@ -241,55 +247,4 @@ function updateTaskStatus(taskIndex, status) {
 
 function getCsrfToken() {
     return window.csrfToken || '';
-}
-
-function renderAITaskInputs(container, task) {
-    // For AI tasks, render input fields based on agent definition
-    // Check for input schema in task definition
-    let inputSchema = null;
-    if (task.definition && task.definition.input_schema) {
-        inputSchema = task.definition.input_schema;
-    } else if (task.input_schema) {
-        inputSchema = task.input_schema;
-    }
-    
-    if (inputSchema) {
-        for (const [fieldName, fieldConfig] of Object.entries(inputSchema)) {
-            createInputField(container, fieldName, fieldConfig, task);
-        }
-    } else {
-        // Default AI input field
-        createInputField(container, 'prompt', {
-            type: 'textarea',
-            label: 'Prompt',
-            placeholder: 'Enter your prompt for this AI task...',
-            required: false
-        }, task);
-    }
-}
-
-function renderToolTaskInputs(container, task) {
-    // For tool tasks, render input fields from tool configuration
-    // considering locked fields and default values
-    let inputSchema = null;
-    
-    if (task.config && task.config.input_schema) {
-        inputSchema = task.config.input_schema;
-    } else if (task.definition && task.definition.input_schema) {
-        inputSchema = task.definition.input_schema;
-    } else if (task.input_schema) {
-        inputSchema = task.input_schema;
-    }
-    
-    if (inputSchema) {
-        for (const [fieldName, fieldConfig] of Object.entries(inputSchema)) {
-            // Skip locked fields for tool tasks
-            if (fieldConfig.locked) {
-                continue;
-            }
-            createInputField(container, fieldName, fieldConfig, task);
-        }
-    } else {
-        console.log('No input schema found for tool task:', task.name);
-    }
 }
