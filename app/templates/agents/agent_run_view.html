@@ -154,11 +154,11 @@
         transition: background-color 0.2s ease;
     }
     
-    /* Active task styling */
+    /* Active task styling with primary turquoise color */
     .task-item.active {
-        background-color: #1e40af !important;
+        background-color: #0CC0DF !important;
         color: white !important;
-        border-color: #1d4ed8 !important;
+        border-color: #0CC0DF !important;
     }
     
     .task-item.active .text-gray-700 {
@@ -166,7 +166,7 @@
     }
     
     .task-item.active .text-gray-400 {
-        color: #d1d5db !important;
+        color: rgba(255, 255, 255, 0.8) !important;
     }
     
     .task-item.active .fas {
@@ -174,11 +174,47 @@
     }
     
     .task-item.active .text-blue-600 {
-        color: #dbeafe !important;
+        color: white !important;
     }
     
     .task-item.active:hover .execute-btn {
         background-color: rgba(255, 255, 255, 0.1) !important;
+    }
+    
+    /* Reduced height for task items */
+    .task-item {
+        padding: 0.25rem 0.5rem !important;
+        min-height: auto;
+    }
+    
+    /* Compact active task details */
+    #activeTaskDetails {
+        padding: 0.5rem !important;
+        margin-top: 0.25rem !important;
+    }
+    
+    #activeTaskDetails .space-y-1 > * + * {
+        margin-top: 0.25rem !important;
+    }
+    
+    /* Smaller input fields in active task */
+    #taskInputFields input,
+    #taskInputFields textarea {
+        font-size: 0.75rem !important;
+        padding: 0.25rem 0.5rem !important;
+        border-radius: 0.25rem !important;
+    }
+    
+    #taskInputFields label {
+        font-size: 0.75rem !important;
+        margin-bottom: 0.125rem !important;
+    }
+    
+    /* Compact button styling */
+    .btn-sm {
+        font-size: 0.75rem !important;
+        padding: 0.25rem 0.5rem !important;
+        border-radius: 0.25rem !important;
     }
     
     /* Button styling */
@@ -254,12 +290,12 @@
                         <!-- Task List -->
                         <div class="space-y-2" id="tasksList">
                             {% for task in task_definitions %}
-                            <div class="task-item flex items-center p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors duration-200 cursor-pointer border border-transparent" 
+                            <div class="task-item flex items-center py-1 px-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors duration-200 cursor-pointer border border-transparent" 
                                  data-task-uuid="{{ task.uuid if task.uuid else 'no-uuid' }}" 
                                  data-task-index="{{ loop.index0 }}"
                                  onclick="selectTask({{ loop.index0 }}, '{{ agent_run.uuid }}')">
                                 <!-- Status Icon -->
-                                <div class="status-icon mr-3">
+                                <div class="status-icon mr-2">
                                     {% if task.status == 'completed' %}
                                         <i class="fas fa-check-circle text-green-600" title="Completed"></i>
                                     {% elif task.status == 'running' %}
@@ -275,68 +311,38 @@
                                 <span class="flex-grow text-sm text-gray-700 font-medium">{{ task.name }}</span>
                                 
                                 <!-- Execute Icon -->
-                                <button class="execute-btn ml-3 p-1 rounded hover:bg-gray-200 transition-colors duration-200" 
+                                <button class="execute-btn ml-2 p-1 rounded hover:bg-gray-200 transition-colors duration-200" 
                                         onclick="event.stopPropagation(); executeTask({{ loop.index0 }})" 
                                         title="Execute task">
-                                    <i class="fas fa-play text-blue-600 hover:text-blue-800"></i>
+                                    <i class="fas fa-play text-blue-600 hover:text-blue-800 text-xs"></i>
                                 </button>
                             </div>
                             {% endfor %}
                         </div>
                         
                         <!-- Active Task Details Section (initially hidden) -->
-                        <div id="activeTaskDetails" class="mt-6 hidden">
-                            <div class="border-t border-gray-200 pt-4">
-                                <h5 class="text-sm font-semibold text-gray-800 mb-3">Active Task Details</h5>
-                                
-                                <!-- Task Description -->
-                                <div class="mb-4">
-                                    <label class="block text-xs font-medium text-gray-600 mb-1">Description</label>
-                                    <div id="taskDescription" class="text-sm text-gray-700 bg-gray-50 p-2 rounded border">
-                                        <!-- Task description will be populated here -->
-                                    </div>
-                                </div>
-                                
-                                <!-- Output Configuration -->
-                                <div class="mb-4">
-                                    <label class="block text-xs font-medium text-gray-600 mb-1">Output Configuration</label>
-                                    <div class="grid grid-cols-2 gap-2 text-xs">
-                                        <div>
-                                            <span class="text-gray-500">Variable:</span>
-                                            <span id="taskOutputVariable" class="font-medium text-gray-800">-</span>
-                                        </div>
-                                        <div>
-                                            <span class="text-gray-500">Type:</span>
-                                            <span id="taskOutputType" class="font-medium text-gray-800">-</span>
-                                        </div>
-                                        <div>
-                                            <span class="text-gray-500">Rendering:</span>
-                                            <span id="taskOutputRendering" class="font-medium text-gray-800">-</span>
-                                        </div>
-                                        <div class="col-span-2" id="taskOutputDescriptionContainer" style="display: none;">
-                                            <span class="text-gray-500">Description:</span>
-                                            <div id="taskOutputDescription" class="font-medium text-gray-800 mt-1"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Task Input Fields -->
-                                <div id="taskInputFields" class="space-y-3">
-                                    <!-- Dynamic input fields will be populated here -->
-                                </div>
-                                
-                                <!-- Action Buttons -->
-                                <div class="flex flex-wrap gap-2 mt-4 pt-3 border-t border-gray-100">
-                                    <button id="executeActiveTaskBtn" class="btn-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition-colors duration-200 flex items-center">
-                                        <i class="fas fa-play mr-1"></i>Execute
-                                    </button>
-                                    <button id="promptActiveTaskBtn" class="btn-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors duration-200 flex items-center">
-                                        <i class="fas fa-eye mr-1"></i>Prompt
-                                    </button>
-                                    <button id="saveActiveTaskBtn" class="btn-sm bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700 transition-colors duration-200 flex items-center">
-                                        <i class="fas fa-save mr-1"></i>Save
-                                    </button>
-                                </div>
+                        <div id="activeTaskDetails" class="mt-2 hidden border-t border-gray-200 pt-2">
+                            <!-- Task Description as simple text, no label -->
+                            <div id="taskDescription" class="text-xs text-gray-600 mb-2 italic leading-relaxed">
+                                <!-- Task description will be populated here -->
+                            </div>
+                            
+                            <!-- Task Input Fields with reduced spacing -->
+                            <div id="taskInputFields" class="space-y-1">
+                                <!-- Dynamic input fields will be populated here -->
+                            </div>
+                            
+                            <!-- Action Buttons with reduced spacing -->
+                            <div class="flex flex-wrap gap-1 mt-2 pt-1 border-t border-gray-100">
+                                <button id="executeActiveTaskBtn" class="btn-sm bg-green-600 text-white px-2 py-1 rounded text-xs hover:bg-green-700 transition-colors duration-200 flex items-center">
+                                    <i class="fas fa-play mr-1 text-xs"></i>Execute
+                                </button>
+                                <button id="promptActiveTaskBtn" class="btn-sm bg-blue-600 text-white px-2 py-1 rounded text-xs hover:bg-blue-700 transition-colors duration-200 flex items-center">
+                                    <i class="fas fa-eye mr-1 text-xs"></i>Prompt
+                                </button>
+                                <button id="saveActiveTaskBtn" class="btn-sm bg-gray-600 text-white px-2 py-1 rounded text-xs hover:bg-gray-700 transition-colors duration-200 flex items-center">
+                                    <i class="fas fa-save mr-1 text-xs"></i>Save
+                                </button>
                             </div>
                         </div>
                     {% else %}
@@ -394,6 +400,7 @@
 // Provide globals for JS modules
 window.taskDefinitions = {{ task_definitions|tojson|safe }};
 window.agentRunUuid = "{{ agent_run.uuid }}";
+window.csrfToken = "{{ csrf_token() }}";
 </script>
 <script src="{{ url_for('static', filename='js/agent_run/init.js') }}"></script>
 {% endblock %}
