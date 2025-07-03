@@ -52,7 +52,8 @@
 - entferne den "View Agent" Button
 - benenne "Create & Assign Assistant" um nach "Create Assistant"
 - nach "save Changes" soll gewechselt werden auf /agents
-**offen**
+
+37 UI Polish
 - alle container sollen auf- und zuklappbar sein durch klick auf die überschrift des containers
 
 ##### Sessions
@@ -219,6 +220,24 @@
      - DELETE `/agents/api/{agent_id}/sessions/{session_id}` - Deletes a specific session
      - POST `/agents/api/{agent_id}/sessions/cleanup` - Bulk cleanup of closed/error sessions
    - **Status**: Fixed - sessions container now properly loads agent sessions and JavaScript error resolved
+
+35. ✅ **RESOLVED** - Sessions Container Loading Issues: GET /agents/api/.../sessions 404 (NOT FOUND) and "Failed to delete session" errors
+   - **Solution**: Fixed multiple issues with sessions functionality:
+     - Added missing sessions API endpoints to api_routes.py with proper error handling
+     - Fixed CSRF exemption for API endpoints using @csrf.exempt decorator 
+     - Corrected JavaScript session ID field mismatch (sessions-management.js was using 'uuid' field instead of 'id')
+     - Enhanced session rendering with proper status icons, colors, and session names
+     - Fixed task completion count display to use correct API field names (completed_tasks/total_tasks)
+     - Updated session data processing to handle last_activity timestamps properly
+   - **Status**: Fixed - Sessions container loads correctly, delete functionality works, proper status display with icons
+
+36. UI polish
+- ergänze einen contaoner zur anziege der sessions in der rechten spalte
+- entferne die Sektion "Run Statistics"
+- verschiebe die Sektion "Knowledge Base" in die linke spalte
+- ergänze einen conatiner in der linken spalte mit der anzeige der wichtigsten daten zum AI Assistenten
+- ergänze in der Toolbar einen "Edit"-Button
+- toggle actions geht nicht wegen fehler: 229cfc1a8-1305-4314-a00f-dc4f3763a067:168 Uncaught ReferenceError: toggleViewActionsMenu is not defined at HTMLButtonElement.onclick (29cfc1a8-1305-4314-a00f-dc4f3763a067:168:110)
 
 #### /assistants
 
