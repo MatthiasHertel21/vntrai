@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+
+{% block title %}Session: {{ agent.name }} - Run {{ agent_run.uuid[:8] }}{% endblock %}
+
+{% block page_header %}
+<div class="page-header max-w-7xl mx-auto w-full">
+    <div class="flex justify-between items-center">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
+                <img src="{{ url_for('static', filename='icons/Agent - black.png') }}" 
+                     class="w-6 h-6" 
+                     alt="Agent Run" 
+                     style="filter: brightness(0) invert(1);">
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900" title="Agent Run ID: {{ agent_run.uuid }}&#10;Agent ID: {{ agent.id }}&#10;Status: {{ agent_run.status }}">Session: {{ agent.name }}</h1>
+                <p class="text-gray-600">Run {{ agent_run.uuid[:8] }} • Status: {{ agent_run.status|title if agent_run.status else 'Unknown' }}</p>
+            </div>
+        </div>
+        <div class="flex gap-2 items-center">
+            <!-- Back Button -->
+            <a href="{{ url_for('agents.list_agents') }}" 
+               class="btn btn-outline">
+                <i class="bi bi-arrow-left"></i>
+                Back
+            </a>
+            
+            <!-- Actions Stacked Menu -->
+            <div class="relative">
+                <button class="btn btn-outline" onclick="toggleRunActionsMenu(event)" id="run-actions-btn">
+                    <i class="bi bi-three-dots-vertical"></i>
+                    Actions
+                </button>
+                <div class="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 hidden" id="run-actions-menu">
+                    <a href="{{ url_for('agents.view_agent', agent_id=agent.id) }}" 
+                       onclick="closeRunActionsMenu()"
+                       class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center rounded-t-lg">
+                        <i class="bi bi-eye mr-2"></i> View Agent
+                    </a>
+                    <a href="{{ url_for('agents.edit_agent', agent_id=agent.id) }}" 
+                       onclick="closeRunActionsMenu()"
+                       class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center">
+                        <i class="bi bi-pencil mr-2"></i> Edit Agent
+                    </a>
+                    <button onclick="closeRunActionsMenu(); refreshRunData('{{ agent_run.uuid }}')" 
+                            class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center rounded-b-lg">
+                        <i class="bi bi-arrow-clockwise mr-2"></i> Refresh Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .page-icon {
+        width: 32px;
+        height: 32px;
+    }
+    
+    .status-badge {
+        font-size: 0.875rem;
+        padding: 0.5rem 1rem;
+    }
+    
+    .badge-sm {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .info-card {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .info-row:last-child {
+        border-bottom: none;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .info-value {
+        color: #212529;
+    }
+    
+    .json-container {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        max-height: 600px;
+        overflow-y: auto;
+    }
+    
+    .progress-bar {
+        height: 0.5rem;
+        background-color: #e9ecef;
+        border-radius: 0.25rem;
+        overflow: hidden;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background-color: #28a745;
+        transition: width 0.3s ease;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <div class="row">
+        <!-- Left Column (75%) -->
+        <div class="col-lg-9">
+            <!-- Result Container -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Result
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Task results will be displayed here.</p>
+                </div>
+            </div>
+
+            <!-- Raw JSON Data -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-code me-2"></i>Raw JSON Data
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="json-container">
+                        <pre><code>{{ agent_run | tojson(indent=2) }}</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column (25%) -->
+        <div class="col-lg-3">
+            <!-- Tasks Container -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-tasks me-2"></i>Tasks
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">Task list will be displayed here.</p>
+                </div>
+            </div>
+
+            <!-- Files Container -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-folder me-2"></i>Files
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">File list will be displayed here.</p>
+                </div>
+            </div>
+
+            <!-- Feedback Container -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-comments me-2"></i>Feedback
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">Feedback will be displayed here.</p>
+                </div>
+            </div>
+
+            <!-- Run Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Info
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="info-card">
+                        <div class="info-row">
+                            <span class="info-label">Run UUID:</span>
+                            <span class="info-value small">{{ agent_run.uuid[:8] }}...</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Agent UUID:</span>
+                            <span class="info-value small">{{ agent_run.agent_uuid[:8] if agent_run.agent_uuid else 'N/A' }}...</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Status:</span>
+                            <span class="info-value">
+                                <span class="badge 
+                                    {% if agent_run.status == 'completed' %}bg-success
+                                    {% elif agent_run.status == 'running' %}bg-primary
+                                    {% elif agent_run.status == 'error' %}bg-danger
+                                    {% else %}bg-secondary
+                                    {% endif %} badge-sm">
+                                    {{ agent_run.status.title() }}
+                                </span>
+                            </span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Created:</span>
+                            <span class="info-value small">{{ agent_run.created_at[:10] if agent_run.created_at else 'Unknown' }}</span>
+                        </div>
+                        {% if agent_run.updated_at %}
+                        <div class="info-row">
+                            <span class="info-label">Updated:</span>
+                            <span class="info-value small">{{ agent_run.updated_at[:10] }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Stats -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Summary
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center g-2">
+                        <div class="col-6">
+                            <div class="fw-bold text-primary">{{ task_definitions|length if task_definitions else 0 }}</div>
+                            <div class="text-muted small">Tasks</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="fw-bold text-info">{{ file_count }}</div>
+                            <div class="text-muted small">Files</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="fw-bold text-success">{{ knowledge_count }}</div>
+                            <div class="text-muted small">Knowledge</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="fw-bold text-warning">{{ agent_run.inputs|length if agent_run.inputs else 0 }}</div>
+                            <div class="text-muted small">Inputs</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Run Actions Menu Functions
+function toggleRunActionsMenu(event) {
+    event.stopPropagation();
+    const menu = document.getElementById('run-actions-menu');
+    if (menu) {
+        menu.classList.toggle('hidden');
+    }
+}
+
+function closeRunActionsMenu() {
+    const menu = document.getElementById('run-actions-menu');
+    if (menu) {
+        menu.classList.add('hidden');
+    }
+}
+
+// Close menu when clicking outside
+document.addEventListener('click', function(event) {
+    const menu = document.getElementById('run-actions-menu');
+    const btn = document.getElementById('run-actions-btn');
+    if (menu && btn && !menu.contains(event.target) && !btn.contains(event.target)) {
+        closeRunActionsMenu();
+    }
+});
+
+// Refresh run data function
+function refreshRunData(runUuid) {
+    console.log('Refreshing run data for:', runUuid);
+    // Show loading indicator
+    const notification = document.createElement('div');
+    notification.className = 'alert alert-info alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3';
+    notification.style.zIndex = '1050';
+    notification.style.maxWidth = '400px';
+    notification.innerHTML = `
+        <i class="bi bi-arrow-clockwise mr-2"></i>
+        Refreshing run data...
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(notification);
+    
+    // Auto-remove notification and refresh page after 2 seconds
+    setTimeout(() => {
+        notification.remove();
+        window.location.reload();
+    }, 2000);
+}
+</script>
+{% endblock %}

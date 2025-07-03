@@ -20,17 +20,47 @@
 ### New requests
 
 #### AgentRun
-1. erstelle eine simple seite Seite zum Anzeigen eines Agent Run mit folgenden Informationen:
+1. ✅ **COMPLETED** - erstelle eine simple seite Seite zum Anzeigen eines Agent Run mit folgenden Informationen:
 - route /agents/uuid_agent/runs/uuid_agentrun
 - Icon + Überschrift
 - Container mit Grunddaten (UUID, UUID des Agenten, Anzahl der Aufgaben, Files, Knowledge Items, Status)
 - container mit der Anzeige der JSOM-Rohdaten des Agentrun
+- mache den Kopftzeil der seite schöner, nimm dir /gents/edit zum vorbild
+- ergänze in der Toolbar einen Button "back", der die Seite /agents aufruft
 
+
+2. erweitere die seite vie_run 
+- zweispaltiges layout für container, erste Spalte 75%, zweite Spalte 25% 
+- json-rawdata-container nach links, info container nach rechts
+- Oberhalb des Info Containers erstelle drei neue (erstmal leere) Container: Tasks, Files, Feedback
+- Oberhalb des JSON Containers erstelle einen neuen Container "Result"
+
+##### Tasks
+3. stelle dar eine Liste der Tasks mit Statusicon, name der task und "execute" icon (rechts)
+4. eine der tasks ist "aktiv" --> siehe "active task"
+
+###### active task
+5. Eine Task aus der Taskliste ist die Aktive Task
+- eine task wird durch klick aktiviert, 
+- aktive tasks bekommen einen farblichen background als Anzeige "aktiv". 
+- beim laden der seite wird die letzte aktive task wieder aktiviert
+- ist keine task aktiv wird beim laden die erste aufgabe aktiviert
+
+6. direkt unterhalb der Zeile mit der aktiven Task sollen die task dargestellt werden:
+- Beschreibung der Task
+- gerenderte die eingabefelder der Task (bei ai-task laut definition im agent, bei tooltask laut definition in der config unter berücksichtigung gesperrter eingabefelder und vorbelegungen)
+
+
+7. ein button "execute" --> führt die aufgabe aus
+8. ein button "prompt" --> zeigt den contextprompt an, der bei execute ausgeführt werden soll
+9. Ein Button "save" --> speichert die Feldwerte der task im json des agent-run
+
+10. Autosave: beim verlassen eines feldes oder nach ablauf von drei sekunden sollen per autosave die eingabewerte der aktuellen task gespeichert werden
 
 ### Critical Issues (Migrated from Sprint 19)
 
 #### /agents
-
+101. vergrößere die minimale breite einer karte um 40px
 112. ⏳ **PENDING** - beim click af eine card soll die aktuellste offene session geöffnet werden und falls diese nicht existier soll eine neue session erzeugt werden
 
 #### /agents/edit

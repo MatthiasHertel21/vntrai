@@ -674,3 +674,42 @@ def sync_assistant(agent_id):
     except Exception as e:
         current_app.logger.error(f"Error syncing assistant for agent {agent_id}: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+# Agent Run Routes
+
+@agents_bp.route('/<agent_uuid>/runs/<run_uuid>')
+def view_agent_run(agent_uuid, run_uuid):
+    """View agent run details - simple implementation"""
+    try:
+        # Load agent and agent run data
+        agent = agents_manager.load(agent_uuid)
+        agent_run = agent_run_manager.load(run_uuid)
+        
+        if not agent:
+            flash('Agent not found', 'error')
+            return redirect(url_for('agents.list_agents'))
+            
+        if not agent_run:
+            flash('Agent run not found', 'error')
+            return redirect(url_for('agents.view_agent', agent_id=agent_uuid))
+        
+        # Get task progress and statistics
+        progress = agent_run_manager.get_task_progress(run_uuid)
+        task_definitions = agent_run_manager.get_task_definitions_with_states(run_uuid)
+        
+        # Count files and knowledge base items
+        file_count = len(agent_run.get('files', []))
+        knowledge_count = len(agent.get('knowledge_base', []))
+        
+        return render_template('agents/agent_run_view.html', 
+                             agent=agent, 
+                             agent_run=agent_run,
+                             progress=progress,
+                             task_definitions=task_definitions,
+                             file_count=file_count,
+                             knowledge_count=knowledge_count)
+                             
+    except Exception as e:
+        current_app.logger.error(f"Error viewing agent run: {str(e)}")
+        flash(f'Error loading agent run: {str(e)}', 'error')
+        return redirect(url_for('agents.list_agents'))
