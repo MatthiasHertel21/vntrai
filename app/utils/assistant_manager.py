@@ -45,12 +45,20 @@ class AssistantManager:
             has_knowledge_base = bool(agent.get('knowledge_base'))
             has_files = bool(agent.get('files'))
             
+            # Collect all possible tools from agent
+            tools_list = agent.get('tools', [])
+            
+            # Add the AI assistant tool if it exists
+            ai_assistant_tool = agent.get('ai_assistant_tool')
+            if ai_assistant_tool and ai_assistant_tool not in tools_list:
+                tools_list.append(ai_assistant_tool)
+                
             # Extract agent configuration for assistant creation
             assistant_config = {
                 'name': agent.get('name', 'Unnamed Agent'),
                 'instructions': agent.get('system_instruction', ''),
                 'model': agent.get('model', 'gpt-4o-mini'),
-                'tools': self._prepare_tools(agent.get('tools', []), has_knowledge_base, has_files),
+                'tools': self._prepare_tools(tools_list, has_knowledge_base, has_files),
                 'description': f"Assistant for agent: {agent.get('name', 'Unnamed')}"
             }
             
@@ -60,16 +68,35 @@ class AssistantManager:
                 assistant_config['file_ids'] = file_ids
             
             # Create the assistant
+            self.logger.info(f"Creating assistant with config: {assistant_config}")
             result = self.assistant_api.create_assistant(assistant_config)
+            self.logger.debug(f"Assistant creation result: {result}")
             
-            if result.get('success', False):
-                assistant_id = result.get('data', {}).get('id')
-                if assistant_id:
-                    # Don't update the agent here - let the caller handle it
-                    self.logger.info(f"Created assistant {assistant_id} for agent {agent['id']}")
-                    return assistant_id
-            else:
-                self.logger.error(f"Failed to create assistant for agent {agent['id']}: {result.get('message', 'Unknown error')}")
+            # Handle different result formats 
+            assistant_id = None
+            if isinstance(result, dict):
+                if result.get('success', False):
+                    # Get assistant ID from data field
+                    if 'data' in result and isinstance(result['data'], dict):
+                        assistant_id = result['data'].get('id')
+                    # Backward compatibility - some implementations might return id at top level
+                    elif 'id' in result:
+                        assistant_id = result['id']
+                else:
+                    self.logger.error(f"Failed to create assistant for agent {agent['id']}: {result.get('message', 'Unknown error')}")
+                    # Log the full result for debugging
+                    self.logger.debug(f"Full API response: {result}")
+            # Direct object return format
+            elif isinstance(result, (str, int)):
+                assistant_id = str(result)
+                
+            if assistant_id:
+                self.logger.info(f"Assistant created successfully with ID: {assistant_id}")
+                # Update the agent with the new assistant ID
+                agent['assistant_id'] = assistant_id
+                agents_manager.update(agent['id'], agent)
+                self.logger.info(f"Created assistant {assistant_id} for agent {agent['id']}")
+                return assistant_id
                 
         except Exception as e:
             self.logger.error(f"Error creating assistant for agent {agent['id']}: {e}")
@@ -113,11 +140,13 @@ class AssistantManager:
             # Update the assistant
             result = self.assistant_api.update_assistant(assistant_id, update_params)
             
-            if result.get('success', False):
+            # Handle both dict and list results safely
+            if isinstance(result, dict) and result.get('success', False):
                 self.logger.info(f"Updated assistant {assistant_id} for agent {agent['id']}")
                 return True
             else:
-                self.logger.error(f"Failed to update assistant {assistant_id}: {result.get('message', 'Unknown error')}")
+                error_msg = result.get('message', 'Unknown error') if isinstance(result, dict) else 'Unexpected result format'
+                self.logger.error(f"Failed to update assistant {assistant_id}: {error_msg}")
                 
         except Exception as e:
             self.logger.error(f"Error updating assistant for agent {agent['id']}: {e}")
@@ -139,7 +168,8 @@ class AssistantManager:
             # Verify the new assistant exists
             result = self.assistant_api.get_assistant(new_assistant_id)
             
-            if result.get('success', False):
+            # Handle both dict and list results safely
+            if isinstance(result, dict) and result.get('success', False):
                 # Update the agent with new assistant ID
                 old_assistant_id = agent.get('assistant_id')
                 agent['assistant_id'] = new_assistant_id
@@ -168,11 +198,16 @@ class AssistantManager:
         try:
             result = self.assistant_api.get_assistant(assistant_id)
             
-            if result.get('success', False):
+            # Handle both dict and list results safely
+            if isinstance(result, dict) and result.get('success', False):
                 self.logger.info(f"Retrieved assistant info for {assistant_id}")
                 return result.get('data', {})
+            elif isinstance(result, list):
+                self.logger.warning(f"Unexpected list result for get_assistant: {result}")
+                return None
             else:
-                self.logger.error(f"Failed to get assistant info for {assistant_id}: {result.get('message', 'Unknown error')}")
+                error_msg = result.get('message', 'Unknown error') if isinstance(result, dict) else 'Unexpected result format'
+                self.logger.error(f"Failed to get assistant info for {assistant_id}: {error_msg}")
                 
         except Exception as e:
             self.logger.error(f"Error getting assistant info for {assistant_id}: {e}")
@@ -210,6 +245,25 @@ class AssistantManager:
         Returns:
             list: Formatted tools for OpenAI Assistant API
         """
+        import logging
+        logging.info(f"Preparing tools: {agent_tools}, type: {type(agent_tools)}")
+        
+        # Force agent_tools to be a list if it's not
+        if not isinstance(agent_tools, list):
+            logging.warning(f"agent_tools is not a list but {type(agent_tools)}. Converting to list.")
+            if agent_tools is None:
+                agent_tools = []
+            elif isinstance(agent_tools, str):
+                if agent_tools:
+                    agent_tools = [agent_tools]
+                else:
+                    agent_tools = []
+            else:
+                try:
+                    agent_tools = list(agent_tools)
+                except:
+                    logging.error(f"Failed to convert agent_tools to list. Using empty list.")
+                    agent_tools = []
         assistant_tools = []
         
         # Always include code interpreter for agents
@@ -217,13 +271,65 @@ class AssistantManager:
         
         # Add file search if agent has knowledge base or files
         if has_knowledge_base or has_files:
-            assistant_tools.append({"type": "file_search"})
+            assistant_tools.append({"type": "retrieval"})
         
-        # Convert custom tools (this would need more sophisticated mapping)
+        # Ensure agent_tools is a list
+        if not isinstance(agent_tools, list):
+            logging.warning(f"Expected list for agent_tools but got: {type(agent_tools)}")
+            if agent_tools is None:
+                agent_tools = []
+            else:
+                try:
+                    agent_tools = list(agent_tools)
+                except (TypeError, ValueError):
+                    logging.error(f"Failed to convert agent_tools to list: {agent_tools}")
+                    agent_tools = []
+        
+        # Convert custom tools
         for tool in agent_tools:
-            if isinstance(tool, dict) and tool.get('type') == 'function':
-                assistant_tools.append(tool)
+            try:
+                # Handle dict-based tool definitions
+                if isinstance(tool, dict):
+                    if 'type' in tool and tool['type'] == 'function':
+                        # Tool is already in the right format
+                        assistant_tools.append(tool)
+                    elif 'id' in tool and 'name' in tool:
+                        # It's likely our internal tool format, convert to OpenAI format
+                        assistant_tools.append({
+                            "type": "function",
+                            "function": {
+                                "name": f"tool_{tool['id']}",
+                                "description": tool.get('description', 'External tool integration')
+                            }
+                        })
+                
+                # Handle string-based tool references like 'tool:123456'
+                elif isinstance(tool, str):
+                    if tool.startswith('tool:'):
+                        # Extract the tool ID
+                        tool_id = tool.split(':')[1]
+                        assistant_tools.append({
+                            "type": "function",
+                            "function": {
+                                "name": f"tool_{tool_id}",
+                                "description": "External tool integration"
+                            }
+                        })
+                    # Handle simple tool type strings
+                    elif tool in ["code_interpreter", "retrieval", "function"]:
+                        # Avoid duplicates
+                        if tool == "code_interpreter" and {"type": "code_interpreter"} in assistant_tools:
+                            continue
+                        if tool == "retrieval" and {"type": "retrieval"} in assistant_tools:
+                            continue
+                        
+                        assistant_tools.append({"type": tool})
+                    
+            except Exception as e:
+                logging.error(f"Error processing tool {tool}: {e}")
         
+        # Log the final tools list
+        logging.info(f"Final assistant tools: {assistant_tools}")
         return assistant_tools
     
     def _prepare_files(self, agent: Dict[str, Any]) -> list:

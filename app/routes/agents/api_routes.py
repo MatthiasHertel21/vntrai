@@ -312,3 +312,180 @@ def api_reassign_assistant(agent_id):
             'success': False,
             'message': f'Internal error: {str(e)}'
         }), 500
+
+@agents_bp.route('/api/<agent_id>/create_assistant', methods=['POST'])
+def api_create_assistant(agent_id):
+    """Create and assign assistant to an agent with comprehensive traceability"""
+    import time
+    from datetime import datetime
+    
+    trace_log = []
+    
+    def add_trace(step, status, details=None, error=None):
+        """Add entry to trace log"""
+        entry = {
+            'step': step,
+            'status': status,
+            'timestamp': datetime.utcnow().isoformat(),
+            'details': details,
+            'error': error
+        }
+        trace_log.append(entry)
+        current_app.logger.info(f"Assistant Creation Trace - {step}: {status} - {details or ''}")
+    
+    try:
+        add_trace("Request Received", "SUCCESS", f"Creating assistant for agent {agent_id}")
+        
+        data = request.get_json()
+        tool_id = data.get('tool_id')
+        trace_level = data.get('trace_level', 'basic')
+        
+        if not tool_id:
+            add_trace("Validation", "FAILED", "Tool ID is required")
+            return jsonify({
+                'success': False,
+                'message': 'Tool ID is required',
+                'trace_log': trace_log
+            }), 400
+        
+        add_trace("Input Validation", "SUCCESS", f"Tool ID: {tool_id}, Trace Level: {trace_level}")
+        
+        # Load the agent
+        add_trace("Agent Loading", "IN_PROGRESS", f"Loading agent {agent_id}")
+        agent = agents_manager.load(agent_id)
+        if not agent:
+            add_trace("Agent Loading", "FAILED", f"Agent {agent_id} not found")
+            return jsonify({
+                'success': False,
+                'message': 'Agent not found',
+                'trace_log': trace_log
+            }), 404
+        
+        add_trace("Agent Loading", "SUCCESS", f"Agent '{agent.get('name', 'Unknown')}' loaded successfully")
+        
+        # Check if agent already has an assistant
+        if agent.get('assistant_id'):
+            add_trace("Assistant Check", "WARNING", f"Agent already has assistant: {agent.get('assistant_id')}")
+            return jsonify({
+                'success': False,
+                'message': f'Agent already has an assistant: {agent.get("assistant_id")}',
+                'trace_log': trace_log
+            }), 400
+        
+        add_trace("Assistant Check", "SUCCESS", "Agent has no existing assistant")
+        
+        # Load the tool
+        add_trace("Tool Loading", "IN_PROGRESS", f"Loading tool {tool_id}")
+        tool = tools_manager.load(tool_id)
+        if not tool:
+            add_trace("Tool Loading", "FAILED", f"Tool {tool_id} not found")
+            return jsonify({
+                'success': False,
+                'message': 'Tool not found',
+                'trace_log': trace_log
+            }), 404
+        
+        # Check if tool has assistant integration enabled
+        assistant_enabled = tool.get('options', {}).get('assistant', {}).get('enabled', False)
+        if not assistant_enabled:
+            add_trace("Tool Validation", "FAILED", "Tool does not have AI Assistant Integration enabled")
+            return jsonify({
+                'success': False,
+                'message': 'Tool does not have AI Assistant Integration enabled',
+                'trace_log': trace_log
+            }), 400
+        
+        add_trace("Tool Loading", "SUCCESS", f"Tool '{tool.get('name', 'Unknown')}' loaded and validated")
+        
+        # Set the AI assistant tool in the agent
+        add_trace("Agent Configuration", "IN_PROGRESS", "Setting AI assistant tool")
+        agent['ai_assistant_tool'] = f"tool:{tool_id}"
+        
+        # Use assistant manager to create the assistant
+        add_trace("Assistant Creation", "IN_PROGRESS", "Initiating assistant creation")
+        from app.utils.assistant_manager import assistant_manager
+        
+        creation_start_time = time.time()
+        assistant_id = assistant_manager.create_assistant_for_agent(agent)
+        creation_duration = time.time() - creation_start_time
+        
+        if assistant_id:
+            add_trace("Assistant Creation", "SUCCESS", 
+                     f"Assistant created successfully: {assistant_id} (Duration: {creation_duration:.2f}s)")
+            
+            # Verify the agent was updated
+            updated_agent = agents_manager.load(agent_id)
+            if updated_agent and updated_agent.get('assistant_id') == assistant_id:
+                add_trace("Agent Update", "SUCCESS", f"Agent successfully updated with assistant ID: {assistant_id}")
+            else:
+                add_trace("Agent Update", "WARNING", "Agent may not have been properly updated with assistant ID")
+            
+            # Get assistant details for response
+            assistant_details = {
+                'assistant_id': assistant_id,
+                'model': agent.get('model', 'Unknown'),
+                'tools_count': len(agent.get('tools', [])),
+                'files_count': len(agent.get('knowledge_base', [])),
+                'creation_time': datetime.utcnow().isoformat(),
+                'creation_duration': f"{creation_duration:.2f}s"
+            }
+            
+            add_trace("Response Preparation", "SUCCESS", 
+                     f"Assistant details compiled: Model={assistant_details['model']}, " +
+                     f"Tools={assistant_details['tools_count']}, Files={assistant_details['files_count']}")
+            
+            # Log comprehensive creation summary
+            summary = f"""
+=== ASSISTANT CREATION SUMMARY ===
+Agent ID: {agent_id}
+Agent Name: {agent.get('name', 'Unknown')}
+Tool ID: {tool_id}
+Tool Name: {tool.get('name', 'Unknown')}
+Assistant ID: {assistant_id}
+Model: {assistant_details['model']}
+Tools Configured: {assistant_details['tools_count']}
+Files Attached: {assistant_details['files_count']}
+Creation Duration: {assistant_details['creation_duration']}
+Creation Time: {assistant_details['creation_time']}
+Trace Entries: {len(trace_log)}
+"""
+            current_app.logger.info(summary)
+            add_trace("Creation Complete", "SUCCESS", "Assistant creation process completed successfully")
+            
+            return jsonify({
+                'success': True,
+                'message': 'Assistant created and assigned successfully',
+                'details': assistant_details,
+                'trace_log': trace_log if trace_level == 'detailed' else trace_log[-3:],  # Last 3 entries for basic
+                'summary': summary.strip()
+            })
+        else:
+            add_trace("Assistant Creation", "FAILED", "Assistant creation returned no ID")
+            
+            # Try to get more specific error information from the assistant manager logs
+            try:
+                # Check if it's a problem with the assistant API
+                test_result = assistant_manager.assistant_api.list_assistants()
+                if isinstance(test_result, list) or (isinstance(test_result, dict) and test_result.get('success')):
+                    add_trace("API Connection Test", "SUCCESS", "Assistant API connection is working")
+                else:
+                    add_trace("API Connection Test", "FAILED", f"Assistant API issue: {test_result}")
+            except Exception as api_test_error:
+                add_trace("API Connection Test", "ERROR", f"Could not test API connection: {str(api_test_error)}")
+            
+            return jsonify({
+                'success': False,
+                'message': 'Failed to create assistant - check server logs for details',
+                'trace_log': trace_log
+            }), 500
+            
+    except Exception as e:
+        error_msg = str(e)
+        add_trace("Exception Occurred", "ERROR", f"Unexpected error: {error_msg}")
+        current_app.logger.error(f"Error creating assistant for agent {agent_id}: {error_msg}", exc_info=True)
+        
+        return jsonify({
+            'success': False,
+            'message': f'Internal error: {error_msg}',
+            'trace_log': trace_log
+        }), 500

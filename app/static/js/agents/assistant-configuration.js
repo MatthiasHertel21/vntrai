@@ -118,6 +118,7 @@ function updateTestButtonsState() {
         const testConnectionBtn = document.getElementById('testConnectionBtn');
         const testChatBtn = document.getElementById('testChatBtn');
         const reassignAssistantBtn = document.getElementById('reassignAssistantBtn');
+        const createAssistantBtn = document.getElementById('createAssistantBtn');
         
         if (!assistantTool) return;
         
@@ -136,6 +137,11 @@ function updateTestButtonsState() {
         // Enable reassign button if agent has an assistant ID (regardless of tool selection)
         if (reassignAssistantBtn) {
             reassignAssistantBtn.disabled = !hasAssistantId;
+        }
+        
+        // Enable create assistant button if tool is selected and agent doesn't have assistant
+        if (createAssistantBtn) {
+            createAssistantBtn.disabled = !hasValidTool || hasAssistantId;
         }
     } catch (error) {
         console.warn('Error updating test button states:', error);
@@ -289,18 +295,195 @@ async function reassignAssistant() {
     }
 }
 
+// Create and assign assistant with comprehensive traceability
+async function createAndAssignAssistant() {
+    const agentId = window.agentData?.id;
+    if (!agentId) {
+        showNotificationSafe('Agent ID not found', false);
+        return;
+    }
+    
+    // Get selected AI Assistant tool
+    const assistantToolSelect = document.getElementById('ai_assistant_tool');
+    if (!assistantToolSelect || !assistantToolSelect.value) {
+        showNotificationSafe('Please select an AI Assistant tool first', false);
+        return;
+    }
+    
+    const toolValue = assistantToolSelect.value;
+    if (!toolValue.startsWith('tool:')) {
+        showNotificationSafe('Please select a valid AI Assistant tool', false);
+        return;
+    }
+    
+    // Confirm action with user
+    const confirmMessage = `Create a new OpenAI Assistant for this agent?\n\n` +
+                          `Agent: ${window.agentData?.name || 'Unknown'}\n` +
+                          `Tool: ${assistantToolSelect.options[assistantToolSelect.selectedIndex].text}\n\n` +
+                          `This will:\n` +
+                          `• Create a new OpenAI Assistant\n` +
+                          `• Configure it with agent parameters\n` +
+                          `• Assign it to this agent\n` +
+                          `• Provide detailed traceability logs`;
+    
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+    
+    // Show loading state
+    const createBtn = document.getElementById('createAssistantBtn');
+    const originalText = createBtn.innerHTML;
+    createBtn.innerHTML = '<i class="bi bi-hourglass-split mr-2 text-gray-400"></i>Creating...';
+    createBtn.disabled = true;
+    
+    try {
+        // Call API to create and assign assistant
+        const response = await fetch(`/agents/api/${agentId}/create_assistant`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                tool_id: toolValue.substring(5), // Remove 'tool:' prefix
+                trace_level: 'detailed'
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Show success with detailed information
+            const details = data.details || {};
+            let successMessage = 'Assistant created and assigned successfully!\n\n';
+            
+            if (details.assistant_id) {
+                successMessage += `Assistant ID: ${details.assistant_id}\n`;
+            }
+            if (details.model) {
+                successMessage += `Model: ${details.model}\n`;
+            }
+            if (details.tools_count) {
+                successMessage += `Tools configured: ${details.tools_count}\n`;
+            }
+            if (details.files_count) {
+                successMessage += `Files attached: ${details.files_count}\n`;
+            }
+            if (details.creation_time) {
+                successMessage += `Created at: ${new Date(details.creation_time).toLocaleString()}\n`;
+            }
+            
+            // Show traceability information
+            if (data.trace_log && data.trace_log.length > 0) {
+                successMessage += '\n=== Creation Log ===\n';
+                data.trace_log.forEach((entry, index) => {
+                    successMessage += `${index + 1}. ${entry.step}: ${entry.status}\n`;
+                    if (entry.details) {
+                        successMessage += `   ${entry.details}\n`;
+                    }
+                });
+            }
+            
+            showNotification(successMessage, true);
+            
+            // Update the agent data
+            if (window.agentData && details.assistant_id) {
+                window.agentData.assistant_id = details.assistant_id;
+            }
+            
+            // Update the assistant status display
+            updateAssistantStatus();
+            updateTestButtonsState();
+            
+            // Reload the page after a short delay to ensure all data is refreshed
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+            
+        } else {
+            let errorMessage = 'Failed to create assistant\n\n';
+            errorMessage += `Error: ${data.message || 'Unknown error'}\n`;
+            
+            // Show error trace log if available
+            if (data.trace_log && data.trace_log.length > 0) {
+                errorMessage += '\n=== Error Log ===\n';
+                data.trace_log.forEach((entry, index) => {
+                    errorMessage += `${index + 1}. ${entry.step}: ${entry.status}\n`;
+                    if (entry.error) {
+                        errorMessage += `   Error: ${entry.error}\n`;
+                    }
+                    if (entry.details) {
+                        errorMessage += `   Details: ${entry.details}\n`;
+                    }
+                });
+            }
+            
+            showNotification(errorMessage, false);
+        }
+        
+    } catch (error) {
+        console.error('Error creating assistant:', error);
+        showNotification(`Error creating assistant: ${error.message}\n\nPlease check the console for more details.`, false);
+    } finally {
+        // Restore button state
+        createBtn.innerHTML = originalText;
+        createBtn.disabled = false;
+    }
+}
+
 // ===========================
 // UTILITY FUNCTIONS
 // ===========================
 
+// Create and display a custom notification
+function showNotification(message, isSuccess) {
+    // Create notification element
+    const notif = document.createElement('div');
+    notif.className = `alert alert-${isSuccess ? 'success' : 'danger'} fixed-notification`;
+    notif.style.position = 'fixed';
+    notif.style.top = '20px';
+    notif.style.right = '20px';
+    notif.style.maxWidth = '400px';
+    notif.style.zIndex = '9999';
+    notif.style.padding = '15px 20px';
+    notif.style.borderRadius = '4px';
+    notif.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+    notif.style.backgroundColor = isSuccess ? '#d4edda' : '#f8d7da';
+    notif.style.color = isSuccess ? '#155724' : '#721c24';
+    notif.style.border = `1px solid ${isSuccess ? '#c3e6cb' : '#f5c6cb'}`;
+    
+    // Support for newlines in the message
+    const messageContent = message.replace(/\n/g, '<br>');
+    notif.innerHTML = messageContent;
+    
+    // Add close button
+    const closeBtn = document.createElement('button');
+    closeBtn.innerHTML = '&times;';
+    closeBtn.style.position = 'absolute';
+    closeBtn.style.right = '10px';
+    closeBtn.style.top = '10px';
+    closeBtn.style.background = 'transparent';
+    closeBtn.style.border = 'none';
+    closeBtn.style.fontSize = '20px';
+    closeBtn.style.cursor = 'pointer';
+    closeBtn.style.color = isSuccess ? '#155724' : '#721c24';
+    closeBtn.onclick = function() {
+        document.body.removeChild(notif);
+    };
+    
+    notif.appendChild(closeBtn);
+    document.body.appendChild(notif);
+    
+    // Auto remove after 10 seconds
+    setTimeout(() => {
+        if (document.body.contains(notif)) {
+            document.body.removeChild(notif);
+        }
+    }, 10000);
+}
+
 // Safe notification function that checks if showNotification exists
 function showNotificationSafe(message, isSuccess) {
-    if (typeof showNotification === 'function') {
-        showNotification(message, isSuccess);
-    } else {
-        // Fallback to console
-        console.log(`${isSuccess ? 'SUCCESS' : 'ERROR'}: ${message}`);
-    }
+    showNotification(message, isSuccess);
 }
 
 // Safe HTML escaping function
@@ -323,7 +506,8 @@ window.AssistantConfiguration = {
     updateTestButtons: updateTestButtonsState,
     testConnection: testAssistantConnection,
     testChat: chatWithAssistant,
-    reassignAssistant: reassignAssistant
+    reassignAssistant: reassignAssistant,
+    createAndAssignAssistant: createAndAssignAssistant
 };
 
 // Make functions globally available for onclick handlers
@@ -332,3 +516,4 @@ window.testAssistantConnection = testAssistantConnection;
 window.chatWithAssistant = chatWithAssistant;
 window.updateTestButtonsState = updateTestButtonsState;
 window.reassignAssistant = reassignAssistant;
+window.createAndAssignAssistant = createAndAssignAssistant;

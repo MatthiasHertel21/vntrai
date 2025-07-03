@@ -7,6 +7,7 @@ Thread Management, File Upload/Management und Assistant Configuration.
 import asyncio
 import aiohttp
 import json
+import os
 import requests
 import time
 from typing import Dict, Any, List, Optional
@@ -357,15 +358,72 @@ class OpenAIAssistantAPIImplementation(BaseImplementation):
             input_params = inputs.get('input_params', inputs)
             output_params = inputs.get('output_params', {})
         
+        # Log input types for debugging
+        self.logger.info(f"Execute called with: config_params={type(config_params)}, input_params={type(input_params)}")
+        
+        # Ensure config_params is a dict, not a list
+        if not isinstance(config_params, dict):
+            self.logger.error(f"config_params is not a dict but {type(config_params)}: {config_params}")
+            # If it's a list, it's likely the schema - try to find actual config values
+            if isinstance(config_params, list):
+                self.logger.info("Attempting to extract API key from schema...")
+                # Create empty config dict
+                config_params = {}
+                
+                # Try to find API key from other sources
+                # 1. Check if it's in input_params
+                if isinstance(input_params, dict) and ('api_key' in input_params or 'openai_api_key' in input_params):
+                    config_params['api_key'] = input_params.get('api_key') or input_params.get('openai_api_key')
+                    self.logger.info("Found API key in input_params")
+                # 2. Check environment variables
+                elif os.environ.get('OPENAI_API_KEY'):
+                    config_params['api_key'] = os.environ.get('OPENAI_API_KEY')
+                    self.logger.info("Found API key in environment variables")
+                else:
+                    return {
+                        'success': False,
+                        'error': 'Invalid configuration: Expected config_params to be a dictionary with API key',
+                        'detail': 'Configuration schema was provided instead of actual values',
+                        'timestamp': datetime.now().isoformat()
+                    }
+            else:
+                return {
+                    'success': False,
+                    'error': f'Invalid config_params type: {type(config_params)}',
+                    'timestamp': datetime.now().isoformat()
+                }
+        
         # Set configuration
         self.config_params = config_params
         
-        # Configure API settings
-        self.api_key = config_params.get('api_key') or config_params.get('openai_api_key')
+        # Configure API settings - check multiple possible key names
+        possible_keys = ['api_key', 'openai_api_key', 'OPENAI_API_KEY', 'openai_key']
+        self.api_key = None
+        
+        # Log the keys we're checking in config_params
+        self.logger.info(f"Available keys in config_params: {list(config_params.keys())}")
+        
+        # First check config_params
+        for key in possible_keys:
+            if key in config_params and config_params[key] and isinstance(config_params[key], str):
+                self.api_key = config_params[key]
+                self.logger.info(f"Found API key in config_params with key: {key}")
+                break
+        
+        # If not found in config_params, check environment variables
         if not self.api_key:
+            if os.environ.get('OPENAI_API_KEY'):
+                self.api_key = os.environ.get('OPENAI_API_KEY')
+                self.logger.info("Found API key in environment variables")
+            else:
+                self.logger.warning("API key not found in config_params or environment variables")
+        
+        if not self.api_key:
+            self.logger.error("API key not found in any expected location")
             return {
                 'success': False,
                 'error': 'API key is required',
+                'detail': 'No API key found in config_params or environment variables',
                 'timestamp': datetime.now().isoformat()
             }
         
@@ -379,15 +437,86 @@ class OpenAIAssistantAPIImplementation(BaseImplementation):
     
     def execute_legacy(self, config_params: Dict[str, Any], input_params: Dict[str, Any], output_params: Dict[str, Any]) -> Dict[str, Any]:
         """Legacy execute method for backward compatibility."""
-        # Convert to new format
-        unified_inputs = {
-            'config_params': config_params,
-            'input_params': input_params,
-            'output_params': output_params
-        }
-        
-        # Run async method synchronously
-        return asyncio.run(self.execute(unified_inputs))
+        try:
+            # Type check for config_params
+            if not isinstance(config_params, dict):
+                self.logger.error(f"execute_legacy received non-dict config_params: {type(config_params)}")
+                # Try to convert schema to dict if it's a list (common error case)
+                if isinstance(config_params, list):
+                    self.logger.warning("Config params is a schema (list), converting to empty dict")
+                    config_params = {}
+                else:
+                    config_params = {}
+            
+            # Type check for input_params 
+            if not isinstance(input_params, dict):
+                self.logger.error(f"execute_legacy received non-dict input_params: {type(input_params)}")
+                input_params = {}
+            
+            # Type check for output_params
+            if not isinstance(output_params, dict):
+                self.logger.error(f"execute_legacy received non-dict output_params: {type(output_params)}")
+                output_params = {}
+                
+            # Look for API key in multiple places before converting to unified format
+            api_key = (
+                config_params.get('api_key') or 
+                config_params.get('openai_api_key') or
+                input_params.get('api_key') or
+                input_params.get('openai_api_key') or
+                os.environ.get('OPENAI_API_KEY')
+            )
+            
+            if api_key and isinstance(api_key, str) and len(api_key) > 10:
+                # Ensure config_params has the API key
+                config_params['api_key'] = api_key
+                self.logger.info("API key found and added to config_params")
+            
+            # Convert to new format
+            unified_inputs = {
+                'config_params': config_params,
+                'input_params': input_params,
+                'output_params': output_params
+            }
+            
+            # Run async method synchronously
+            result = asyncio.run(self.execute(unified_inputs))
+            
+            # Add safety check for result type
+            if isinstance(result, list):
+                self.logger.error(f"execute_legacy received unexpected list result: {result}")
+                return {
+                    'success': False,
+                    'error': f"Unexpected response format: received list instead of dict - {result}",
+                    'timestamp': datetime.now().isoformat()
+                }
+            
+            return result
+            
+        except AttributeError as e:
+            if "'list' object has no attribute 'get'" in str(e):
+                self.logger.error(f"AttributeError caught in execute_legacy: {e}")
+                return {
+                    'success': False, 
+                    'error': 'Configuration error: Expected dictionary but received list. This usually happens when schema is returned instead of config values.',
+                    'timestamp': datetime.now().isoformat()
+                }
+                import traceback
+                self.logger.error(f"Traceback: {traceback.format_exc()}")
+                return {
+                    'success': False,
+                    'error': f"'list' object has no attribute 'get'",
+                    'timestamp': datetime.now().isoformat()
+                }
+            else:
+                raise
+        except Exception as e:
+            self.logger.error(f"Exception in execute_legacy: {e}")
+            return {
+                'success': False,
+                'error': str(e),
+                'timestamp': datetime.now().isoformat()
+            }
 
     async def _test_connection(self) -> Dict[str, Any]:
         """Test the connection to OpenAI Assistant API."""
@@ -400,12 +529,19 @@ class OpenAIAssistantAPIImplementation(BaseImplementation):
                 ) as response:
                     if response.status == 200:
                         data = await response.json()
+                        # Handle both dict and list responses safely
+                        assistants_data = []
+                        if isinstance(data, dict):
+                            assistants_data = data.get('data', [])
+                        elif isinstance(data, list):
+                            assistants_data = data
+                        
                         return {
                             'success': True,
                             'message': 'Successfully connected to OpenAI Assistant API',
                             'data': {
                                 'connection_status': 'success',
-                                'assistants_count': len(data.get('data', [])),
+                                'assistants_count': len(assistants_data),
                                 'api_version': response.headers.get('openai-version', 'unknown')
                             },
                             'timestamp': datetime.now().isoformat()
@@ -431,10 +567,36 @@ class OpenAIAssistantAPIImplementation(BaseImplementation):
         instructions = params.get('instructions', '')
         model = params.get('model', 'gpt-4-turbo-preview')
         
-        # Parse JSON parameters
-        tools = self._parse_json_param(params.get('tools', '[]'), [])
-        file_ids = self._parse_json_param(params.get('file_ids', '[]'), [])
+        # Get tools - use directly if it's already a list, otherwise parse from JSON
+        tools_param = params.get('tools', [])
+        if isinstance(tools_param, str):
+            try:
+                tools = json.loads(tools_param)
+            except json.JSONDecodeError:
+                self.logger.warning(f"Failed to parse tools JSON: {tools_param}")
+                tools = []
+        else:
+            # Already a list or other object
+            tools = tools_param
+            
+        # Similar handling for file_ids
+        file_ids_param = params.get('file_ids', [])
+        if isinstance(file_ids_param, str):
+            try:
+                file_ids = json.loads(file_ids_param)
+            except json.JSONDecodeError:
+                self.logger.warning(f"Failed to parse file_ids JSON: {file_ids_param}")
+                file_ids = []
+        else:
+            file_ids = file_ids_param
+            
+        # Handle metadata
         metadata = self._parse_json_param(params.get('metadata', '{}'), {})
+        
+        # Debug log
+        self.logger.info(f"Creating assistant with tools: {tools}, type: {type(tools)}")
+        for i, tool in enumerate(tools):
+            self.logger.info(f"Tool {i}: {type(tool)} - {tool}")
         
         data = {
             "name": name,
@@ -443,12 +605,42 @@ class OpenAIAssistantAPIImplementation(BaseImplementation):
             "model": model
         }
         
+        # Ensure tools are properly formatted
         if tools:
-            data["tools"] = tools
+            # Make sure tools is a list
+            if not isinstance(tools, list):
+                self.logger.warning(f"Tools is not a list: {tools}")
+                # Try to convert to list
+                try:
+                    tools = list(tools)
+                except:
+                    self.logger.error(f"Unable to convert tools to list, using empty list")
+                    tools = []
+            
+            # Make sure each tool has the proper format
+            valid_tools = []
+            for tool in tools:
+                if not isinstance(tool, dict):
+                    self.logger.warning(f"Skipping non-dict tool: {tool}")
+                    continue
+                
+                if "type" not in tool:
+                    self.logger.warning(f"Tool missing 'type': {tool}")
+                    continue
+                    
+                # Add to valid tools
+                valid_tools.append(tool)
+                
+            data["tools"] = valid_tools
+            self.logger.info(f"Final tools for API: {valid_tools}")
+            
         if file_ids:
             data["file_ids"] = file_ids
         if metadata:
             data["metadata"] = metadata
+        
+        # Debug log the final data being sent
+        self.logger.info(f"Assistant creation data: {json.dumps(data, indent=2)}")
         
         async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=self.timeout)) as session:
             try:
@@ -457,7 +649,7 @@ class OpenAIAssistantAPIImplementation(BaseImplementation):
                     headers=self.headers,
                     json=data
                 ) as response:
-                    if response.status == 200:
+                    if response.status in [200, 201]:
                         assistant_data = await response.json()
                         return {
                             'success': True,
@@ -468,12 +660,14 @@ class OpenAIAssistantAPIImplementation(BaseImplementation):
                         }
                     else:
                         error_text = await response.text()
+                        self.logger.error(f"Assistant creation failed: {response.status} - {error_text}")
                         return {
                             'success': False,
                             'error': f"Failed to create assistant: {response.status} - {error_text}",
                             'timestamp': datetime.now().isoformat()
                         }
             except Exception as e:
+                self.logger.error(f"Exception during assistant creation: {str(e)}")
                 return {
                     'success': False,
                     'error': f"Error creating assistant: {str(e)}",
@@ -590,7 +784,14 @@ class OpenAIAssistantAPIImplementation(BaseImplementation):
                 ) as response:
                     if response.status == 200:
                         data = await response.json()
-                        assistants = data.get("data", [])
+                        # Handle both dict and list responses safely
+                        if isinstance(data, dict):
+                            assistants = data.get("data", [])
+                        elif isinstance(data, list):
+                            assistants = data
+                        else:
+                            assistants = []
+                        
                         return {
                             'success': True,
                             'message': f"Found {len(assistants)} assistants",
@@ -835,7 +1036,14 @@ class OpenAIAssistantAPIImplementation(BaseImplementation):
                 ) as response:
                     if response.status == 200:
                         data = await response.json()
-                        files = data.get("data", [])
+                        # Handle both dict and list responses safely
+                        if isinstance(data, dict):
+                            files = data.get("data", [])
+                        elif isinstance(data, list):
+                            files = data
+                        else:
+                            files = []
+                        
                         return {
                             'success': True,
                             'message': f"Found {len(files)} files",
@@ -899,8 +1107,14 @@ class OpenAIAssistantAPIImplementation(BaseImplementation):
 
     def _parse_json_param(self, param: str, default: Any) -> Any:
         """Parse a JSON parameter with fallback to default."""
-        if not param or param.strip() == '':
+        if not param or param == '':
             return default
+            
+        # If param is already a Python object (list/dict/etc.), return as is
+        if not isinstance(param, str):
+            return param
+            
+        # Otherwise try to parse as JSON
         try:
             return json.loads(param)
         except json.JSONDecodeError:

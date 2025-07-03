@@ -32,6 +32,12 @@
    - **Solution**: Successfully refactored agents.py into modular structure: main_routes.py, api_routes.py, session_routes.py, task_routes.py, error_handlers.py
    - **Status**: Fixed - clean separation of concerns implemented
 
+12. beim click af eine card soll die aktuellste offene session geöffnet werden und falls diese nicht existier soll eine neue session erzeugt werden
+
+13. UI Polish
+- entferne die aktionen für Duplicate, Export und Reconnect aus der card und packe sie als stacked menüe in die seiten /views und /edit
+
+
 
 #### /agents/edit
 
@@ -52,6 +58,8 @@ Der Container-Header soll eine filter option haben nach status des agent runs.
 7. polish 
 - verwende eine kompaktere Darstellung der seite und der container. 
 - alle container sollen auf- und zuklappbar sein durch klick auf die überschrift des containers
+- entferne den "View Agent" Button
+- benenne "Create & Assign Assistant" um nach "Create Assistant"
 
 8. ✅ **RESOLVED** - in agents/edit kann ich keinen AI Assistant tool auswählen, die liste ist leer
    - **Solution**: Fixed filtering logic to only show tools with "Enable AI Assistant Integration" option enabled
@@ -64,6 +72,19 @@ Der Container-Header soll eine filter option haben nach status des agent runs.
 10. ✅ **RESOLVED** - stelle layout der "Actions" im container AI Assistant Configuration um von farbigen buttons auf normale menüeinträge
    - **Solution**: Converted colored action buttons to neutral menu entries with consistent styling
    - **Status**: Fixed - actions now use standard menu styling instead of colored buttons
+
+11. ✅ **RESOLVED** - erstelle eine aktion zur erstellung und zuweisung eines assistenten mit umfangreicher nachvollziehbarkeit
+   - **Solution**: Added "Create & Assign Assistant" action with comprehensive traceability including step-by-step logging, timing, and detailed error reporting
+   - **Status**: Fixed - users can create assistants with full audit trail and process visibility 
+   - entferne die alerts im browser
+
+#### /agents/view
+
+14. UI Polish
+- bennene "open session" um in "last session"
+- stacke  "Duplicate", "activity", "edit" und "new session"
+- mache das layout zweispaltig nach dem vorbild von edit
+- entferne am ende der seite alles nach dem container "Run Statistics"
 
 #### /assistence
 5. Layout Polishing
