@@ -19,7 +19,7 @@
 
 ### New requests
 
-#### AgentRun
+#### AgentRun (/agents/uuid/runs/uuid)
 1. ✅ **COMPLETED** - erstelle eine simple seite Seite zum Anzeigen eines Agent Run mit folgenden Informationen:
 - route /agents/uuid_agent/runs/uuid_agentrun
 - Icon + Überschrift
@@ -35,20 +35,42 @@
 - Oberhalb des Info Containers erstelle drei neue (erstmal leere) Container: Tasks, Files, Feedback
 - Oberhalb des JSON Containers erstelle einen neuen Container "Result"
 
+11. ✅ **COMPLETED** - das tailwind design soll nicht so bunt sein. orientiere dich am layout von /agents/edit. die sektionen sollen nicht verschiedenfarbike Header haben. bleibe bei allen farben in der farbpalette der anwendung
+
+12. ✅ **COMPLETED** - UI Polish
+- entferne den container summary
+- entferne den Container Run Info und zeige die Infos in der Überschrift der Seite als Ubline an bzw. als Tooltipp auf dem Header der seite
+
+14. ✅ **COMPLETED** - Refactore das Javascript der seite
+- lagere es nach funktionseinheiten getrennt in verschiedene JS Dateien aus
+
+##### Result
+13. ergänze im Inhalt des Containers für jede Task eine Sektion mit folgendem Aufbau:
+- Name der Task (fett)
+- Update-Button (rechtsbündig) mit "Spinner Icon
+- graue Linie als sektions-trennstrich
+- ausgabefeld für das ergebnis der task zur anzeige von html
+- headerbereich: Auswahlfeld für eine Sprache, Icon zum Ausklappen für verschiedene Export-Aktionen (nach Clipboard, nach txt, mach markdown, nach words, nach pdf )
+
 ##### Tasks
-3. stelle dar eine Liste der Tasks mit Statusicon, name der task und "execute" icon (rechts)
-4. eine der tasks ist "aktiv" --> siehe "active task"
+3. ✅ **COMPLETED** - stelle dar eine Liste der Tasks mit Statusicon, name der task und "execute" icon (rechts)
+4. ✅ **COMPLETED** - eine der tasks ist "aktiv" --> siehe "active task"
 
 ###### active task
-5. Eine Task aus der Taskliste ist die Aktive Task
+5. Handling Aktiver Tasks:
+- Eine Task aus der Taskliste ist die "aktive Task"
 - eine task wird durch klick aktiviert, 
 - aktive tasks bekommen einen farblichen background als Anzeige "aktiv". 
 - beim laden der seite wird die letzte aktive task wieder aktiviert
 - ist keine task aktiv wird beim laden die erste aufgabe aktiviert
 
 6. direkt unterhalb der Zeile mit der aktiven Task sollen die task dargestellt werden:
-- Beschreibung der Task
-- gerenderte die eingabefelder der Task (bei ai-task laut definition im agent, bei tooltask laut definition in der config unter berücksichtigung gesperrter eingabefelder und vorbelegungen)
+- Entferne das Label "active Task Details" und "Description"
+- Zeige den Inhalt von Description nicht als Feld an, sondern als Text
+- entferne die Anzeige von "Prompt" und dem entsprechenden Feld
+- entferne die anzeige der Output-Parameter
+- zeige die eingabefelder der Task gerendert an!(bei ai-task die Input-felder laut definition im agent, bei tooltask die INput-Felder laut definition in der config unter berücksichtigung gesperrter eingabefelder und vorbelegungen)
+- reduziere den abstand aller task-einträge zum container
 
 
 7. ein button "execute" --> führt die aufgabe aus
@@ -60,7 +82,7 @@
 ### Critical Issues (Migrated from Sprint 19)
 
 #### /agents
-101. vergrößere die minimale breite einer karte um 40px
+101. vergrößere die minimale breite einer card um 40px
 112. ⏳ **PENDING** - beim click af eine card soll die aktuellste offene session geöffnet werden und falls diese nicht existier soll eine neue session erzeugt werden
 
 #### /agents/edit
@@ -86,7 +108,12 @@
 - bewege die checkbox "reqired" von der überschrift in die gleiche zeile wie "Default"
 - die Buttons Update und Cancel sollen normale breite haben, rechtbündig sein und immer am fußende des dialogs stehen (nicht mitscrollen) 
 
+140. ✅ **COMPLETED** - Die Felder Output-Variable, Output-Type, Output-Description und Output-Rendering" werden nicht persisitiert
+
 #### /agents/view
+
+131. UI Polish
+- style die seite im tailwind layput
 
 135. ✅ **RESOLVED** - Sessions nicht angezeigt (nur "Loading Sessions...")
    - **Solution**: Fixed script block naming issue - changed `{% block scripts %}` to `{% block extra_js %}` in view.html to match base.html

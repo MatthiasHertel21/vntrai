@@ -818,3 +818,88 @@ def cleanup_agent_sessions(agent_id):
     except Exception as e:
         current_app.logger.error(f"Error cleaning up sessions for agent {agent_id}: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
+# Agent Run Task Input Management API
+
+@agents_bp.route('/api/agent_run/<run_uuid>/task_input/<task_uuid>', methods=['POST'])
+@csrf.exempt
+def api_save_task_input(run_uuid, task_uuid):
+    """Save task input values for an agent run task"""
+    try:
+        data = request.get_json()
+        inputs = data.get('inputs', {}) if data else {}
+        
+        # Validate that the agent run exists
+        agent_run = agent_run_manager.load(run_uuid)
+        if not agent_run:
+            return jsonify({'success': False, 'error': 'Agent run not found'}), 404
+        
+        # Save the task inputs
+        success = agent_run_manager.set_task_inputs(run_uuid, task_uuid, inputs)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Task inputs saved successfully'
+            })
+        else:
+            return jsonify({'success': False, 'error': 'Failed to save task inputs'}), 500
+            
+    except Exception as e:
+        current_app.logger.error(f"Error saving task inputs: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@agents_bp.route('/api/agent_run/<run_uuid>/selected_task', methods=['POST'])
+@csrf.exempt
+def api_save_selected_task(run_uuid):
+    """Save the currently selected task for an agent run"""
+    try:
+        data = request.get_json()
+        task_index = data.get('task_index') if data else None
+        
+        if task_index is None:
+            return jsonify({'success': False, 'error': 'Missing task_index'}), 400
+        
+        # Validate that the agent run exists
+        agent_run = agent_run_manager.load(run_uuid)
+        if not agent_run:
+            return jsonify({'success': False, 'error': 'Agent run not found'}), 404
+        
+        # Save selected task index in agent run metadata
+        agent_run['selected_task_index'] = task_index
+        agent_run['updated_at'] = datetime.now().isoformat()
+        
+        success = agent_run_manager.save(agent_run)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Selected task saved successfully'
+            })
+        else:
+            return jsonify({'success': False, 'error': 'Failed to save selected task'}), 500
+            
+    except Exception as e:
+        current_app.logger.error(f"Error saving selected task: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@agents_bp.route('/api/agent_run/<run_uuid>/selected_task', methods=['GET'])
+@csrf.exempt
+def api_get_selected_task(run_uuid):
+    """Get the currently selected task for an agent run"""
+    try:
+        # Load the agent run
+        agent_run = agent_run_manager.load(run_uuid)
+        if not agent_run:
+            return jsonify({'success': False, 'error': 'Agent run not found'}), 404
+        
+        selected_task_index = agent_run.get('selected_task_index', 0)
+        
+        return jsonify({
+            'success': True,
+            'selected_task_index': selected_task_index
+        })
+            
+    except Exception as e:
+        current_app.logger.error(f"Error getting selected task: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500

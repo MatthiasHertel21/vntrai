@@ -60,6 +60,10 @@ def api_create_agent_task(agent_id):
             'name': name,
             'description': data.get('description', ''),
             'type': data.get('type', 'standard'),
+            'output_variable': data.get('output_variable', ''),
+            'output_type': data.get('output_type', 'text'),
+            'output_description': data.get('output_description', ''),
+            'output_rendering': data.get('output_rendering', 'text'),
             'order': len(tasks) + 1,
             'created_at': datetime.utcnow().isoformat(),
             'modified_at': datetime.utcnow().isoformat(),
@@ -120,6 +124,14 @@ def api_update_agent_task(agent_id, task_uuid):
             task['description'] = data['description']
         if 'type' in data:
             task['type'] = data['type']
+        if 'output_variable' in data:
+            task['output_variable'] = data['output_variable']
+        if 'output_type' in data:
+            task['output_type'] = data['output_type']
+        if 'output_description' in data:
+            task['output_description'] = data['output_description']
+        if 'output_rendering' in data:
+            task['output_rendering'] = data['output_rendering']
         if 'ai_config' in data:
             task['ai_config'] = data['ai_config']
         if 'tool_config' in data:
