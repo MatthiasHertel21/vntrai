@@ -2,6 +2,50 @@
 
 {% block title %}Assistant Management{% endblock %}
 
+{% block extra_css %}
+<style>
+/* Custom styles for assistant cards */
+.assistant-card {
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.assistant-card h3 {
+    max-width: calc(100% - 2rem);
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+.assistant-card .card-header-content {
+    min-width: 0;
+    flex: 1;
+}
+
+/* Ensure dropdown doesn't overflow */
+.relative {
+    position: relative;
+}
+
+.assistant-card .dropdown-menu {
+    right: 0;
+    left: auto;
+    min-width: 12rem;
+}
+
+/* Better responsive behavior */
+@media (max-width: 768px) {
+    .assistant-card h3 {
+        font-size: 1rem;
+        max-width: calc(100% - 3rem);
+    }
+    
+    .assistant-card .text-lg {
+        font-size: 1rem;
+    }
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="max-w-4xl mx-auto w-full space-y-6">
     <!-- Header with Statistics -->
@@ -64,29 +108,36 @@
     {% if all_assistants %}
     <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3" id="assistantsGrid">
         {% for assistant in all_assistants %}
-        <div class="assistant-card bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200" 
+        <div class="assistant-card bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 flex flex-col h-full" 
              data-status="{{ assistant.status }}" data-name="{{ assistant.name|lower }}" data-model="{{ assistant.model|lower }}">
             
             <!-- Card Header -->
             <div class="p-4 border-b border-gray-200">
-                <div class="flex items-start justify-between">
-                    <div class="flex-1">
-                        <h3 class="text-lg font-semibold text-gray-900 truncate">{{ assistant.name }}</h3>
-                        <p class="text-sm text-gray-500">{{ assistant.model }}</p>
+                <div class="flex items-start justify-between gap-2">
+                    <div class="flex-1 min-w-0">
+                        <h3 class="text-lg font-semibold text-gray-900 truncate pr-2" title="{{ assistant.name }}">
+                            {% if assistant.name|length > 25 %}
+                                {{ assistant.name[:22] }}...
+                            {% else %}
+                                {{ assistant.name }}
+                            {% endif %}
+                        </h3>
+                        <div class="flex items-center space-x-2 mt-1 flex-wrap">
+                            <p class="text-sm text-gray-500 truncate">{{ assistant.model }}</p>
+                            <!-- Status Badge - moved behind model -->
+                            {% if assistant.status == 'mapped' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 flex-shrink-0">
+                                Mapped
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 flex-shrink-0">
+                                Orphaned
+                            </span>
+                            {% endif %}
+                        </div>
                     </div>
-                    <div class="flex items-center space-x-2">
-                        <!-- Status Badge -->
-                        {% if assistant.status == 'mapped' %}
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            Mapped
-                        </span>
-                        {% else %}
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                            Orphaned
-                        </span>
-                        {% endif %}
-                        
-                        <!-- Dropdown Menu -->
+                    <div class="flex items-start flex-shrink-0">
+                        <!-- Dropdown Menu - fixed positioning -->
                         <div class="relative">
                             <button class="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100" 
                                     onclick="toggleDropdown(this)">
@@ -94,18 +145,33 @@
                                     <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path>
                                 </svg>
                             </button>
-                            <div class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 ring-1 ring-black ring-opacity-5">
-                                <div class="py-1">                    <a href="/assistants/chat/{{ assistant.id }}" 
-                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Chat</a>
-                    {% if assistant.status == 'orphaned' %}
-                    <a href="/agents/create_from_assistant/{{ assistant.id }}" 
-                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Create Agent</a>
-                    {% else %}
-                    <a href="/agents/edit/{{ assistant.agent.id }}" 
-                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Edit Agent</a>
-                    {% endif %}
+                            <div class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 ring-1 ring-black ring-opacity-5 dropdown-menu">
+                                <div class="py-1">
+                                    <a href="/assistants/chat/{{ assistant.id }}" 
+                                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <i class="bi bi-chat-dots mr-2"></i>Chat
+                                    </a>
+                                    <a href="https://platform.openai.com/assistants/{{ assistant.id }}" 
+                                       target="_blank" rel="noopener noreferrer"
+                                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <i class="bi bi-box-arrow-up-right mr-2"></i>Open in OpenAI
+                                    </a>
+                                    {% if assistant.status == 'orphaned' %}
+                                    <a href="/agents/create_from_assistant/{{ assistant.id }}" 
+                                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <i class="bi bi-plus-circle mr-2"></i>Create Agent
+                                    </a>
+                                    {% else %}
+                                    <a href="/agents/edit/{{ assistant.agent.id }}" 
+                                       class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <i class="bi bi-pencil mr-2"></i>Edit Agent
+                                    </a>
+                                    {% endif %}
+                                    <hr class="my-1">
                                     <button onclick="deleteAssistant('{{ assistant.id }}', '{{ assistant.name }}')" 
-                                            class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">Delete</button>
+                                            class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                                        <i class="bi bi-trash mr-2"></i>Delete
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -113,8 +179,8 @@
                 </div>
             </div>
 
-            <!-- Card Body -->
-            <div class="p-4">
+            <!-- Card Body - flexible layout to push footer down -->
+            <div class="p-4 flex-1">
                 <!-- Description -->
                 {% if assistant.description %}
                 <p class="text-sm text-gray-600 mb-3">{{ assistant.description[:100] }}{% if assistant.description|length > 100 %}...{% endif %}</p>
@@ -147,22 +213,10 @@
                     </div>
                 </div>
                 {% endif %}
-
-                <!-- Agent Info -->
-                {% if assistant.agent %}
-                <div class="mb-3">
-                    <div class="flex items-center text-sm text-green-600">
-                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                        </svg>
-                        Mapped to Agent: {{ assistant.agent.name }}
-                    </div>
-                </div>
-                {% endif %}
             </div>
 
-            <!-- Card Footer -->
-            <div class="px-4 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between text-xs text-gray-500">
+            <!-- Card Footer - always at bottom -->
+            <div class="px-4 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between text-xs text-gray-500 mt-auto">
                 <div>Created: {{ assistant.created_at_formatted or 'Unknown' }}</div>
                 <div>ID: {{ assistant.id[:8] }}...</div>
             </div>
@@ -331,7 +385,7 @@ document.getElementById('confirmDeleteBtn').addEventListener('click', function()
             }
             return response.json();
         })
-        .then(data => {
+        .then data => {
             if (data.success) {
                 // Show success message and reload
                 alert('Assistant deleted successfully');
