@@ -142,23 +142,12 @@
                 </div>
             </div>
             
-            <!-- Card Header with Icon and Status -->
+            <!-- Card Header without Icon -->
             <div class="p-4 pb-3 hover-group flex-grow">
                 <div class="flex items-center justify-between mb-3 pr-8">
-                    <div class="flex items-center space-x-2 min-w-0 flex-1">
-                        {% if agent.metadata and agent.metadata.icon and agent.metadata.icon != 'default' %}
-                        <img class="h-10 w-10 rounded-lg object-contain bg-gray-50 border border-gray-200 p-1 flex-shrink-0" 
-                             src="{{ agent.metadata.icon }}" 
-                             alt="{{ agent.name }}">
-                        {% else %}
-                        <div class="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <i class="bi bi-robot text-blue-500 text-lg"></i>
-                        </div>
-                        {% endif %}
-                        <div class="min-w-0 flex-1">
-                            <h3 class="text-sm font-semibold text-gray-900 truncate">{{ agent.name }}</h3>
-                            <p class="text-xs text-gray-500 truncate">{{ agent.category or 'General' }}</p>
-                        </div>
+                    <div class="min-w-0 flex-1">
+                        <h3 class="text-sm font-semibold text-gray-900 truncate">{{ agent.name }}</h3>
+                        <p class="text-xs text-gray-500 truncate">{{ agent.category or 'General' }}</p>
                     </div>
                 </div>
                 

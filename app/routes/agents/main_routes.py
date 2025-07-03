@@ -4,7 +4,7 @@ Handles listing, creating, viewing, editing, and deleting agents
 """
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, make_response, current_app
-from app.utils.data_manager import agents_manager, tools_manager
+from app.utils.data_manager import agents_manager, tools_manager, agent_run_manager
 from app.utils.validation import DataValidator
 from app.utils.assistant_manager import assistant_manager
 import uuid
@@ -49,6 +49,11 @@ def list_agents():
         # Get unique categories for filter
         all_agents = agents_manager.load_all()
         categories = list(set([a.get('category', 'General') for a in all_agents if a.get('category')]))
+        
+        # Add session count to each agent
+        for agent in agents:
+            agent_runs = agent_run_manager.get_agent_runs(agent.get('id', ''))
+            agent['total_runs'] = len(agent_runs)
         
         # Sort agents by created_at descending (newest first)
         agents.sort(key=lambda x: x.get('created_at', ''), reverse=True)

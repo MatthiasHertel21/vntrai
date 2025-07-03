@@ -32,9 +32,15 @@
 
 12. beim click af eine card soll die aktuellste offene session geöffnet werden und falls diese nicht existier soll eine neue session erzeugt werden
 
-13. UI Polish
+13. ✅ **RESOLVED** - UI Polish
+- **Solution**: Removed Duplicate, Export, and Reconnect actions from agent cards and implemented them as stacked menus in /views and /edit pages. Also removed the agent icon from the card header.
+- **Status**: Fixed - stacked menus with proper dropdown functionality added to view.html and edit.html pages, agent icon removed from list.html cards
 - entferne die aktionen für Duplicate, Export und Reconnect aus der card und packe sie als stacked menüe in die seiten /views und /edit
+- entferne das agent-icon im header der card oben links
 
+31. ✅ **RESOLVED** - Zeige in der Fußzeile die korrekte Zahl der Sessions in dem Agenten an.
+- **Solution**: Added session counting logic to agents listing by importing agent_run_manager and calculating total_runs for each agent
+- **Status**: Fixed - agent cards now display correct session count in footer using agent_run_manager.get_agent_runs()  
 
 
 #### /agents/edit
@@ -69,6 +75,25 @@
      - Collapsible container with chevron indicator
    - **Status**: Fixed - Sessions container header includes filter and cleanup functionality
 
+35. ✅ **RESOLVED** - In der Seite /agent/edit werdem im container "Sessions" die Sessions nicht geladen.
+   - **Solution**: Fixed critical bug in sessions API endpoints in api_routes.py:
+     - Fixed `get_agent_sessions()` function - corrected iteration over list instead of trying to use .items() on a list
+     - Fixed `cleanup_agent_sessions()` function - same iteration issue  
+     - Fixed `delete_agent_session()` function - corrected method name from delete_run() to delete()
+     - Sessions API now properly returns session data with status, age, task completion info
+   - **Status**: Fixed - Sessions container now loads properly and displays agent sessions
+
+##### Files
+32. ergänze einen container "Files" mit folgenden inhalten
+- Header: Aktion "Upload" --> öffnet dialog
+- Body: Liste der hochgeladenen Files
+- Footer: Anzahl der hochgeladnen Files und Anzahl der im Assistant verfügbaren Files
+
+33. File Upload - Dialog
+- Feld / Button zum Upload von Files
+- Option "anonymize"
+- Hochgeladenen dateien werden gespeichert unter /data/files/uuid des agenten/filename
+- die Metadaten zu hochgeladenen Files werden 
 
 ##### AI Assistant Configuration
 
@@ -150,10 +175,7 @@
      - Assistant synchronization respects the updated assistant_tools configuration
    - **Status**: Fixed - assistant tools checkboxes are correctly pre-filled and saved when editing agents
 
-30. UI Polish
-- Input Fields: Feld "Description" soll auf gleicher Breite beginnen wie Feld "Type"
-- bewege die checkbox "reqired" von der überschrift in die gleiche zeile wie "Default"
-- die Buttons Update und Cancel sollen normale breite haben, rechtbündig sein und immer am fußende des dialogs stehen (nicht mitscrollen) 
+
 
 ##### Modal Edit Task:
 17. ✅ **RESOLVED** - der Button "Update Task" erzeugt einen Fehler: Error updating task: Unexpected token '<', "
@@ -161,8 +183,9 @@
    - **Status**: Fixed - task updates now work correctly via the edit modal
 
 30. UI Polish
-- Input Fields: Feld "Description" soll auf gleicher breite beginnen wie das feld "Typ"
-- checkbox "required" soll in gleiche zeile wie "default" ans ende
+- Input Fields: Feld "Description" soll auf gleicher Breite beginnen wie Feld "Type"
+- bewege die checkbox "reqired" von der überschrift in die gleiche zeile wie "Default"
+- die Buttons Update und Cancel sollen normale breite haben, rechtbündig sein und immer am fußende des dialogs stehen (nicht mitscrollen) 
 
 ##### container "Tasks"
 24. ✅ **RESOLVED** - die Reorder-Buttons erzeugen einen Fehler: Error moving task: Unexpected token '<', "×
@@ -182,11 +205,20 @@
 
 #### /agents/view
 
-14. UI Polish
-- bennene "open session" um in "last session"
-- stacke  "Duplicate", "activity", "edit" und "new session"
-- mache das layout zweispaltig nach dem vorbild von edit
-- entferne am ende der seite alles nach dem container "Run Statistics"
+14. ✅ **RESOLVED** - UI Polish
+   - **Solution**: Successfully implemented all UI polish requirements for agent view page:
+     - Renamed "Open Session" button to "Current Session"
+     - Stacked "Duplicate", "Activity", "Edit", and "New Session" actions into dropdown menu
+     - Converted layout to two-column design matching edit page
+     - Removed all content after "Run Statistics" container (modal, unused functions)
+   - **Status**: Fixed - agent view page has clean two-column layout with proper action stacking
+
+34. ✅ **RESOLVED** - JS-Fehler im Button "Actions": 265132e3-30a3-4366-8b96-3452043d9ab2:168 Uncaught ReferenceError: toggleViewActionsMenu is not defined
+   - **Solution**: Added missing sessions API endpoints in api_routes.py to handle session loading, deletion, and cleanup operations:
+     - GET `/agents/api/{agent_id}/sessions` - Lists all sessions for an agent with status, age, and task completion info
+     - DELETE `/agents/api/{agent_id}/sessions/{session_id}` - Deletes a specific session
+     - POST `/agents/api/{agent_id}/sessions/cleanup` - Bulk cleanup of closed/error sessions
+   - **Status**: Fixed - sessions container now properly loads agent sessions and JavaScript error resolved
 
 #### /assistants
 
@@ -277,27 +309,6 @@
 
 ---
 
-## 📚 Sprint 19 Technical Scope
-
-### Frontend Enhancements
-- **CSS Framework**: Enhanced Tailwind CSS utilities for animations
-- **JavaScript Modules**: Animation utility functions and enhanced form handling
-- **Responsive Breakpoints**: Mobile-first design improvements
-- **Accessibility**: ARIA attributes and keyboard navigation
-
-### Backend Refactoring
-- **Route Separation**: Extract generic utilities from agent-specific routes
-- **Code Organization**: Improved module structure and separation of concerns
-- **API Consistency**: Standardized response formats and error handling
-- **Performance**: Optimized route handling and reduced redundancy
-
-### UI/UX Improvements
-- **Modal System**: Enhanced task dialog design and functionality
-- **Tooltip Framework**: Professional tooltip system with animations
-- **Form Validation**: Real-time validation with improved user feedback
-- **Mobile Experience**: Touch-optimized interactions and responsive layouts
-
----
 
 ## 🎯 Sprint 19 Definition of Done
 
@@ -319,40 +330,3 @@
 
 ---
 
-## 🔮 Next Sprint Preview (Sprint 20)
-
-### Planned Focus Areas
-1. **Real-Time Execution Engine**: Implementation of live agent execution with streaming updates
-2. **Multi-Task Workflow**: Sequential and parallel task execution capabilities
-3. **WebSocket Integration**: Real-time progress updates and live monitoring
-4. **Task Progress Visualization**: Flowboard-style task progress display
-5. **Enhanced Error Handling**: Robust error recovery and retry mechanisms
-
-### Expected Deliverables
-- Complete real-time agent execution system
-- WebSocket-based live updates for task progress
-- Visual workflow representation for multi-task agents
-- Enhanced error handling and recovery mechanisms
-- Performance optimizations for complex workflows
-
----
-
-## 📊 Sprint 19 Success Metrics
-
-### User Experience Metrics
-- **Mobile Usability**: 100% of features accessible on mobile devices
-- **Animation Performance**: Consistent 60fps animations across all transitions
-- **Accessibility Score**: WCAG 2.1 AA compliance achieved
-- **Form Validation**: Real-time feedback with <100ms response time
-
-### Technical Metrics
-- **Code Quality**: Improved maintainability with agent.py refactoring
-- **Bundle Size**: JavaScript optimizations with no increase in bundle size
-- **Performance**: No regression in page load times
-- **Test Coverage**: 100% of new features covered by manual tests
-
-### Development Process
-- **Sprint Velocity**: Maintain 100% completion rate for planned features
-- **Code Review**: All changes reviewed and approved
-- **Documentation**: Complete documentation for new animation framework
-- **Migration**: Seamless refactoring with zero downtime

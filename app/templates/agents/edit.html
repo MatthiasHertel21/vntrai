@@ -17,7 +17,29 @@
                 <p class="text-gray-600">Modify agent configuration and capabilities</p>
             </div>
         </div>
-        <div class="flex gap-2">
+        <div class="flex gap-2 items-center">
+            <!-- Actions Stacked Menu -->
+            <div class="relative">
+                <button class="btn btn-outline" onclick="toggleEditActionsMenu(event)" id="edit-actions-btn">
+                    <i class="bi bi-three-dots-vertical"></i>
+                    Actions
+                </button>
+                <div class="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 hidden" id="edit-actions-menu">
+                    <button onclick="closeEditActionsMenu(); duplicateAgent('{{ agent.id }}', '{{ agent.name }}')" 
+                            class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center rounded-t-lg">
+                        <i class="bi bi-files mr-2"></i> Duplicate
+                    </button>
+                    <button onclick="closeEditActionsMenu(); exportAgent('{{ agent.id }}', '{{ agent.name }}')" 
+                            class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center">
+                        <i class="bi bi-download mr-2"></i> Export
+                    </button>
+                    <button onclick="closeEditActionsMenu(); reconnectAgent('{{ agent.id }}', '{{ agent.name }}')" 
+                            class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center rounded-b-lg">
+                        <i class="bi bi-arrow-clockwise mr-2"></i> Reconnect
+                    </button>
+                </div>
+            </div>
+            
             <a href="{{ url_for('agents.list_agents') }}" 
                class="btn btn-outline">
                 <i class="bi bi-arrow-left"></i>
@@ -648,6 +670,74 @@ function deleteTaskOld(taskId) {
     if (confirm('Are you sure you want to delete this task?')) {
         showNotification('Task deletion will be available in Sprint 18.', false);
         console.log('Delete Task clicked for task:', taskId);
+    }
+}
+
+// Stacked menu functions for edit page
+function toggleEditActionsMenu(event) {
+    event.stopPropagation();
+    const menu = document.getElementById('edit-actions-menu');
+    menu.classList.toggle('hidden');
+}
+
+function closeEditActionsMenu() {
+    document.getElementById('edit-actions-menu').classList.add('hidden');
+}
+
+// Close menu when clicking outside
+document.addEventListener('click', function(event) {
+    const menu = document.getElementById('edit-actions-menu');
+    const btn = document.getElementById('edit-actions-btn');
+    if (menu && btn && !menu.contains(event.target) && !btn.contains(event.target)) {
+        closeEditActionsMenu();
+    }
+});
+
+// Agent action functions (matching list.html functionality)
+function duplicateAgent(agentId, agentName) {
+    if (confirm(`Duplicate agent "${agentName}"?`)) {
+        window.location.href = `/agents/${agentId}/duplicate`;
+    }
+}
+
+function exportAgent(agentId, agentName) {
+    if (confirm(`Export agent "${agentName}"?`)) {
+        // Export functionality - could be implemented as download
+        fetch(`/agents/api/${agentId}/export`, { method: 'POST' })
+            .then(response => response.blob())
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `${agentName}-export.json`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+            })
+            .catch(error => {
+                console.error('Export failed:', error);
+                alert('Export failed. Please try again.');
+            });
+    }
+}
+
+function reconnectAgent(agentId, agentName) {
+    if (confirm(`Reconnect agent "${agentName}"?`)) {
+        fetch(`/agents/api/${agentId}/reconnect`, { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Agent reconnected successfully');
+                    location.reload();
+                } else {
+                    alert(data.message || 'Reconnection failed');
+                }
+            })
+            .catch(error => {
+                console.error('Reconnection failed:', error);
+                alert('Reconnection failed. Please try again.');
+            });
     }
 }
 

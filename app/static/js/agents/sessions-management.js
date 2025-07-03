@@ -80,13 +80,47 @@ function renderSessionsList() {
 function createSessionElement(session) {
     const div = document.createElement('div');
     div.className = 'px-3 py-2 border border-gray-200 rounded bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer';
-    div.onclick = () => openSession(session.uuid);
+    div.onclick = () => openSession(session.id);
+    
+    // Determine status display
+    let statusIcon, statusColor, statusText;
+    switch (session.status) {
+        case 'active':
+        case 'running':
+            statusIcon = 'bi-play-circle-fill';
+            statusColor = 'text-green-500';
+            statusText = 'Active';
+            break;
+        case 'completed':
+            statusIcon = 'bi-check-circle-fill';
+            statusColor = 'text-blue-500';
+            statusText = 'Completed';
+            break;
+        case 'failed':
+        case 'error':
+            statusIcon = 'bi-x-circle-fill';
+            statusColor = 'text-red-500';
+            statusText = 'Failed';
+            break;
+        case 'paused':
+            statusIcon = 'bi-pause-circle-fill';
+            statusColor = 'text-yellow-500';
+            statusText = 'Paused';
+            break;
+        default:
+            statusIcon = 'bi-circle';
+            statusColor = 'text-gray-500';
+            statusText = 'Created';
+    }
+    
+    // Generate session name if not provided
+    const sessionName = session.name || `Session ${session.id.substring(0, 8)}`;
     
     // Format last used date
     let lastUsedText = 'Never';
-    if (session.last_used) {
+    if (session.last_activity) {
         try {
-            const lastUsed = new Date(session.last_used);
+            const lastUsed = new Date(session.last_activity);
             const now = new Date();
             const diffHours = Math.floor((now - lastUsed) / (1000 * 60 * 60));
             
@@ -108,17 +142,17 @@ function createSessionElement(session) {
             <div class="flex items-center flex-1 min-w-0">
                 <!-- Status icon -->
                 <div class="flex-shrink-0 mr-2">
-                    <i class="bi ${session.status_icon} ${session.status_color}" title="${session.status_text}"></i>
+                    <i class="bi ${statusIcon} ${statusColor}" title="${statusText}"></i>
                 </div>
                 
                 <!-- Session info -->
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center">
-                        <span class="font-medium text-gray-900 text-sm truncate">${session.name}</span>
+                        <span class="font-medium text-gray-900 text-sm truncate">${sessionName}</span>
                         <span class="ml-2 text-xs text-gray-500">(${session.age_days}d old)</span>
                     </div>
                     <div class="text-xs text-gray-500">
-                        Last used: ${lastUsedText} • ${session.task_completed}/${session.task_count} tasks completed
+                        Last used: ${lastUsedText} • ${session.completed_tasks}/${session.total_tasks} tasks completed
                     </div>
                 </div>
             </div>
@@ -126,7 +160,7 @@ function createSessionElement(session) {
             <!-- Actions -->
             <div class="flex items-center ml-2">
                 <button type="button" 
-                        onclick="event.stopPropagation(); deleteSession('${session.uuid}')" 
+                        onclick="event.stopPropagation(); deleteSession('${session.id}')" 
                         class="p-1 text-red-500 hover:text-red-700 transition-colors"
                         title="Delete session">
                     <i class="bi bi-trash" style="font-size: 12px;"></i>
@@ -163,14 +197,14 @@ function openSession(sessionUuid) {
 }
 
 // Delete session
-async function deleteSession(sessionUuid) {
+async function deleteSession(sessionId) {
     if (!confirm('Are you sure you want to delete this session?')) {
         return;
     }
     
     try {
         const agentId = window.agentData.id;
-        const response = await fetch(`/agents/api/${agentId}/sessions/${sessionUuid}`, {
+        const response = await fetch(`/agents/api/${agentId}/sessions/${sessionId}`, {
             method: 'DELETE',
             headers: {
                 'X-CSRFToken': document.querySelector('input[name="csrf_token"]')?.value || ''
@@ -179,7 +213,7 @@ async function deleteSession(sessionUuid) {
         
         if (response.ok) {
             // Remove from local data
-            agentSessions = agentSessions.filter(s => s.uuid !== sessionUuid);
+            agentSessions = agentSessions.filter(s => s.id !== sessionId);
             filterSessions(); // Refresh display
             showNotificationSafe('Session deleted successfully', true);
         } else {
