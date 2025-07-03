@@ -73,10 +73,17 @@ Der Container-Header soll eine filter option haben nach status des agent runs.
    - **Solution**: Converted colored action buttons to neutral menu entries with consistent styling
    - **Status**: Fixed - actions now use standard menu styling instead of colored buttons
 
-11. ✅ **RESOLVED** - erstelle eine aktion zur erstellung und zuweisung eines assistenten mit umfangreicher nachvollziehbarkeit
+11. ✅ **RESOLVED** - erstelle eine aktion zur erstellung und zuweisung eines assistenten 
    - **Solution**: Added "Create & Assign Assistant" action with comprehensive traceability including step-by-step logging, timing, and detailed error reporting
    - **Status**: Fixed - users can create assistants with full audit trail and process visibility 
    - entferne die alerts im browser
+
+15. zeige den Status-Tag als "Assigned" in AI Assistant configuration an, wenn ein Assistent zugewiesen ist
+
+16. ersetze die aktion "Reassign Assistant" durch die AKtion "Remove Assistant". Zeige die Aktionen "Create Assistant" und "Remobe Assistant" alternativ an
+
+##### Modal Edit Task:
+17. der Button "Update Task" erzeugt einen Fehler: Error updating task: Unexpected token '<', "
 
 #### /agents/view
 
@@ -86,11 +93,24 @@ Der Container-Header soll eine filter option haben nach status des agent runs.
 - mache das layout zweispaltig nach dem vorbild von edit
 - entferne am ende der seite alles nach dem container "Run Statistics"
 
-#### /assistence
-5. Layout Polishing
-- stelle sicher, dass das menü open rechts nicht aus dem card-layout hinaus wandert
-- setze das status-tag hinter das model
-- stelle sicher, dass die fußzeile immer am unteren Rand der Card ist
+#### /assistants
+
+5. ✅ **RESOLVED** - Layout Polishing
+   - **Solution**: Implemented comprehensive layout improvements for assistant cards including proper menu button positioning, status tag placement, footer alignment, and name truncation with tooltips
+   - **Status**: Fixed - menu button stays within card layout, status tag positioned after model, footer always at bottom, names truncated with tooltips for full text
+   - stelle sicher, dass der menü-button open rechts nicht aus dem card-layout hinaus wandert
+   - setze das status-tag hinter das model
+   - stelle sicher, dass die fußzeile immer am unteren Rand der Card ist
+   - kürze den Namen des Agenten so, dass der Menübutton nicht aus der Card verschoben wird, setze einen Tooltip auf den card-header zur anzeige des vollständigen Namens 
+
+19. ✅ **RESOLVED** - UI Polish
+   - **Solution**: Removed "Mapped to agent: ..." display from assistant cards for cleaner UI
+   - **Status**: Fixed - agent mapping information no longer displayed in card body
+   - entferne die Anzeige "Mapped to agent: ..."
+
+18. ✅ **RESOLVED** - ergänze eine Aktion "open in openai" um die webseite des agenten beim hertsller (z.B. openai) zu öffnen
+   - **Solution**: Added "Open in OpenAI" action to assistant dropdown menu with direct link to OpenAI platform
+   - **Status**: Fixed - users can now open assistants directly in OpenAI platform with one click
 
 
 ### From Previous Sprint (High Priority)

@@ -385,7 +385,7 @@ document.getElementById('confirmDeleteBtn').addEventListener('click', function()
             }
             return response.json();
         })
-        .then data => {
+        .then(data => {
             if (data.success) {
                 // Show success message and reload
                 alert('Assistant deleted successfully');

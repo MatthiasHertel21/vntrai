@@ -6,16 +6,26 @@
     <title>{% block title %}{% endblock %} - VNTRAI</title>
     <link rel="icon" href="{{ url_for('static', filename='icons/Platform logo - blue.png') }}" type="image/png">
     
-    <!-- Tailwind CSS - Production Version -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio"></script>
     <script>
-        // Production-ready Tailwind CSS configuration
+        // Tailwind CSS configuration
         if (typeof tailwind !== 'undefined') {
             tailwind.config = {
                 theme: {
                     extend: {}
                 }
             }
+        }
+        // Suppress development warnings in production
+        if (typeof console !== 'undefined' && console.warn) {
+            const originalWarn = console.warn;
+            console.warn = function(...args) {
+                if (args[0] && args[0].includes && args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                    return;
+                }
+                originalWarn.apply(console, args);
+            };
         }
     </script>
     
