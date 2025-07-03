@@ -208,31 +208,52 @@ def get_run_tasks(run_uuid):
 def execute_task(run_uuid, task_uuid):
     """Execute a task in an agent run (Sprint 18)"""
     try:
+        # Debug: Log incoming request details
+        print(f"[DEBUG] Task execute called with run_uuid={run_uuid}, task_uuid={task_uuid}")
+        print(f"[DEBUG] Request content type: {request.content_type}")
+        print(f"[DEBUG] Request data: {request.data}")
+        
         # Validate CSRF token
         try:
             validate_csrf(request.headers.get('X-CSRFToken'))
         except ValidationError:
+            print(f"[DEBUG] CSRF validation failed")
             return jsonify({'success': False, 'error': 'CSRF token validation failed'}), 400
         
         data = request.get_json()
+        print(f"[DEBUG] Parsed JSON data: {data}")
+        
         inputs = data.get('inputs', {}) if data else {}
+        print(f"[DEBUG] Extracted inputs: {inputs}")
         
         # Get task definition and current state
         agent_run = agent_run_manager.load(run_uuid)
         if not agent_run:
+            print(f"[DEBUG] Agent run not found: {run_uuid}")
             return jsonify({'success': False, 'error': 'Agent run not found'}), 404
+        
+        print(f"[DEBUG] Agent run found, agent_uuid: {agent_run.get('agent_uuid')}")
         
         agent = agents_manager.load(agent_run['agent_uuid'])
         if not agent:
+            print(f"[DEBUG] Agent not found: {agent_run['agent_uuid']}")
             return jsonify({'success': False, 'error': 'Agent not found'}), 404
+        
+        print(f"[DEBUG] Agent found: {agent.get('name', 'Unknown')}")
         
         task_def = agents_manager.get_task_definition(agent_run['agent_uuid'], task_uuid)
         if not task_def:
+            print(f"[DEBUG] Task definition not found: {task_uuid}")
             return jsonify({'success': False, 'error': 'Task definition not found'}), 404
         
+        print(f"[DEBUG] Task definition found, type: {task_def.get('type')}")
+        
         # Set task as running
-        agent_run_manager.set_task_status(run_uuid, task_uuid, 'running')
-        agent_run_manager.set_task_inputs(run_uuid, task_uuid, inputs)
+        status_result = agent_run_manager.set_task_status(run_uuid, task_uuid, 'running')
+        print(f"[DEBUG] Set task status to running: {status_result}")
+        
+        inputs_result = agent_run_manager.set_task_inputs(run_uuid, task_uuid, inputs)
+        print(f"[DEBUG] Set task inputs: {inputs_result}")
         
         try:
             # Execute task based on type

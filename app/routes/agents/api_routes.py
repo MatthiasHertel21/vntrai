@@ -826,16 +826,28 @@ def cleanup_agent_sessions(agent_id):
 def api_save_task_input(run_uuid, task_uuid):
     """Save task input values for an agent run task"""
     try:
+        # Debug: Log incoming request details
+        current_app.logger.info(f"API save_task_input called with run_uuid={run_uuid}, task_uuid={task_uuid}")
+        current_app.logger.info(f"Request content type: {request.content_type}")
+        current_app.logger.info(f"Request data: {request.data}")
+        
         data = request.get_json()
+        current_app.logger.info(f"Parsed JSON data: {data}")
+        
         inputs = data.get('inputs', {}) if data else {}
+        current_app.logger.info(f"Extracted inputs: {inputs}")
         
         # Validate that the agent run exists
         agent_run = agent_run_manager.load(run_uuid)
         if not agent_run:
+            current_app.logger.error(f"Agent run not found: {run_uuid}")
             return jsonify({'success': False, 'error': 'Agent run not found'}), 404
+        
+        current_app.logger.info(f"Agent run found, has task_states: {'task_states' in agent_run}")
         
         # Save the task inputs
         success = agent_run_manager.set_task_inputs(run_uuid, task_uuid, inputs)
+        current_app.logger.info(f"set_task_inputs result: {success}")
         
         if success:
             return jsonify({
@@ -843,10 +855,11 @@ def api_save_task_input(run_uuid, task_uuid):
                 'message': 'Task inputs saved successfully'
             })
         else:
+            current_app.logger.error(f"Failed to save task inputs for run {run_uuid}, task {task_uuid}")
             return jsonify({'success': False, 'error': 'Failed to save task inputs'}), 500
             
     except Exception as e:
-        current_app.logger.error(f"Error saving task inputs: {str(e)}")
+        current_app.logger.error(f"Error saving task inputs: {str(e)}", exc_info=True)
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @agents_bp.route('/api/agent_run/<run_uuid>/selected_task', methods=['POST'])

@@ -1207,12 +1207,24 @@ class AgentRunManager(DataManager):
     
     def update_task_state(self, run_id: str, task_uuid: str, state_data: Dict[str, Any]) -> bool:
         """Update task execution state in agent run (Sprint 18)"""
-        agent_run = self.load(run_id)
-        if not agent_run or 'task_states' not in agent_run:
-            return False
+        print(f"[DEBUG] update_task_state called with run_id={run_id}, task_uuid={task_uuid}, state_data={state_data}")
         
+        agent_run = self.load(run_id)
+        if not agent_run:
+            print(f"[DEBUG] Agent run not found: {run_id}")
+            return False
+            
+        if 'task_states' not in agent_run:
+            print(f"[DEBUG] No task_states in agent run: {run_id}, creating empty list")
+            agent_run['task_states'] = []
+        
+        print(f"[DEBUG] Found {len(agent_run['task_states'])} task states")
+        
+        # Look for existing task state
         for i, task_state in enumerate(agent_run['task_states']):
+            print(f"[DEBUG] Checking task state {i}: task_uuid={task_state.get('task_uuid')}")
             if task_state.get('task_uuid') == task_uuid:
+                print(f"[DEBUG] Found matching task state at index {i}")
                 # Update state data while preserving task_uuid
                 updated_state = {**task_state, **state_data}
                 updated_state['task_uuid'] = task_uuid
@@ -1220,9 +1232,27 @@ class AgentRunManager(DataManager):
                 
                 agent_run['task_states'][i] = updated_state
                 agent_run['updated_at'] = datetime.now().isoformat()
-                return self.save(agent_run)
+                
+                result = self.save(agent_run)
+                print(f"[DEBUG] Save result: {result}")
+                return result
         
-        return False
+        # No existing task state found, create a new one
+        print(f"[DEBUG] No matching task state found for task_uuid: {task_uuid}, creating new one")
+        new_task_state = {
+            'task_uuid': task_uuid,
+            'status': 'pending',
+            'created_at': datetime.now().isoformat(),
+            'updated_at': datetime.now().isoformat(),
+            **state_data  # Add the provided state data
+        }
+        
+        agent_run['task_states'].append(new_task_state)
+        agent_run['updated_at'] = datetime.now().isoformat()
+        
+        result = self.save(agent_run)
+        print(f"[DEBUG] Created new task state, save result: {result}")
+        return result
     
     def set_task_status(self, run_id: str, task_uuid: str, status: str, error: str = None) -> bool:
         """Set task status (Sprint 18)"""

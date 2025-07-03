@@ -19,6 +19,9 @@
 
 ### New requests
 
+18. verwende tailwind-icons in alles templates und färbe sie in der primärfarbe der applikation (türkis)
+
+
 #### AgentRun (/agents/uuid/runs/uuid)
 1. ✅ **COMPLETED** - erstelle eine simple seite Seite zum Anzeigen eines Agent Run mit folgenden Informationen:
 - route /agents/uuid_agent/runs/uuid_agentrun
@@ -45,42 +48,47 @@
 - lagere es nach funktionseinheiten getrennt in verschiedene JS Dateien aus
 
 ##### Result
-13. ergänze im Inhalt des Containers für jede Task eine Sektion mit folgendem Aufbau:
+13. ✅ **COMPLETED** ergänze im Inhalt des Containers für jede Task eine Sektion mit folgendem Aufbau:
 - Name der Task (fett)
 - Update-Button (rechtsbündig) mit "Spinner Icon
 - graue Linie als sektions-trennstrich
-- ausgabefeld für das ergebnis der task zur anzeige von html
-- headerbereich: Auswahlfeld für eine Sprache, Icon zum Ausklappen für verschiedene Export-Aktionen (nach Clipboard, nach txt, mach markdown, nach words, nach pdf )
+- ausgabefeld für das ergebnis der task zur anzeige von html (ohne ran, ohne hintergrundfarbe)
+
+16. ergänze im headerbereich des containers "Result": Auswahlfeld für eine Sprache (german, english, french, ...) und ein Icon zum Ausklappen für verschiedene Export-Aktionen (Clipboard, Text, markdown, word, pdf )
+
 
 ##### Tasks
 3. ✅ **COMPLETED** - stelle dar eine Liste der Tasks mit Statusicon, name der task und "execute" icon (rechts)
 4. ✅ **COMPLETED** - eine der tasks ist "aktiv" --> siehe "active task"
 
-15. UI Polish
+15. ✅ **COMPLETED** UI Polish
 - reduziere die höhe des containers zur anzeige eines task-eintrages in der liste
 - ergänze ein Icon zur Anzeige des Status der Task
 - ergänze rechts ein "execute" Icon
 
 ###### active task
-5. Handling Aktiver Tasks:
+5. ✅ **COMPLETED** Handling Aktiver Tasks:
 - Eine Task aus der Taskliste ist die "aktive Task"
 - eine task wird durch klick aktiviert, 
-- aktive tasks bekommen einen farblichen background (primärfarbe der anwendunf türkis) als Anzeige "aktiv". 
 - beim laden der seite wird die letzte aktive task wieder aktiviert
 - ist keine task aktiv wird beim laden die erste aufgabe aktiviert
 
-6. direkt unterhalb der Zeile mit der aktiven Task sollen die task dargestellt werden:
+
+17. - aktive tasks bekommen einen farblichen background (primärfarbe der anwendunf türkis) als Anzeige "aktiv". 
+
+
+6. ✅ **COMPLETED** direkt unterhalb der Zeile mit der aktiven Task sollen die task dargestellt werden:
 - Entferne das Label "active Task Details" und "Description"
-- Zeige den Inhalt von Description nicht als Feld an, sondern als Text
+- Zeige den Inhalt von Description nicht als Feld an, sondern als normalen Text
 - entferne die Anzeige von "Prompt" und dem entsprechenden Feld
 - entferne die anzeige der Output-Parameter
-- zeige die eingabefelder der Task gerendert an!(bei ai-task die Input-felder laut definition im agent, bei tooltask die INput-Felder laut definition in der config unter berücksichtigung gesperrter eingabefelder und vorbelegungen)
+- zeige die definierten eingabefelder der Task gerendert an!(bei ai-task die Input-felder laut definition im agent, bei tooltask die INput-Felder laut definition in der config unter berücksichtigung gesperrter eingabefelder und vorbelegungen)
 - reduziere den abstand aller task-einträge zum container
 
 
-7. ein button "execute" --> führt die aufgabe aus
-8. ein button "prompt" --> zeigt den contextprompt an, der bei execute ausgeführt werden soll
-9. Ein Button "save" --> speichert die Feldwerte der task im json des agent-run
+7. ✅ **COMPLETED** ein button "execute" --> führt die aufgabe aus
+8. ✅ **COMPLETED** ein button "prompt" --> zeigt den contextprompt an, der bei execute ausgeführt werden soll
+9. ✅ **COMPLETED** Ein Button "save" --> speichert die Feldwerte der task im json des agent-run
 
 10. Autosave: beim verlassen eines feldes oder nach ablauf von drei sekunden sollen per autosave die eingabewerte der aktuellen task gespeichert werden
 
@@ -94,6 +102,7 @@
 
 137. ⏳ **PENDING** - UI Polish
 - alle container sollen auf- und zuklappbar sein durch klick auf die überschrift des containers
+- verwende tailwind-icons und färbe sie in der primärfarbe der applikation (türkis)
 
 ##### Files
 132. ⏳ **PENDING** - ergänze einen container "Files" mit folgenden inhalten

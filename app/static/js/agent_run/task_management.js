@@ -86,12 +86,29 @@ function showActiveTaskDetails(taskIndex) {
         }
     } else if (task.type === 'tool' || (task.definition && task.definition.type === 'tool')) {
         // For tool tasks, we need to look up the tool definition
-        // For now, create a placeholder - this would need integration with tool manager
-        console.log('Tool task detected - tool definition lookup needed');
-        const toolMessage = document.createElement('p');
-        toolMessage.className = 'text-sm text-gray-500 italic';
-        toolMessage.textContent = 'Tool input fields will be loaded dynamically...';
-        inputFieldsContainer.appendChild(toolMessage);
+        console.log('Tool task detected - rendering tool input fields');
+        
+        // Look for tool_id in different locations
+        let toolId = null;
+        if (task.tool_id) {
+            toolId = task.tool_id;
+        } else if (task.definition && task.definition.tool_id) {
+            toolId = task.definition.tool_id;
+        } else if (task.config && task.config.tool_id) {
+            toolId = task.config.tool_id;
+        } else if (task.definition && task.definition.config && task.definition.config.tool_id) {
+            toolId = task.definition.config.tool_id;
+        }
+        
+        if (toolId) {
+            // Try to render tool input fields
+            renderToolInputFields(inputFieldsContainer, toolId, task);
+        } else {
+            const toolMessage = document.createElement('p');
+            toolMessage.className = 'text-sm text-gray-500 italic';
+            toolMessage.textContent = 'Tool input fields: tool_id not found in task definition';
+            inputFieldsContainer.appendChild(toolMessage);
+        }
     } else {
         // Check for input schema in different locations (fallback)
         let inputSchema = null;
@@ -231,7 +248,15 @@ function autoSaveTaskInputs() {
 function saveTaskInputs(taskIndex, inputData) {
     const task = window.taskDefinitions[taskIndex];
     if (!task) return;
-    fetch(`/agents/api/agent_run/${window.agentRunUuid}/task_input/${task.uuid}`, {
+    
+    // Get the task UUID from the correct location
+    const taskUuid = task.uuid || task.definition?.uuid;
+    if (!taskUuid) {
+        console.error('Task UUID not found for task:', task);
+        return;
+    }
+    
+    fetch(`/agents/api/agent_run/${window.agentRunUuid}/task_input/${taskUuid}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
         body: JSON.stringify({ inputs: inputData })
@@ -240,6 +265,9 @@ function saveTaskInputs(taskIndex, inputData) {
     .then(data => {
         if (data.success) {
             // Update local task state
+            if (!window.taskDefinitions[taskIndex].state) {
+                window.taskDefinitions[taskIndex].state = {};
+            }
             window.taskDefinitions[taskIndex].state.inputs = inputData;
             console.log('Task inputs saved successfully');
         } else {
@@ -254,6 +282,14 @@ function saveTaskInputs(taskIndex, inputData) {
 function executeTask(taskIndex) {
     const task = window.taskDefinitions[taskIndex];
     if (!task) return;
+    
+    // Get the task UUID from the correct location
+    const taskUuid = task.uuid || task.definition?.uuid;
+    if (!taskUuid) {
+        console.error('Task UUID not found for task:', task);
+        return;
+    }
+    
     let inputData = {};
     if (taskIndex === window.activeTaskIndex) {
         const inputFields = document.querySelectorAll('#taskInputFields input, #taskInputFields textarea');
@@ -262,7 +298,7 @@ function executeTask(taskIndex) {
         inputData = task.state?.inputs || {};
     }
     updateTaskStatus(taskIndex, 'running');
-    fetch(`/api/task_management/run/${window.agentRunUuid}/tasks/${task.uuid}/execute`, {
+    fetch(`/api/task_management/run/${window.agentRunUuid}/tasks/${taskUuid}/execute`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
         body: JSON.stringify({ inputs: inputData })
@@ -326,4 +362,197 @@ function updateTaskStatus(taskIndex, status) {
 
 function getCsrfToken() {
     return window.csrfToken || '';
+}
+
+async function renderToolInputFields(container, toolId, task) {
+    try {
+        // Fetch tool definition from backend
+        const response = await fetch(`/tools/api/config/${toolId}`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch tool definition: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        if (!result.success) {
+            throw new Error(result.message || 'Failed to load tool config');
+        }
+        
+        const toolData = result.tool;
+        
+        // Get input parameters from different sources
+        let inputParams = [];
+        
+        // First check if tool has direct input_fields definition
+        if (toolData.input_fields && Array.isArray(toolData.input_fields)) {
+            inputParams = toolData.input_fields;
+        } else {
+            // Fallback: Create basic input params based on common tool patterns
+            const commonInputs = getCommonToolInputs(toolData.tool_definition);
+            if (commonInputs.length > 0) {
+                inputParams = commonInputs;
+            }
+        }
+        
+        if (inputParams.length === 0) {
+            const noFieldsMessage = document.createElement('p');
+            noFieldsMessage.className = 'text-sm text-gray-500 italic';
+            noFieldsMessage.textContent = `Tool: ${toolData.name} - Input fields definition not available`;
+            container.appendChild(noFieldsMessage);
+            return;
+        }
+        
+        // Render input fields
+        inputParams.forEach(param => {
+            // Skip locked fields
+            if (toolData.locked_inputs && toolData.locked_inputs.includes(param.name)) {
+                return;
+            }
+            
+            createToolInputField(container, param, task, toolData);
+        });
+        
+    } catch (error) {
+        console.error('Error rendering tool input fields:', error);
+        const errorMessage = document.createElement('p');
+        errorMessage.className = 'text-sm text-red-500 italic';
+        errorMessage.textContent = `Error loading tool input fields: ${error.message}`;
+        container.appendChild(errorMessage);
+    }
+}
+
+function getCommonToolInputs(toolDefinition) {
+    // Common input parameters for different tool types
+    const commonInputMappings = {
+        'ChatGPT': [
+            {
+                name: 'prompt',
+                type: 'textarea',
+                label: 'Prompt',
+                description: 'Enter your question or request',
+                required: true
+            },
+            {
+                name: 'model',
+                type: 'select',
+                label: 'Model',
+                description: 'OpenAI model to use',
+                options: ['gpt-4', 'gpt-4-turbo-preview', 'gpt-3.5-turbo'],
+                default: 'gpt-3.5-turbo'
+            },
+            {
+                name: 'temperature',
+                type: 'number',
+                label: 'Temperature',
+                description: 'Creativity level (0.0 - 2.0)',
+                min: 0.0,
+                max: 2.0,
+                step: 0.1,
+                default: 0.7
+            }
+        ],
+        'Google Sheets': [
+            {
+                name: 'spreadsheet_id',
+                type: 'text',
+                label: 'Spreadsheet ID',
+                description: 'Google Sheets spreadsheet ID',
+                required: true
+            },
+            {
+                name: 'range',
+                type: 'text',
+                label: 'Range',
+                description: 'Cell range (e.g., A1:C10)',
+                required: true
+            }
+        ],
+        'OpenAI Assistant': [
+            {
+                name: 'message',
+                type: 'textarea',
+                label: 'Message',
+                description: 'Message to send to the assistant',
+                required: true
+            }
+        ]
+    };
+    
+    return commonInputMappings[toolDefinition] || [];
+}
+
+function createToolInputField(container, param, task, toolData) {
+    const fieldDiv = document.createElement('div');
+    fieldDiv.className = 'space-y-1';
+    
+    const label = document.createElement('label');
+    label.className = 'block text-xs font-medium text-gray-600';
+    label.textContent = param.label || param.name;
+    
+    let input;
+    const fieldName = param.name;
+    
+    // Get saved value from different possible locations
+    let savedValue = '';
+    if (task.state && task.state.inputs && task.state.inputs[fieldName]) {
+        savedValue = task.state.inputs[fieldName];
+    } else if (task.inputs && task.inputs[fieldName]) {
+        savedValue = task.inputs[fieldName];
+    } else if (toolData.prefilled_inputs && toolData.prefilled_inputs[fieldName]) {
+        savedValue = toolData.prefilled_inputs[fieldName];
+    } else if (param.default) {
+        savedValue = param.default;
+    }
+    
+    if (param.type === 'textarea') {
+        input = document.createElement('textarea');
+        input.className = 'w-full text-xs border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
+        input.rows = 3;
+        input.value = savedValue;
+    } else if (param.type === 'select') {
+        input = document.createElement('select');
+        input.className = 'w-full text-xs border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
+        
+        // Add options
+        if (param.options && Array.isArray(param.options)) {
+            param.options.forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.value = option;
+                optionElement.textContent = option;
+                if (option === savedValue) {
+                    optionElement.selected = true;
+                }
+                input.appendChild(optionElement);
+            });
+        }
+    } else {
+        input = document.createElement('input');
+        input.type = param.type === 'number' ? 'number' : 'text';
+        input.className = 'w-full text-xs border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
+        input.value = savedValue;
+        
+        if (param.type === 'number' && param.min !== undefined) {
+            input.min = param.min;
+        }
+        if (param.type === 'number' && param.max !== undefined) {
+            input.max = param.max;
+        }
+        if (param.type === 'number' && param.step !== undefined) {
+            input.step = param.step;
+        }
+    }
+    
+    input.name = fieldName;
+    input.placeholder = param.description || param.placeholder || '';
+    
+    if (param.required) {
+        input.required = true;
+        label.innerHTML += ' <span class="text-red-500">*</span>';
+    }
+    
+    input.addEventListener('input', scheduleAutoSave);
+    input.addEventListener('blur', autoSaveTaskInputs);
+    
+    fieldDiv.appendChild(label);
+    fieldDiv.appendChild(input);
+    container.appendChild(fieldDiv);
 }
