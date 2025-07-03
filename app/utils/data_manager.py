@@ -1103,6 +1103,52 @@ class AgentRunManager(DataManager):
     def __init__(self):
         super().__init__('agentrun')
     
+    def save(self, item: Dict[str, Any]) -> bool:
+        """Save agent run using uuid instead of id"""
+        uuid_val = item.get('uuid')
+        if not uuid_val:
+            uuid_val = str(uuid.uuid4())
+            item['uuid'] = uuid_val
+        
+        # Remove id field if it exists to avoid duplication
+        if 'id' in item:
+            del item['id']
+        
+        # Update timestamp
+        item['updated_at'] = datetime.now().isoformat()
+        if 'created_at' not in item:
+            item['created_at'] = item['updated_at']
+        
+        file_path = self.data_dir / f"{uuid_val}.json"
+        try:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(item, f, indent=2, ensure_ascii=False)
+            return True
+        except IOError as e:
+            print(f"Error saving {self.data_type} {uuid_val}: {e}")
+            return False
+    
+    def load(self, uuid_val: str) -> Optional[Dict[str, Any]]:
+        """Load agent run by uuid"""
+        file_path = self.data_dir / f"{uuid_val}.json"
+        if not file_path.exists():
+            return None
+        
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            # Ensure uuid field exists and remove id field if present
+            if 'uuid' not in data:
+                data['uuid'] = uuid_val
+            if 'id' in data:
+                del data['id']
+                
+            return data
+        except (IOError, json.JSONDecodeError) as e:
+            print(f"Error loading {self.data_type} {uuid_val}: {e}")
+            return None
+    
     def create_agent_run(self, agent_id: str, name: str = '') -> Dict[str, Any]:
         """Create new agent run with Sprint 18 task state structure"""
         agent_run = {
@@ -1253,40 +1299,52 @@ class AgentRunManager(DataManager):
     
     def get_task_definitions_with_states(self, run_id: str) -> List[Dict[str, Any]]:
         """Get task definitions combined with their execution states (Sprint 18)"""
-        agent_run = self.load(run_id)
-        if not agent_run:
-            return []
-        
-        agent = agents_manager.load(agent_run['agent_uuid'])
-        if not agent or 'tasks' not in agent:
-            return []
-        
-        # Combine task definitions with their states
-        combined_tasks = []
-        task_states_dict = {ts['task_uuid']: ts for ts in agent_run.get('task_states', [])}
-        
-        for task_def in sorted(agent['tasks'], key=lambda x: x.get('order', 0)):
-            task_uuid = task_def['uuid']
-            task_state = task_states_dict.get(task_uuid, {
-                'task_uuid': task_uuid,
-                'status': 'pending',
-                'inputs': {},
-                'outputs': {},
-                'results': {},
-                'error': None
-            })
+        try:
+            agent_run = self.load(run_id)
+            if not agent_run:
+                return []
             
-            combined_task = {
-                'definition': task_def,
-                'state': task_state,
-                'uuid': task_uuid,
-                'name': task_def.get('name', 'Unnamed Task'),
-                'type': task_def.get('type', 'ai'),
-                'status': task_state.get('status', 'pending')
-            }
-            combined_tasks.append(combined_task)
-        
-        return combined_tasks
+            agent = agents_manager.load(agent_run['agent_uuid'])
+            if not agent or 'tasks' not in agent:
+                return []
+            
+            # Combine task definitions with their states
+            combined_tasks = []
+            task_states_dict = {ts['task_uuid']: ts for ts in agent_run.get('task_states', [])}
+            
+            for task_def in sorted(agent['tasks'], key=lambda x: x.get('order', 0)):
+                try:
+                    task_uuid = task_def.get('uuid', '')
+                    if not task_uuid:
+                        current_app.logger.warning(f"Task without UUID found in agent {agent_run['agent_uuid']}")
+                        continue
+                        
+                    task_state = task_states_dict.get(task_uuid, {
+                        'task_uuid': task_uuid,
+                        'status': 'pending',
+                        'inputs': {},
+                        'outputs': {},
+                        'results': {},
+                        'error': None
+                    })
+                    
+                    combined_task = {
+                        'definition': task_def,
+                        'state': task_state,
+                        'uuid': task_uuid,
+                        'name': task_def.get('name', 'Unnamed Task'),
+                        'type': task_def.get('type', 'ai'),
+                        'status': task_state.get('status', 'pending')
+                    }
+                    combined_tasks.append(combined_task)
+                except Exception as task_error:
+                    current_app.logger.error(f"Error processing task {task_def}: {str(task_error)}")
+                    continue
+            
+            return combined_tasks
+        except Exception as e:
+            current_app.logger.error(f"Error in get_task_definitions_with_states: {str(e)}")
+            return []
     
     def sync_task_definitions(self, run_id: str) -> bool:
         """Sync task definitions from agent to agent run (Sprint 18)"""

@@ -29,7 +29,7 @@
 - ergänze in der Toolbar einen Button "back", der die Seite /agents aufruft
 
 
-2. erweitere die seite vie_run 
+2. ✅ **COMPLETED** erweitere die seite view_run 
 - zweispaltiges layout für container, erste Spalte 75%, zweite Spalte 25% 
 - json-rawdata-container nach links, info container nach rechts
 - Oberhalb des Info Containers erstelle drei neue (erstmal leere) Container: Tasks, Files, Feedback
@@ -56,11 +56,16 @@
 3. ✅ **COMPLETED** - stelle dar eine Liste der Tasks mit Statusicon, name der task und "execute" icon (rechts)
 4. ✅ **COMPLETED** - eine der tasks ist "aktiv" --> siehe "active task"
 
+15. UI Polish
+- reduziere die höhe des containers zur anzeige eines task-eintrages in der liste
+- ergänze ein Icon zur Anzeige des Status der Task
+- ergänze rechts ein "execute" Icon
+
 ###### active task
 5. Handling Aktiver Tasks:
 - Eine Task aus der Taskliste ist die "aktive Task"
 - eine task wird durch klick aktiviert, 
-- aktive tasks bekommen einen farblichen background als Anzeige "aktiv". 
+- aktive tasks bekommen einen farblichen background (primärfarbe der anwendunf türkis) als Anzeige "aktiv". 
 - beim laden der seite wird die letzte aktive task wieder aktiviert
 - ist keine task aktiv wird beim laden die erste aufgabe aktiviert
 

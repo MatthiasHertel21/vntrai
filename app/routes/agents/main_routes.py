@@ -697,6 +697,16 @@ def view_agent_run(agent_uuid, run_uuid):
         progress = agent_run_manager.get_task_progress(run_uuid)
         task_definitions = agent_run_manager.get_task_definitions_with_states(run_uuid)
         
+        # Debug logging
+        current_app.logger.info(f"Agent run {run_uuid}: found {len(task_definitions) if task_definitions else 0} tasks")
+        if task_definitions:
+            for i, task in enumerate(task_definitions):
+                current_app.logger.info(f"Task {i}: {task.get('name', 'Unknown')} - UUID: {task.get('uuid', 'No UUID')}")
+        
+        # Ensure task_definitions is always a list
+        if task_definitions is None:
+            task_definitions = []
+        
         # Count files and knowledge base items
         file_count = len(agent_run.get('files', []))
         knowledge_count = len(agent.get('knowledge_base', []))
@@ -710,6 +720,9 @@ def view_agent_run(agent_uuid, run_uuid):
                              knowledge_count=knowledge_count)
                              
     except Exception as e:
-        current_app.logger.error(f"Error viewing agent run: {str(e)}")
+        import traceback
+        error_details = traceback.format_exc()
+        current_app.logger.error(f"Error viewing agent run {run_uuid}: {str(e)}")
+        current_app.logger.error(f"Traceback: {error_details}")
         flash(f'Error loading agent run: {str(e)}', 'error')
         return redirect(url_for('agents.list_agents'))

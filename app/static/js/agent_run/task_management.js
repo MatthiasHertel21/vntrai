@@ -28,30 +28,66 @@ function selectTask(taskIndex, uuid) {
 }
 
 function saveActiveTaskSelection(taskIndex, uuid) {
+    // Save to localStorage  
     localStorage.setItem(`agentRun_${uuid}_activeTask`, taskIndex.toString());
-    fetch(`/api/agent_run/${uuid}/selected_task`, {
+    
+    // Try to save to backend, but don't fail if it doesn't work
+    fetch(`/agents/api/agent_run/${uuid}/selected_task`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
         body: JSON.stringify({ task_index: taskIndex })
+    }).catch(error => {
+        console.log('Backend save failed, using localStorage only:', error);
     });
 }
 
 function showActiveTaskDetails(taskIndex) {
+    console.log('showActiveTaskDetails called with taskIndex:', taskIndex);
+    console.log('window.taskDefinitions:', window.taskDefinitions);
+    
     const task = window.taskDefinitions[taskIndex];
-    if (!task) return;
+    if (!task) {
+        console.error('Task not found at index:', taskIndex);
+        return;
+    }
+    
+    console.log('Task data:', task);
+    
     const detailsContainer = document.getElementById('activeTaskDetails');
     const descriptionContainer = document.getElementById('taskDescription');
     const inputFieldsContainer = document.getElementById('taskInputFields');
+    
+    if (!detailsContainer || !descriptionContainer || !inputFieldsContainer) {
+        console.error('Required DOM elements not found');
+        return;
+    }
+    
     detailsContainer.classList.remove('hidden');
-    descriptionContainer.textContent = task.definition?.description || 'No description available';
+    
+    // Handle different task data structures
+    const description = task.description || task.definition?.description || 'No description available';
+    descriptionContainer.textContent = description;
+    
     inputFieldsContainer.innerHTML = '';
+    
+    // Check for input schema in different locations
+    let inputSchema = null;
     if (task.definition && task.definition.input_schema) {
-        const schema = task.definition.input_schema;
-        for (const [fieldName, fieldConfig] of Object.entries(schema)) {
+        inputSchema = task.definition.input_schema;
+    } else if (task.input_schema) {
+        inputSchema = task.input_schema;
+    } else if (task.config && task.config.input_schema) {
+        inputSchema = task.config.input_schema;
+    }
+    
+    if (inputSchema) {
+        for (const [fieldName, fieldConfig] of Object.entries(inputSchema)) {
             createInputField(inputFieldsContainer, fieldName, fieldConfig, task);
         }
     } else if (task.type === 'ai') {
         createDefaultAIInputs(inputFieldsContainer, task);
+    } else {
+        console.log('No input schema found, task type:', task.type);
     }
 }
 
@@ -61,8 +97,19 @@ function createInputField(container, fieldName, fieldConfig, task) {
     const label = document.createElement('label');
     label.className = 'block text-xs font-medium text-gray-600';
     label.textContent = fieldConfig.label || fieldName;
+    
     let input;
-    const savedValue = task.state?.inputs?.[fieldName] || fieldConfig.default || '';
+    
+    // Get saved value from different possible locations
+    let savedValue = '';
+    if (task.state && task.state.inputs && task.state.inputs[fieldName]) {
+        savedValue = task.state.inputs[fieldName];
+    } else if (task.inputs && task.inputs[fieldName]) {
+        savedValue = task.inputs[fieldName];
+    } else if (fieldConfig.default) {
+        savedValue = fieldConfig.default;
+    }
+    
     if (fieldConfig.type === 'textarea') {
         input = document.createElement('textarea');
         input.className = 'w-full text-xs border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
@@ -74,12 +121,15 @@ function createInputField(container, fieldName, fieldConfig, task) {
         input.className = 'w-full text-xs border border-gray-300 rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
         input.value = savedValue;
     }
+    
     input.name = fieldName;
     input.placeholder = fieldConfig.placeholder || '';
+    
     if (fieldConfig.required) {
         input.required = true;
         label.innerHTML += ' <span class="text-red-500">*</span>';
     }
+    
     input.addEventListener('input', scheduleAutoSave);
     input.addEventListener('blur', autoSaveTaskInputs);
     fieldDiv.appendChild(label);
@@ -112,10 +162,23 @@ function autoSaveTaskInputs() {
 function saveTaskInputs(taskIndex, inputData) {
     const task = window.taskDefinitions[taskIndex];
     if (!task) return;
-    fetch(`/api/agent_run/${window.agentRunUuid}/task_input/${task.uuid}`, {
+    fetch(`/agents/api/agent_run/${window.agentRunUuid}/task_input/${task.uuid}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
         body: JSON.stringify({ inputs: inputData })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update local task state
+            window.taskDefinitions[taskIndex].state.inputs = inputData;
+            console.log('Task inputs saved successfully');
+        } else {
+            console.error('Failed to save task inputs:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error saving task inputs:', error);
     });
 }
 
@@ -130,7 +193,7 @@ function executeTask(taskIndex) {
         inputData = task.state?.inputs || {};
     }
     updateTaskStatus(taskIndex, 'running');
-    fetch(`/task-management/run/${window.agentRunUuid}/tasks/${task.uuid}/execute`, {
+    fetch(`/api/task_management/run/${window.agentRunUuid}/tasks/${task.uuid}/execute`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
         body: JSON.stringify({ inputs: inputData })
