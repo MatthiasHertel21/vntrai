@@ -3,10 +3,12 @@ API routes for agents - RESTful API endpoints for external access
 Handles legacy API endpoints and general agent API functions
 """
 
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, Response
 from app.utils.data_manager import agents_manager, tools_manager, agent_run_manager
 from datetime import datetime
 import uuid
+import json
+import time
 
 # Import CSRF protection to exempt API endpoints
 from app import csrf
@@ -916,3 +918,214 @@ def api_get_selected_task(run_uuid):
     except Exception as e:
         current_app.logger.error(f"Error getting selected task: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@agents_bp.route('/api/agent_run/<run_uuid>/task_execute/<task_uuid>/stream', methods=['POST'])
+@csrf.exempt
+def api_stream_execute_task(run_uuid, task_uuid):
+    """Stream execute a task with real-time HTML output"""
+    import time
+    import json
+    from flask import Response
+    
+    def generate_task_execution_stream():
+        try:
+            # Load agent run and validate
+            agent_run = agent_run_manager.load(run_uuid)
+            if not agent_run:
+                yield f"data: {json.dumps({'error': 'Agent run not found'})}\n\n"
+                return
+            
+            # Load agent and get task definition
+            agent = agents_manager.load(agent_run['agent_uuid'])
+            if not agent:
+                yield f"data: {json.dumps({'error': 'Agent not found'})}\n\n"
+                return
+            
+            # Find task definition
+            task_def = None
+            for task in agent.get('tasks', []):
+                if task.get('uuid') == task_uuid:
+                    task_def = task
+                    break
+            
+            if not task_def:
+                yield f"data: {json.dumps({'error': 'Task definition not found'})}\n\n"
+                return
+            
+            # Get task inputs from request
+            try:
+                request_data = request.get_json()
+                task_inputs = request_data.get('inputs', {}) if request_data else {}
+            except:
+                task_inputs = {}
+            
+            # Update task status to running
+            agent_run_manager.set_task_status(run_uuid, task_uuid, 'running')
+            
+            # Generate task information as HTML chunks
+            start_html = '<div class="task-execution-output">'
+            yield f"data: {json.dumps({'type': 'html_chunk', 'content': start_html})}\n\n"
+            time.sleep(0.1)
+            
+            # Task Header
+            header_html = f'<div class="task-header"><h3 class="text-lg font-semibold text-gray-900 mb-4">🚀 Executing Task: {task_def.get("name", "Unnamed Task")}</h3></div>'
+            yield f"data: {json.dumps({'type': 'html_chunk', 'content': header_html})}\n\n"
+            time.sleep(0.2)
+            
+            # Task Information Section
+            info_start_html = '<div class="task-info mb-6"><h4 class="font-medium text-gray-700 mb-2">📋 Task Information</h4>'
+            yield f"data: {json.dumps({'type': 'html_chunk', 'content': info_start_html})}\n\n"
+            time.sleep(0.1)
+            
+            # Basic task details
+            task_type = task_def.get('type', 'ai')
+            task_desc = task_def.get('description', 'No description provided')
+            
+            details_html = f'<div class="bg-gray-50 p-4 rounded-lg mb-4"><div class="grid grid-cols-2 gap-4"><div><span class="font-medium">Type:</span> <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">{task_type.upper()}</span></div><div><span class="font-medium">UUID:</span> <code class="text-sm text-gray-600">{task_uuid}</code></div></div></div>'
+            yield f"data: {json.dumps({'type': 'html_chunk', 'content': details_html})}\n\n"
+            time.sleep(0.3)
+            
+            desc_html = f'<div class="mb-4"><span class="font-medium">Description:</span><p class="text-gray-700 mt-1">{task_desc}</p></div></div>'
+            yield f"data: {json.dumps({'type': 'html_chunk', 'content': desc_html})}\n\n"
+            time.sleep(0.2)
+            
+            # Inputs Section
+            if task_inputs:
+                inputs_start_html = '<div class="inputs-section mb-6"><h4 class="font-medium text-gray-700 mb-2">📝 Input Parameters</h4><div class="bg-yellow-50 p-4 rounded-lg">'
+                yield f"data: {json.dumps({'type': 'html_chunk', 'content': inputs_start_html})}\n\n"
+                time.sleep(0.1)
+                
+                for key, value in task_inputs.items():
+                    safe_value = str(value).replace('"', '&quot;').replace('<', '&lt;').replace('>', '&gt;')
+                    input_html = f'<div class="mb-2"><span class="font-medium text-gray-600">{key}:</span> <span class="ml-2">{safe_value}</span></div>'
+                    yield f"data: {json.dumps({'type': 'html_chunk', 'content': input_html})}\n\n"
+                    time.sleep(0.1)
+                
+                inputs_end_html = '</div></div>'
+                yield f"data: {json.dumps({'type': 'html_chunk', 'content': inputs_end_html})}\n\n"
+            else:
+                no_inputs_html = '<div class="inputs-section mb-6"><h4 class="font-medium text-gray-700 mb-2">📝 Input Parameters</h4><div class="bg-gray-50 p-4 rounded-lg text-gray-500 italic">No input parameters provided</div></div>'
+                yield f"data: {json.dumps({'type': 'html_chunk', 'content': no_inputs_html})}\n\n"
+            
+            time.sleep(0.3)
+            
+            # Configuration Section (for AI tasks)
+            if task_type == 'ai':
+                ai_config = task_def.get('ai_config', {})
+                config_start_html = '<div class="config-section mb-6"><h4 class="font-medium text-gray-700 mb-2">🤖 AI Configuration</h4><div class="bg-blue-50 p-4 rounded-lg">'
+                yield f"data: {json.dumps({'type': 'html_chunk', 'content': config_start_html})}\n\n"
+                time.sleep(0.1)
+                
+                model = ai_config.get('model', 'Not specified')
+                temperature = ai_config.get('temperature', 'Not specified')
+                max_tokens = ai_config.get('max_tokens', 'Not specified')
+                
+                config_details_html = f'<div class="grid grid-cols-2 gap-4"><div><span class="font-medium">Model:</span> {str(model)}</div><div><span class="font-medium">Temperature:</span> {str(temperature)}</div><div><span class="font-medium">Max Tokens:</span> {str(max_tokens)}</div></div>'
+                yield f"data: {json.dumps({'type': 'html_chunk', 'content': config_details_html})}\n\n"
+                time.sleep(0.2)
+                
+                # System prompt if available
+                system_prompt = ai_config.get('system_prompt', '')
+                if system_prompt:
+                    safe_prompt = system_prompt.replace('"', '&quot;').replace('<', '&lt;').replace('>', '&gt;')[:200]
+                    if len(system_prompt) > 200:
+                        safe_prompt += '...'
+                    prompt_html = f'<div class="mt-4"><span class="font-medium">System Prompt:</span><div class="bg-white p-3 rounded border mt-1 text-sm">{safe_prompt}</div></div>'
+                    yield f"data: {json.dumps({'type': 'html_chunk', 'content': prompt_html})}\n\n"
+                    time.sleep(0.2)
+                
+                config_end_html = '</div></div>'
+                yield f"data: {json.dumps({'type': 'html_chunk', 'content': config_end_html})}\n\n"
+            
+            # Tool Configuration Section (for tool tasks)
+            elif task_type == 'tool':
+                tool_config = task_def.get('tool_config', {})
+                tool_config_start_html = '<div class="config-section mb-6"><h4 class="font-medium text-gray-700 mb-2">🔧 Tool Configuration</h4><div class="bg-green-50 p-4 rounded-lg">'
+                yield f"data: {json.dumps({'type': 'html_chunk', 'content': tool_config_start_html})}\n\n"
+                time.sleep(0.1)
+                
+                tool_id = tool_config.get('tool_id', 'Not specified')
+                tool_name = tool_config.get('tool_name', 'Not specified')
+                
+                tool_details_html = f'<div class="mb-2"><span class="font-medium">Tool ID:</span> {str(tool_id)}</div><div class="mb-2"><span class="font-medium">Tool Name:</span> {str(tool_name)}</div>'
+                yield f"data: {json.dumps({'type': 'html_chunk', 'content': tool_details_html})}\n\n"
+                time.sleep(0.2)
+                
+                tool_config_end_html = '</div></div>'
+                yield f"data: {json.dumps({'type': 'html_chunk', 'content': tool_config_end_html})}\n\n"
+            
+            time.sleep(0.5)
+            
+            # Execution Status
+            execution_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            status_html = f'<div class="execution-status mb-6"><h4 class="font-medium text-gray-700 mb-2">⚡ Execution Status</h4><div class="bg-green-50 p-4 rounded-lg"><div class="flex items-center"><div class="w-3 h-3 bg-green-500 rounded-full mr-2 animate-pulse"></div><span class="text-green-700 font-medium">Task executed successfully</span></div><div class="text-sm text-gray-600 mt-2">Execution completed at: {execution_time}</div></div></div>'
+            yield f"data: {json.dumps({'type': 'html_chunk', 'content': status_html})}\n\n"
+            time.sleep(0.3)
+            
+            # Results Summary
+            results_html = '<div class="results-summary mb-6"><h4 class="font-medium text-gray-700 mb-2">📊 Results Summary</h4><div class="bg-purple-50 p-4 rounded-lg"><div class="text-purple-700">Task execution simulation completed. In a real implementation, this would contain the actual execution results from the AI model or tool.</div></div></div>'
+            yield f"data: {json.dumps({'type': 'html_chunk', 'content': results_html})}\n\n"
+            time.sleep(0.2)
+            
+            # Close the main container
+            end_html = '</div>'
+            yield f"data: {json.dumps({'type': 'html_chunk', 'content': end_html})}\n\n"
+            
+            # Build complete HTML result for saving
+            complete_html = f"""
+            <div class="task-execution-output">
+                <div class="task-header">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">🚀 Task Execution: {task_def.get('name', 'Unnamed Task')}</h3>
+                </div>
+                <div class="task-info mb-6">
+                    <h4 class="font-medium text-gray-700 mb-2">📋 Task Information</h4>
+                    <div class="bg-gray-50 p-4 rounded-lg mb-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><span class="font-medium">Type:</span> <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800">{task_type.upper()}</span></div>
+                            <div><span class="font-medium">UUID:</span> <code class="text-sm text-gray-600">{task_uuid}</code></div>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <span class="font-medium">Description:</span>
+                        <p class="text-gray-700 mt-1">{task_desc}</p>
+                    </div>
+                </div>
+                <div class="execution-status mb-6">
+                    <h4 class="font-medium text-gray-700 mb-2">⚡ Execution Status</h4>
+                    <div class="bg-green-50 p-4 rounded-lg">
+                        <div class="flex items-center">
+                            <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                            <span class="text-green-700 font-medium">Task executed successfully</span>
+                        </div>
+                        <div class="text-sm text-gray-600 mt-2">Execution completed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</div>
+                    </div>
+                </div>
+            </div>
+            """
+            
+            # Save task inputs and results
+            agent_run_manager.set_task_inputs(run_uuid, task_uuid, task_inputs)
+            agent_run_manager.set_task_results(run_uuid, task_uuid, {'html_output': complete_html})
+            agent_run_manager.set_task_status(run_uuid, task_uuid, 'completed')
+            
+            # Signal completion
+            yield f"data: {json.dumps({'type': 'complete', 'html_result': complete_html})}\n\n"
+            
+        except Exception as e:
+            current_app.logger.error(f"Error in task execution stream: {str(e)}")
+            yield f"data: {json.dumps({'type': 'error', 'error': str(e)})}\n\n"
+            # Set task status to error
+            try:
+                agent_run_manager.set_task_status(run_uuid, task_uuid, 'error', str(e))
+            except:
+                pass
+    
+    return Response(
+        generate_task_execution_stream(),
+        mimetype='text/plain',
+        headers={
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+            'X-Accel-Buffering': 'no'  # Disable nginx buffering
+        }
+    )

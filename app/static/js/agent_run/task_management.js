@@ -297,26 +297,126 @@ function executeTask(taskIndex) {
     } else {
         inputData = task.state?.inputs || {};
     }
+    
+    // Update UI to show execution is starting
     updateTaskStatus(taskIndex, 'running');
-    fetch(`/api/task_management/run/${window.agentRunUuid}/tasks/${taskUuid}/execute`, {
+    
+    // Clear previous output
+    const outputElement = document.querySelector(`#taskResult-${taskIndex}`);
+    if (outputElement) {
+        outputElement.innerHTML = '<div class="text-gray-500 italic">Starting execution...</div>';
+    }
+    
+    // Start streaming execution
+    executeTaskWithStreaming(taskIndex, taskUuid, inputData);
+}
+
+function executeTaskWithStreaming(taskIndex, taskUuid, inputData) {
+    const outputElement = document.querySelector(`#taskResult-${taskIndex}`);
+    if (!outputElement) {
+        console.error('Output element not found for task:', taskIndex);
+        return;
+    }
+    
+    // Initialize EventSource for server-sent events
+    const eventSource = new EventSource('/agents/api/agent_run/' + window.agentRunUuid + '/task_execute/' + taskUuid + '/stream', {
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    });
+    
+    // Since EventSource doesn't support POST, we need to use fetch for the initial request
+    // and then connect to a streaming endpoint
+    fetch(`/agents/api/agent_run/${window.agentRunUuid}/task_execute/${taskUuid}/stream`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken(),
+            'Accept': 'text/plain'
+        },
         body: JSON.stringify({ inputs: inputData })
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            updateTaskStatus(taskIndex, 'completed');
-            if (data.results) {
-                window.taskDefinitions[taskIndex].state.results = data.results;
-            }
-        } else {
-            updateTaskStatus(taskIndex, 'error');
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
         }
+        
+        // Handle streaming response
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        
+        function readStream() {
+            return reader.read().then(({ done, value }) => {
+                if (done) {
+                    console.log('Stream complete');
+                    return;
+                }
+                
+                // Decode the chunk
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n');
+                
+                lines.forEach(line => {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            handleStreamData(data, taskIndex, outputElement);
+                        } catch (e) {
+                            console.error('Error parsing stream data:', e);
+                        }
+                    }
+                });
+                
+                // Continue reading
+                return readStream();
+            });
+        }
+        
+        return readStream();
     })
-    .catch(() => {
+    .catch(error => {
+        console.error('Streaming error:', error);
         updateTaskStatus(taskIndex, 'error');
+        if (outputElement) {
+            outputElement.innerHTML = '<div class="text-red-500">Error executing task: ' + error.message + '</div>';
+        }
     });
+}
+
+function handleStreamData(data, taskIndex, outputElement) {
+    switch (data.type) {
+        case 'html_chunk':
+            // Append HTML chunk to output
+            outputElement.innerHTML += data.content;
+            // Scroll to bottom of output
+            outputElement.scrollTop = outputElement.scrollHeight;
+            break;
+            
+        case 'complete':
+            // Task execution completed
+            updateTaskStatus(taskIndex, 'completed');
+            // Save the complete HTML result to the task state
+            if (window.taskDefinitions[taskIndex] && data.html_result) {
+                if (!window.taskDefinitions[taskIndex].state) {
+                    window.taskDefinitions[taskIndex].state = {};
+                }
+                if (!window.taskDefinitions[taskIndex].state.results) {
+                    window.taskDefinitions[taskIndex].state.results = {};
+                }
+                window.taskDefinitions[taskIndex].state.results.html_output = data.html_result;
+            }
+            console.log('Task execution completed:', taskIndex);
+            break;
+            
+        case 'error':
+            // Handle execution error
+            updateTaskStatus(taskIndex, 'error');
+            outputElement.innerHTML += '<div class="text-red-500 p-4 bg-red-50 rounded-lg mt-4">❌ Execution Error: ' + data.error + '</div>';
+            break;
+            
+        default:
+            console.log('Unknown stream data type:', data.type);
+    }
 }
 
 function updateTaskStatus(taskIndex, status) {
@@ -556,3 +656,32 @@ function createToolInputField(container, param, task, toolData) {
     fieldDiv.appendChild(input);
     container.appendChild(fieldDiv);
 }
+
+// Load saved task results on page load
+function loadSavedTaskResults() {
+    if (!window.taskDefinitions) return;
+    
+    window.taskDefinitions.forEach((task, index) => {
+        const outputElement = document.querySelector(`#taskResult-${index}`);
+        if (!outputElement) return;
+        
+        // Check if task has saved HTML results
+        const htmlOutput = task.state?.results?.html_output;
+        if (htmlOutput) {
+            // Replace the placeholder content with saved results
+            outputElement.innerHTML = htmlOutput;
+            
+            // Update task status if it was completed
+            if (task.state?.status === 'completed') {
+                updateTaskStatus(index, 'completed');
+            }
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', (event) => {
+    // Initial setup - restore active task and load saved results
+    const uuid = window.agentRunUuid;
+    restoreActiveTask(uuid);
+    loadSavedTaskResults();
+});

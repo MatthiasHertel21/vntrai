@@ -7,6 +7,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Restore active task
     restoreActiveTask(window.agentRunUuid);
+    
+    // Load saved task results
+    loadSavedTaskResults();
+    
      // Setup action buttons
     const executeBtn = document.getElementById('executeActiveTaskBtn');
     if (executeBtn) {
