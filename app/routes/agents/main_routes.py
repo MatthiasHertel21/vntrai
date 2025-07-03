@@ -106,6 +106,20 @@ def create_agent():
             # Save agent
             agents_manager.save(agent_data)
             
+            # Try to create assistant if AI assistant tool is configured
+            try:
+                ai_tool = agent_data.get('ai_assistant_tool', '')
+                if ai_tool and ai_tool.startswith('tool:'):
+                    current_app.logger.info(f"Creating assistant for new agent {agent_data['id']}")
+                    assistant_id = assistant_manager.create_assistant_for_agent(agent_data)
+                    if assistant_id:
+                        agent_data['assistant_id'] = assistant_id
+                        # Save again with assistant_id
+                        agents_manager.save(agent_data)
+                        current_app.logger.info(f"Created assistant {assistant_id} for new agent {agent_data['id']}")
+            except Exception as e:
+                current_app.logger.error(f"Error creating assistant for new agent {agent_data['id']}: {str(e)}")
+            
             flash(f'Agent "{name}" created successfully', 'success')
             return redirect(url_for('agents.view_agent', agent_id=agent_data['id']))
             
@@ -153,7 +167,12 @@ def edit_agent(agent_id):
             agent['ai_assistant_tool'] = request.form.get('ai_assistant_tool', '')
             agent['model'] = request.form.get('model', '')
             agent['instructions'] = request.form.get('instructions', '')
-            agent['assistant_id'] = request.form.get('assistant_id', '')
+            # Always preserve existing assistant_id unless explicitly provided in form
+            form_assistant_id = request.form.get('assistant_id', '').strip()
+            if form_assistant_id:
+                # Only update if form has a value
+                agent['assistant_id'] = form_assistant_id
+            # Otherwise, preserve the existing assistant_id (don't overwrite with empty string)
             
             # Handle tool configuration
             enabled_tools = request.form.getlist('enabled_tools')
@@ -172,6 +191,15 @@ def edit_agent(agent_id):
                 agent['global_variables'] = json.loads(global_vars_json)
             except json.JSONDecodeError:
                 agent['global_variables'] = {}
+            
+            # Handle assistant tools configuration
+            assistant_tools_list = request.form.getlist('assistant_tools')
+            agent['assistant_tools'] = {
+                'file_search': 'file_search' in assistant_tools_list,
+                'code_interpreter': 'code_interpreter' in assistant_tools_list,
+                'function_calling': 'function_calling' in assistant_tools_list,
+                'web_browsing': 'web_browsing' in assistant_tools_list
+            }
             
             # Handle checkboxes
             agent['use_as_agent'] = bool(request.form.get('use_as_agent'))
@@ -201,45 +229,96 @@ def edit_agent(agent_id):
             try:
                 # Check if AI assistant tool is configured
                 ai_tool = agent.get('ai_assistant_tool', '')
-                if ai_tool and ai_tool.startswith('tool:openai_assistant'):
-                    # Get current assistant ID
-                    current_assistant_id = agent.get('assistant_id', '')
-                    
-                    if not current_assistant_id:
-                        # No assistant exists, create a new one
-                        try:
-                            new_assistant_id = assistant_manager.create_assistant_for_agent(agent)
-                            if new_assistant_id:
-                                agent['assistant_id'] = new_assistant_id
-                                flash(f'Created new OpenAI Assistant {new_assistant_id[:8]}... for agent', 'success')
+                if ai_tool and ai_tool.startswith('tool:'):
+                    # Extract tool ID and validate it's an AI assistant tool
+                    tool_id = ai_tool.replace('tool:', '')
+                    try:
+                        tool_data = tools_manager.get_by_id(tool_id)
+                        is_ai_assistant_tool = False
+                        
+                        if tool_data:
+                            # Check if it's an OpenAI Assistant tool by checking integration or tool definition
+                            tool_definition = tool_data.get('tool_definition', '')
+                            integration_id = tool_data.get('integration_id', '')
+                            
+                            if integration_id:
+                                from app.utils.data_manager import integrations_manager
+                                integration_data = integrations_manager.get_by_id(integration_id)
+                                if integration_data and integration_data.get('implementation') == 'openai_assistant_api':
+                                    is_ai_assistant_tool = True
+                            elif tool_definition == 'OpenAI Assistant API':
+                                is_ai_assistant_tool = True
+                        
+                        if is_ai_assistant_tool:
+                            # Get current assistant ID
+                            current_assistant_id = agent.get('assistant_id', '')
+                            
+                            if not current_assistant_id:
+                                # No assistant exists, create a new one with all agent parameters
+                                try:
+                                    current_app.logger.info(f"Creating new assistant for agent {agent_id} with full parameter sync")
+                                    new_assistant_id = assistant_manager.create_assistant_for_agent(agent)
+                                    if new_assistant_id:
+                                        agent['assistant_id'] = new_assistant_id
+                                        current_app.logger.info(f"Successfully created assistant {new_assistant_id} for agent {agent_id}")
+                                        # Immediately sync all parameters to ensure consistency
+                                        assistant_manager.update_assistant_for_agent(agent)
+                                    else:
+                                        current_app.logger.warning(f"Could not create OpenAI Assistant for agent {agent_id}")
+                                except Exception as e:
+                                    current_app.logger.error(f"Error creating assistant for agent {agent_id}: {e}")
                             else:
-                                flash('Could not create OpenAI Assistant. Please check your configuration.', 'warning')
-                        except Exception as e:
-                            current_app.logger.error(f"Error creating assistant for agent {agent_id}: {e}")
-                            flash(f'Warning: Could not create OpenAI Assistant: {str(e)}', 'warning')
-                    else:
-                        # Assistant exists, synchronize configuration
-                        try:
-                            success = assistant_manager.update_assistant_for_agent(agent)
-                            if success:
-                                flash(f'Synchronized agent configuration with OpenAI Assistant {current_assistant_id[:8]}...', 'info')
-                            else:
-                                flash('Could not synchronize with OpenAI Assistant. Please check the configuration.', 'warning')
-                        except Exception as e:
-                            current_app.logger.error(f"Error updating assistant for agent {agent_id}: {e}")
-                            flash(f'Warning: Could not sync with OpenAI Assistant: {str(e)}', 'warning')
+                                # Assistant exists, synchronize all configuration parameters
+                                try:
+                                    # First verify the assistant_id is valid
+                                    assistant_info = assistant_manager.get_assistant_info(current_assistant_id)
+                                    if assistant_info:
+                                        # Assistant exists, update with all current agent parameters
+                                        current_app.logger.info(f"Synchronizing all parameters for assistant {current_assistant_id}")
+                                        success = assistant_manager.update_assistant_for_agent(agent)
+                                        if success:
+                                            current_app.logger.info(f"Successfully synchronized assistant {current_assistant_id} with agent parameters")
+                                        else:
+                                            current_app.logger.warning(f"Could not synchronize OpenAI Assistant for agent {agent_id}")
+                                    else:
+                                        # Assistant doesn't exist, create a new one with current parameters
+                                        current_app.logger.info(f"Assistant ID {current_assistant_id} not found, creating new assistant with current parameters")
+                                        new_assistant_id = assistant_manager.create_assistant_for_agent(agent)
+                                        if new_assistant_id:
+                                            agent['assistant_id'] = new_assistant_id
+                                            current_app.logger.info(f"Created replacement assistant {new_assistant_id} for agent {agent_id}")
+                                            # Sync parameters immediately after creation
+                                            assistant_manager.update_assistant_for_agent(agent)
+                                        else:
+                                            current_app.logger.error(f"Failed to create replacement assistant for agent {agent_id}")
+                                except Exception as e:
+                                    current_app.logger.error(f"Error updating assistant for agent {agent_id}: {e}")
+                        else:
+                            # AI assistant tool not configured or different tool selected
+                            if agent.get('assistant_id'):
+                                # Agent had an assistant but AI tool was removed/changed
+                                current_app.logger.info(f"AI Assistant tool removed for agent {agent_id}, keeping existing assistant_id")
+                    except Exception as e:
+                        current_app.logger.error(f"Error validating AI assistant tool: {str(e)}")
                 else:
-                    # AI assistant tool not configured or different tool selected
+                    # AI assistant tool not configured
                     if agent.get('assistant_id'):
                         # Agent had an assistant but AI tool was removed/changed
-                        flash('AI Assistant tool was removed. The existing Assistant connection remains but won\'t be updated.', 'info')
+                        current_app.logger.info(f"AI Assistant tool removed for agent {agent_id}, keeping existing assistant_id")
                             
             except Exception as e:
                 current_app.logger.error(f"Error handling OpenAI Assistant for agent {agent_id}: {str(e)}")
-                flash(f'Warning: Assistant management error: {str(e)}', 'warning')
             
-            # Save agent
+            # Save agent (including any assistant_id updates)
             agents_manager.save(agent)
+            
+            # Additional sync after save to ensure assistant is up-to-date with final agent state
+            try:
+                if agent.get('assistant_id') and agent.get('ai_assistant_tool'):
+                    current_app.logger.info(f"Final assistant sync for agent {agent_id} after save")
+                    assistant_manager.update_assistant_for_agent(agent)
+            except Exception as e:
+                current_app.logger.error(f"Error in final assistant sync for agent {agent_id}: {str(e)}")
             
             flash(f'Agent "{agent["name"]}" updated successfully', 'success')
             return redirect(url_for('agents.view_agent', agent_id=agent_id))
@@ -451,6 +530,14 @@ def cleanup_agent(agent_id):
         # Save agent
         agents_manager.save(agent)
         
+        # Sync assistant if configured
+        try:
+            if agent.get('assistant_id') and agent.get('ai_assistant_tool'):
+                current_app.logger.info(f"Syncing assistant after cleanup for agent {agent_id}")
+                assistant_manager.update_assistant_for_agent(agent)
+        except Exception as e:
+            current_app.logger.error(f"Error syncing assistant after cleanup for agent {agent_id}: {str(e)}")
+        
         flash(f'Agent "{agent.get("name", "Unknown")}" cleaned up successfully', 'success')
         return redirect(url_for('agents.view_agent', agent_id=agent_id))
         
@@ -483,6 +570,12 @@ def reassign_assistant(agent_id):
             # Save agent
             agents_manager.save(agent)
             
+            # Sync assistant after reassignment
+            try:
+                assistant_manager.update_assistant_for_agent(agent)
+            except Exception as e:
+                current_app.logger.error(f"Error syncing assistant after reassignment for agent {agent_id}: {str(e)}")
+            
             return jsonify({
                 'success': True,
                 'message': f'Agent reassigned to assistant {new_assistant_id[:8]}...',
@@ -508,6 +601,13 @@ def create_assistant(agent_id):
         try:
             new_assistant_id = assistant_manager.create_assistant_for_agent(agent)
             
+            # Verify the assistant was actually created
+            if not new_assistant_id:
+                return jsonify({'success': False, 'error': 'Failed to create assistant'}), 500
+                
+            # Reload the agent to ensure we have the most recent version
+            agent = agents_manager.load(agent_id)
+            
             # Update agent with new assistant ID
             agent['assistant_id'] = new_assistant_id
             agent['updated_at'] = datetime.now().isoformat()
@@ -515,13 +615,27 @@ def create_assistant(agent_id):
             # Save agent
             agents_manager.save(agent)
             
+            # Ensure assistant is synced with final agent state
+            try:
+                assistant_manager.update_assistant_for_agent(agent)
+            except Exception as e:
+                current_app.logger.error(f"Error syncing assistant after creation for agent {agent_id}: {str(e)}")
+            
+            # Verify the agent was saved with the assistant ID
+            saved_agent = agents_manager.load(agent_id)
+            if saved_agent.get('assistant_id') != new_assistant_id:
+                current_app.logger.error(f"Assistant created but agent not updated correctly. Assistant ID: {new_assistant_id}")
+            
             return jsonify({
                 'success': True,
-                'message': f'Created new assistant {new_assistant_id[:8]}...',
-                'assistant_id': new_assistant_id
+                'message': 'OK',
+                'details': {
+                    'assistant_id': new_assistant_id
+                }
             })
             
         except Exception as e:
+            current_app.logger.error(f"Error creating assistant for agent {agent_id}: {str(e)}")
             return jsonify({'success': False, 'error': str(e)}), 500
         
     except Exception as e:

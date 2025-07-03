@@ -305,8 +305,8 @@ venv\\Scripts\\activate   # Windows
 # Abhängigkeiten installieren
 pip install -r requirements.txt
 
-# Anwendung starten
-python run.py
+# Anwendung starten (über Docker)
+sudo docker-compose exec web python run.py
 ```
 
 ## Technologie-Stack

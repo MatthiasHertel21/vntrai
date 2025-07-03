@@ -470,7 +470,7 @@ migrate_data()
 "
 
 # ❌ WRONG: Direct execution on host
-python3 migration_script.py
+sudo docker-compose exec web python3 migration/migrate_v036_data.py
 ```
 
 **Reasons for Docker requirement**:

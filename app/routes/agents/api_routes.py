@@ -165,6 +165,14 @@ def api_quick_actions(agent_id):
             
             agents_manager.save(agent)
             
+            # Sync assistant if configured (quick actions might affect assistant behavior)
+            try:
+                if agent.get('assistant_id') and agent.get('ai_assistant_tool'):
+                    from app.utils.assistant_manager import assistant_manager
+                    assistant_manager.update_assistant_for_agent(agent)
+            except Exception as e:
+                current_app.logger.error(f"Error syncing assistant after quick actions update for agent {agent_id}: {str(e)}")
+            
             return jsonify({'message': 'Quick actions updated successfully'})
             
     except Exception as e:
@@ -204,6 +212,14 @@ def api_clear_agent_data(agent_id):
         
         # Save agent
         agents_manager.save(agent)
+        
+        # Sync assistant if configured (cleared data might affect assistant behavior)
+        try:
+            if agent.get('assistant_id') and agent.get('ai_assistant_tool'):
+                from app.utils.assistant_manager import assistant_manager
+                assistant_manager.update_assistant_for_agent(agent)
+        except Exception as e:
+            current_app.logger.error(f"Error syncing assistant after data clear for agent {agent_id}: {str(e)}")
         
         return jsonify({
             'message': f'Agent data cleared successfully: {", ".join(cleared_items)}',
@@ -454,10 +470,9 @@ Trace Entries: {len(trace_log)}
             
             return jsonify({
                 'success': True,
-                'message': 'Assistant created and assigned successfully',
+                'message': 'OK',
                 'details': assistant_details,
-                'trace_log': trace_log if trace_level == 'detailed' else trace_log[-3:],  # Last 3 entries for basic
-                'summary': summary.strip()
+                'trace_log': trace_log if trace_level == 'detailed' else []  # No trace log for basic level
             })
         else:
             add_trace("Assistant Creation", "FAILED", "Assistant creation returned no ID")
@@ -489,3 +504,130 @@ Trace Entries: {len(trace_log)}
             'message': f'Internal error: {error_msg}',
             'trace_log': trace_log
         }), 500
+
+@agents_bp.route('/api/<agent_id>/remove_assistant', methods=['POST'])
+def api_remove_assistant(agent_id):
+    """Remove assistant from an agent"""
+    try:
+        current_app.logger.info(f"Removing assistant from agent {agent_id}")
+        
+        # Get agent from database
+        agent = agent_storage.get_agent(agent_id)
+        if not agent:
+            current_app.logger.error(f"Agent {agent_id} not found")
+            return jsonify({
+                'success': False,
+                'message': 'Agent not found'
+            }), 404
+        
+        # Check if agent has an assistant
+        if not agent.get('assistant_id'):
+            return jsonify({
+                'success': False,
+                'message': 'No assistant assigned to this agent'
+            }), 400
+        
+        assistant_id = agent['assistant_id']
+        current_app.logger.info(f"Removing assistant {assistant_id} from agent {agent_id}")
+        
+        # Remove assistant_id from agent
+        agent['assistant_id'] = None
+        agent_storage.save_agent(agent)
+        
+        current_app.logger.info(f"Successfully removed assistant from agent {agent_id}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Assistant removed',
+            'agent_id': agent_id,
+            'removed_assistant_id': assistant_id
+        })
+        
+    except Exception as e:
+        error_msg = str(e)
+        current_app.logger.error(f"Error removing assistant from agent {agent_id}: {error_msg}", exc_info=True)
+        
+        return jsonify({
+            'success': False,
+            'message': f'Internal error: {error_msg}'
+        }), 500
+
+@agents_bp.route('/api/<agent_id>/sync_assistant', methods=['POST'])
+def api_sync_assistant(agent_id):
+    """Synchronize agent configuration with OpenAI assistant with detailed response"""
+    try:
+        agent = agents_manager.load(agent_id)
+        if not agent:
+            return jsonify({'success': False, 'message': 'Agent not found'}), 404
+        
+        assistant_id = agent.get('assistant_id')
+        if not assistant_id:
+            return jsonify({'success': False, 'message': 'No assistant configured for this agent'}), 400
+        
+        # Get AI assistant tool
+        ai_tool = agent.get('ai_assistant_tool', '')
+        if not ai_tool or not ai_tool.startswith('tool:'):
+            return jsonify({'success': False, 'message': 'No AI assistant tool configured'}), 400
+        
+        # Extract tool ID and validate the tool exists and is an AI assistant tool
+        tool_id = ai_tool.replace('tool:', '')
+        
+        try:
+            tool_data = tools_manager.get_by_id(tool_id)
+            if not tool_data:
+                return jsonify({'success': False, 'message': 'Selected AI assistant tool not found'}), 400
+            
+            # Check if it's an OpenAI Assistant tool by checking integration or tool definition
+            tool_definition = tool_data.get('tool_definition', '')
+            integration_id = tool_data.get('integration_id', '')
+            
+            # Load integration to verify it's an OpenAI Assistant integration
+            if integration_id:
+                from app.utils.data_manager import integrations_manager
+                integration_data = integrations_manager.get_by_id(integration_id)
+                if not integration_data or integration_data.get('implementation') != 'openai_assistant_api':
+                    return jsonify({'success': False, 'message': 'Selected tool is not an OpenAI Assistant tool'}), 400
+            elif tool_definition != 'OpenAI Assistant API':
+                return jsonify({'success': False, 'message': 'Selected tool is not an OpenAI Assistant tool'}), 400
+        except Exception as e:
+            current_app.logger.error(f"Error validating AI assistant tool: {str(e)}")
+            return jsonify({'success': False, 'message': 'Error validating AI assistant tool configuration'}), 500
+        
+        # Sync assistant with comprehensive parameter update
+        try:
+            from app.utils.assistant_manager import assistant_manager
+            
+            current_app.logger.info(f"Synchronizing assistant {assistant_id} with agent {agent_id} parameters")
+            
+            success = assistant_manager.update_assistant_for_agent(agent)
+            
+            if success:
+                # Prepare detailed sync information
+                sync_details = {
+                    'assistant_id': assistant_id,
+                    'agent_name': agent.get('name', 'Unknown'),
+                    'model': agent.get('model', 'Default'),
+                    'instructions_updated': bool(agent.get('system_instruction')),
+                    'tools_count': len(agent.get('tools', [])),
+                    'files_count': len(agent.get('knowledge_base', [])),
+                    'sync_timestamp': datetime.now().isoformat()
+                }
+                
+                return jsonify({
+                    'success': True,
+                    'message': 'Assistant synchronized successfully',
+                    'details': sync_details
+                })
+            else:
+                return jsonify({
+                    'success': False, 
+                    'message': 'Failed to synchronize assistant configuration'
+                }), 500
+            
+        except Exception as e:
+            current_app.logger.error(f"Error synchronizing assistant for agent {agent_id}: {str(e)}")
+            return jsonify({'success': False, 'message': f'Synchronization error: {str(e)}'}), 500
+        
+    except Exception as e:
+        current_app.logger.error(f"Error in sync_assistant API for agent {agent_id}: {str(e)}")
+        return jsonify({'success': False, 'message': f'Internal error: {str(e)}'}), 500

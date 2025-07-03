@@ -99,12 +99,15 @@ function updateAssistantStatus() {
         
         if (!assistantTool || !statusElement) return;
         
-        if (assistantTool.value && assistantTool.value !== '') {
-            statusElement.textContent = 'Configured';
-            statusElement.className = 'ml-2 px-2 py-1 text-xs rounded-full bg-green-100 text-green-600';
+        // Check if agent has an assistant_id
+        const hasAssistantId = window.agentData?.assistant_id;
+        
+        if (hasAssistantId) {
+            statusElement.innerHTML = '<span class="bg-green-100 text-green-800">Assigned</span>';
+        } else if (assistantTool.value && assistantTool.value !== '') {
+            statusElement.innerHTML = '<span class="bg-yellow-100 text-yellow-800">Configured</span>';
         } else {
-            statusElement.textContent = 'Not Configured';
-            statusElement.className = 'ml-2 px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600';
+            statusElement.innerHTML = '<span class="bg-gray-100 text-gray-600">Not Assigned</span>';
         }
     } catch (error) {
         console.warn('Error updating assistant status:', error);
@@ -316,19 +319,12 @@ async function createAndAssignAssistant() {
         return;
     }
     
-    // Confirm action with user
-    const confirmMessage = `Create a new OpenAI Assistant for this agent?\n\n` +
-                          `Agent: ${window.agentData?.name || 'Unknown'}\n` +
-                          `Tool: ${assistantToolSelect.options[assistantToolSelect.selectedIndex].text}\n\n` +
-                          `This will:\n` +
-                          `• Create a new OpenAI Assistant\n` +
-                          `• Configure it with agent parameters\n` +
-                          `• Assign it to this agent\n` +
-                          `• Provide detailed traceability logs`;
+    // Confirm action with user - removed to reduce friction
+    // const confirmMessage = `Create a new OpenAI Assistant for "${window.agentData?.name || 'Unknown'}"?`;
     
-    if (!confirm(confirmMessage)) {
-        return;
-    }
+    // if (!confirm(confirmMessage)) {
+    //     return;
+    // }
     
     // Show loading state
     const createBtn = document.getElementById('createAssistantBtn');
@@ -352,82 +348,187 @@ async function createAndAssignAssistant() {
         const data = await response.json();
         
         if (data.success) {
-            // Show success with detailed information
-            const details = data.details || {};
-            let successMessage = 'Assistant created and assigned successfully!\n\n';
-            
-            if (details.assistant_id) {
-                successMessage += `Assistant ID: ${details.assistant_id}\n`;
-            }
-            if (details.model) {
-                successMessage += `Model: ${details.model}\n`;
-            }
-            if (details.tools_count) {
-                successMessage += `Tools configured: ${details.tools_count}\n`;
-            }
-            if (details.files_count) {
-                successMessage += `Files attached: ${details.files_count}\n`;
-            }
-            if (details.creation_time) {
-                successMessage += `Created at: ${new Date(details.creation_time).toLocaleString()}\n`;
-            }
-            
-            // Show traceability information
-            if (data.trace_log && data.trace_log.length > 0) {
-                successMessage += '\n=== Creation Log ===\n';
-                data.trace_log.forEach((entry, index) => {
-                    successMessage += `${index + 1}. ${entry.step}: ${entry.status}\n`;
-                    if (entry.details) {
-                        successMessage += `   ${entry.details}\n`;
-                    }
-                });
-            }
-            
-            showNotification(successMessage, true);
+            // Show minimal success message
+            showNotificationSafe('✓', true);
             
             // Update the agent data
-            if (window.agentData && details.assistant_id) {
-                window.agentData.assistant_id = details.assistant_id;
+            if (window.agentData && data.details?.assistant_id) {
+                window.agentData.assistant_id = data.details.assistant_id;
             }
             
             // Update the assistant status display
             updateAssistantStatus();
             updateTestButtonsState();
             
-            // Reload the page after a short delay to ensure all data is refreshed
+            // Reload the page after a shorter delay
             setTimeout(() => {
                 window.location.reload();
-            }, 2000);
+            }, 800);
             
         } else {
-            let errorMessage = 'Failed to create assistant\n\n';
-            errorMessage += `Error: ${data.message || 'Unknown error'}\n`;
-            
-            // Show error trace log if available
-            if (data.trace_log && data.trace_log.length > 0) {
-                errorMessage += '\n=== Error Log ===\n';
-                data.trace_log.forEach((entry, index) => {
-                    errorMessage += `${index + 1}. ${entry.step}: ${entry.status}\n`;
-                    if (entry.error) {
-                        errorMessage += `   Error: ${entry.error}\n`;
-                    }
-                    if (entry.details) {
-                        errorMessage += `   Details: ${entry.details}\n`;
-                    }
-                });
-            }
-            
-            showNotification(errorMessage, false);
+            let errorMessage = data.message || 'Failed to create assistant';
+            showNotificationSafe(errorMessage, false);
         }
         
     } catch (error) {
         console.error('Error creating assistant:', error);
-        showNotification(`Error creating assistant: ${error.message}\n\nPlease check the console for more details.`, false);
+        showNotificationSafe(`Error creating assistant: ${error.message}`, false);
     } finally {
         // Restore button state
         createBtn.innerHTML = originalText;
         createBtn.disabled = false;
     }
+}
+
+// Remove assistant from agent
+async function removeAssistant() {
+    const agentId = window.agentData?.id;
+    if (!agentId) {
+        showNotificationSafe('Agent ID not found', false);
+        return;
+    }
+    
+    const agentName = window.agentData?.name || 'Unknown';
+    const assistantId = window.agentData?.assistant_id;
+    
+    if (!assistantId) {
+        showNotificationSafe('No assistant assigned to remove', false);
+        return;
+    }
+    
+    // Removed confirmation dialog to reduce alerts/popups
+    
+    // Show loading state
+    const removeBtn = document.getElementById('removeAssistantBtn');
+    const originalText = removeBtn.innerHTML;
+    removeBtn.innerHTML = '<i class="bi bi-hourglass-split mr-2"></i>Removing...';
+    removeBtn.disabled = true;
+    
+    try {
+        // Call API to remove assistant
+        const response = await fetch(`/agents/api/${agentId}/remove_assistant`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showNotificationSafe('✓', true);
+            
+            // Update UI to reflect removal
+            window.agentData.assistant_id = null;
+            updateAssistantStatus();
+            updateTestButtonsState();
+            
+            // Reload page to update the action menu
+            setTimeout(() => {
+                window.location.reload();
+            }, 800);
+            
+        } else {
+            throw new Error(result.message || 'Failed to remove assistant');
+        }
+        
+    } catch (error) {
+        console.error('Error removing assistant:', error);
+        showNotificationSafe('Error removing assistant: ' + error.message, false);
+        
+        // Restore button state
+        removeBtn.innerHTML = originalText;
+        removeBtn.disabled = false;
+    }
+}
+
+// Update assistant with current agent parameters
+async function updateAssistant() {
+    const agentId = window.agentData?.id;
+    const assistantId = window.agentData?.assistant_id;
+    
+    if (!agentId) {
+        showNotificationSafe('Agent ID not found', false);
+        return;
+    }
+    
+    if (!assistantId) {
+        showNotificationSafe('No assistant assigned to update', false);
+        return;
+    }
+    
+    // Show loading state
+    const updateBtn = document.getElementById('updateAssistantBtn');
+    const originalText = updateBtn.innerHTML;
+    updateBtn.innerHTML = '<i class="bi bi-hourglass-split mr-2 text-gray-400"></i>Updating...';
+    updateBtn.disabled = true;
+    
+    try {
+        // Call API to update assistant with current agent parameters
+        const response = await fetch(`/agents/api/${agentId}/sync_assistant`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Show detailed success message with synchronization info
+            let message = 'Assistant synchronized successfully';
+            
+            if (data.details) {
+                const details = data.details;
+                message = `Assistant synchronized\n\n✓ Name: ${details.agent_name}\n✓ Model: ${details.model}`;
+                
+                if (details.instructions_updated) {
+                    message += '\n✓ Instructions: Updated';
+                }
+                
+                if (details.tools_count > 0) {
+                    message += `\n✓ Tools: ${details.tools_count} configured`;
+                }
+                
+                if (details.files_count > 0) {
+                    message += `\n✓ Files: ${details.files_count} attached`;
+                }
+                
+                message += `\n\nSync completed at ${new Date(details.sync_timestamp).toLocaleTimeString()}`;
+            }
+            
+            showNotificationSafe(message, true);
+            
+            // Update the assistant status display
+            updateAssistantStatus();
+            
+        } else {
+            let errorMessage = data.message || 'Failed to update assistant';
+            showNotificationSafe(`Update failed: ${errorMessage}`, false);
+        }
+        
+    } catch (error) {
+        console.error('Error updating assistant:', error);
+        showNotificationSafe(`Error updating assistant: ${error.message}`, false);
+    } finally {
+        // Restore button state
+        updateBtn.innerHTML = originalText;
+        updateBtn.disabled = false;
+    }
+}
+
+// Open assistant in vendor website (OpenAI)
+function openAssistantInVendorSite() {
+    const assistantId = window.agentData?.assistant_id;
+    
+    if (!assistantId) {
+        showNotificationSafe('No assistant assigned', false);
+        return;
+    }
+    
+    // Open OpenAI assistant page in new tab
+    const openaiUrl = `https://platform.openai.com/assistants/${assistantId}`;
+    window.open(openaiUrl, '_blank');
 }
 
 // ===========================
@@ -473,12 +574,15 @@ function showNotification(message, isSuccess) {
     notif.appendChild(closeBtn);
     document.body.appendChild(notif);
     
-    // Auto remove after 10 seconds
+    // Auto remove after 15 seconds for detailed messages (sync info), 8 seconds for others
+    const isDetailedMessage = message.includes('✓') || message.includes('synchronized');
+    const autoRemoveTime = isDetailedMessage ? 15000 : 8000;
+    
     setTimeout(() => {
         if (document.body.contains(notif)) {
             document.body.removeChild(notif);
         }
-    }, 10000);
+    }, autoRemoveTime);
 }
 
 // Safe notification function that checks if showNotification exists
@@ -507,7 +611,10 @@ window.AssistantConfiguration = {
     testConnection: testAssistantConnection,
     testChat: chatWithAssistant,
     reassignAssistant: reassignAssistant,
-    createAndAssignAssistant: createAndAssignAssistant
+    createAndAssignAssistant: createAndAssignAssistant,
+    removeAssistant: removeAssistant,
+    openInVendorSite: openAssistantInVendorSite,
+    updateAssistant: updateAssistant
 };
 
 // Make functions globally available for onclick handlers
@@ -517,3 +624,6 @@ window.chatWithAssistant = chatWithAssistant;
 window.updateTestButtonsState = updateTestButtonsState;
 window.reassignAssistant = reassignAssistant;
 window.createAndAssignAssistant = createAndAssignAssistant;
+window.removeAssistant = removeAssistant;
+window.openAssistantInVendorSite = openAssistantInVendorSite;
+window.updateAssistant = updateAssistant;

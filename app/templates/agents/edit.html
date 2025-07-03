@@ -165,8 +165,12 @@
                         <h3 class="text-lg font-medium text-gray-900 flex items-center">
                             <i class="bi bi-cpu mr-2 text-purple-500"></i>
                             AI Assistant Configuration
-                            <span id="assistantStatus" class="ml-2 px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600">
-                                Not Configured
+                            <span id="assistantStatus" class="ml-2 px-2 py-1 text-xs rounded-full">
+                                {% if agent.assistant_id %}
+                                    <span class="bg-green-100 text-green-800">Assigned</span>
+                                {% else %}
+                                    <span class="bg-gray-100 text-gray-600">Not Assigned</span>
+                                {% endif %}
                             </span>
                         </h3>
                         <div class="relative">
@@ -194,20 +198,38 @@
                                     <i class="bi bi-chat-dots mr-2 text-gray-400"></i>
                                     Test Chat
                                 </button>
+                                <!-- Conditional actions based on assistant status -->
+                                {% if agent.assistant_id %}
                                 <button type="button" 
-                                        onclick="reassignAssistant(); toggleActionMenu(this.closest('.relative').querySelector('button'))" 
-                                        class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed border-b border-gray-100"
-                                        id="reassignAssistantBtn" disabled>
+                                        onclick="updateAssistant(); toggleActionMenu(this.closest('.relative').querySelector('button'))" 
+                                        class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100"
+                                        id="updateAssistantBtn">
                                     <i class="bi bi-arrow-repeat mr-2 text-gray-400"></i>
-                                    Reassign Assistant
+                                    Update Assistant
                                 </button>
                                 <button type="button" 
+                                        onclick="openAssistantInVendorSite(); toggleActionMenu(this.closest('.relative').querySelector('button'))" 
+                                        class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 border-b border-gray-100"
+                                        id="openInVendorBtn">
+                                    <i class="bi bi-box-arrow-up-right mr-2 text-gray-400"></i>
+                                    Open in OpenAI
+                                </button>
+                                <button type="button" 
+                                        onclick="removeAssistant(); toggleActionMenu(this.closest('.relative').querySelector('button'))" 
+                                        class="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-gray-50"
+                                        id="removeAssistantBtn">
+                                    <i class="bi bi-trash mr-2"></i>
+                                    Remove Assistant
+                                </button>
+                                {% else %}
+                                <button type="button" 
                                         onclick="createAndAssignAssistant(); toggleActionMenu(this.closest('.relative').querySelector('button'))" 
-                                        class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        class="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                                         id="createAssistantBtn">
                                     <i class="bi bi-plus-circle mr-2 text-gray-400"></i>
                                     Create Assistant
                                 </button>
+                                {% endif %}
                             </div>
                         </div>
                     </div>
@@ -498,6 +520,9 @@
                 </div>
             </div>
         </div>
+
+        <!-- Hidden input to preserve assistant_id when form is submitted -->
+        <input type="hidden" name="assistant_id" value="{{ agent.assistant_id or '' }}" id="assistant_id_input">
 
         <!-- Auto-save indicator -->
         <div class="text-sm text-gray-500 text-center py-4">

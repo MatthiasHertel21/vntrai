@@ -32,7 +32,7 @@ class AssistantManager:
     
     def create_assistant_for_agent(self, agent: Dict[str, Any]) -> Optional[str]:
         """
-        Create a new OpenAI Assistant for the given agent
+        Create a new OpenAI Assistant for the given agent with comprehensive configuration
         
         Args:
             agent: Agent dictionary containing configuration
@@ -53,22 +53,33 @@ class AssistantManager:
             if ai_assistant_tool and ai_assistant_tool not in tools_list:
                 tools_list.append(ai_assistant_tool)
                 
-            # Extract agent configuration for assistant creation
+            # Extract comprehensive agent configuration for assistant creation
             assistant_config = {
                 'name': agent.get('name', 'Unnamed Agent'),
-                'instructions': agent.get('system_instruction', ''),
+                'instructions': agent.get('system_instruction', agent.get('instructions', '')),
                 'model': agent.get('model', 'gpt-4o-mini'),
-                'tools': self._prepare_tools(tools_list, has_knowledge_base, has_files),
+                'tools': self._prepare_tools(tools_list, has_knowledge_base, has_files, agent),
                 'description': f"Assistant for agent: {agent.get('name', 'Unnamed')}"
             }
             
-            # Prepare files for upload
+            # Add metadata with agent information
+            assistant_config['metadata'] = {
+                'agent_id': agent.get('id', ''),
+                'agent_name': agent.get('name', ''),
+                'created_from': 'agent_save',
+                'created_at': agent.get('updated_at', ''),
+                'agent_category': agent.get('category', ''),
+                'agent_status': agent.get('status', '')
+            }
+            
+            # Prepare files for upload (knowledge base and attached files)
             file_ids = self._prepare_files(agent)
             if file_ids:
                 assistant_config['file_ids'] = file_ids
             
+            self.logger.info(f"Creating assistant with comprehensive config for agent {agent['id']}: {list(assistant_config.keys())}")
+            
             # Create the assistant
-            self.logger.info(f"Creating assistant with config: {assistant_config}")
             result = self.assistant_api.create_assistant(assistant_config)
             self.logger.debug(f"Assistant creation result: {result}")
             
@@ -95,7 +106,7 @@ class AssistantManager:
                 # Update the agent with the new assistant ID
                 agent['assistant_id'] = assistant_id
                 agents_manager.update(agent['id'], agent)
-                self.logger.info(f"Created assistant {assistant_id} for agent {agent['id']}")
+                self.logger.info(f"Created comprehensive assistant {assistant_id} for agent {agent['id']} with all parameters synced")
                 return assistant_id
                 
         except Exception as e:
@@ -105,7 +116,7 @@ class AssistantManager:
     
     def update_assistant_for_agent(self, agent: Dict[str, Any]) -> bool:
         """
-        Update an existing OpenAI Assistant with agent configuration
+        Update an existing OpenAI Assistant with comprehensive agent configuration
         
         Args:
             agent: Agent dictionary containing updated configuration
@@ -123,26 +134,36 @@ class AssistantManager:
             has_knowledge_base = bool(agent.get('knowledge_base'))
             has_files = bool(agent.get('files'))
             
-            # Prepare update parameters
+            # Prepare comprehensive update parameters
             update_params = {
                 'name': agent.get('name', 'Unnamed Agent'),
-                'instructions': agent.get('system_instruction', ''),
+                'instructions': agent.get('system_instruction', agent.get('instructions', '')),
                 'model': agent.get('model', 'gpt-4o-mini'),
-                'tools': self._prepare_tools(agent.get('tools', []), has_knowledge_base, has_files),
+                'tools': self._prepare_tools(agent.get('tools', []), has_knowledge_base, has_files, agent),
                 'description': f"Assistant for agent: {agent.get('name', 'Unnamed')}"
             }
             
-            # Prepare files for upload
+            # Add metadata with agent information
+            update_params['metadata'] = {
+                'agent_id': agent.get('id', ''),
+                'agent_name': agent.get('name', ''),
+                'updated_at': agent.get('updated_at', ''),
+                'sync_source': 'agent_save'
+            }
+            
+            # Prepare files for upload (knowledge base and attached files)
             file_ids = self._prepare_files(agent)
             if file_ids:
                 update_params['file_ids'] = file_ids
+            
+            self.logger.info(f"Updating assistant {assistant_id} with parameters: {list(update_params.keys())}")
             
             # Update the assistant
             result = self.assistant_api.update_assistant(assistant_id, update_params)
             
             # Handle both dict and list results safely
             if isinstance(result, dict) and result.get('success', False):
-                self.logger.info(f"Updated assistant {assistant_id} for agent {agent['id']}")
+                self.logger.info(f"Successfully updated assistant {assistant_id} for agent {agent['id']} with all parameters")
                 return True
             else:
                 error_msg = result.get('message', 'Unknown error') if isinstance(result, dict) else 'Unexpected result format'
@@ -233,7 +254,7 @@ class AssistantManager:
             self.logger.error(f"Error listing assistants: {e}")
             return []
     
-    def _prepare_tools(self, agent_tools: list, has_knowledge_base: bool = False, has_files: bool = False) -> list:
+    def _prepare_tools(self, agent_tools: list, has_knowledge_base: bool = False, has_files: bool = False, agent: Dict[str, Any] = None) -> list:
         """
         Convert agent tools to OpenAI Assistant API format
         
@@ -241,6 +262,7 @@ class AssistantManager:
             agent_tools: List of agent tool configurations
             has_knowledge_base: Whether agent has knowledge base items
             has_files: Whether agent has uploaded files
+            agent: Full agent configuration dictionary (optional, for assistant_tools config)
             
         Returns:
             list: Formatted tools for OpenAI Assistant API
@@ -266,12 +288,28 @@ class AssistantManager:
                     agent_tools = []
         assistant_tools = []
         
-        # Always include code interpreter for agents
-        assistant_tools.append({"type": "code_interpreter"})
+        # Get assistant tools configuration from agent
+        assistant_tools_config = {}
+        if agent and isinstance(agent, dict):
+            assistant_tools_config = agent.get('assistant_tools', {})
+            logging.info(f"Agent assistant_tools config: {assistant_tools_config}")
         
-        # Add file search if agent has knowledge base or files
-        if has_knowledge_base or has_files:
-            assistant_tools.append({"type": "retrieval"})
+        # Add OpenAI Assistant tools based on agent configuration
+        if assistant_tools_config.get('code_interpreter', True):  # Default to True for backward compatibility
+            assistant_tools.append({"type": "code_interpreter"})
+            logging.info("Added code_interpreter tool")
+        
+        # Add file search if enabled or if agent has knowledge base/files (backward compatibility)
+        if assistant_tools_config.get('file_search', False) or has_knowledge_base or has_files:
+            assistant_tools.append({"type": "file_search"})
+            logging.info("Added file_search tool")
+        
+        # TODO: Add support for web_browsing when OpenAI supports it
+        # if assistant_tools_config.get('web_browsing', False):
+        #     assistant_tools.append({"type": "web_browsing"})
+        #     logging.info("Added web_browsing tool")
+        
+        # Note: function_calling is handled by the custom function tools below
         
         # Ensure agent_tools is a list
         if not isinstance(agent_tools, list):
@@ -316,12 +354,17 @@ class AssistantManager:
                             }
                         })
                     # Handle simple tool type strings
-                    elif tool in ["code_interpreter", "retrieval", "function"]:
+                    elif tool in ["code_interpreter", "file_search", "function"]:
                         # Avoid duplicates
                         if tool == "code_interpreter" and {"type": "code_interpreter"} in assistant_tools:
                             continue
-                        if tool == "retrieval" and {"type": "retrieval"} in assistant_tools:
+                        if tool == "file_search" and {"type": "file_search"} in assistant_tools:
                             continue
+                        # Convert legacy "retrieval" to "file_search"
+                        if tool == "retrieval":
+                            tool = "file_search"
+                            if {"type": "file_search"} in assistant_tools:
+                                continue
                         
                         assistant_tools.append({"type": tool})
                     
@@ -415,3 +458,20 @@ class MockAssistantAPI:
 
 # Create global instance
 assistant_manager = AssistantManager()
+
+def sync_assistant_after_save(agent: Dict[str, Any], operation_description: str = "save") -> None:
+    """
+    Helper function to sync assistant after agent save operations
+    
+    Args:
+        agent: Agent dictionary
+        operation_description: Description of the operation for logging
+    """
+    try:
+        if agent.get('assistant_id') and agent.get('ai_assistant_tool'):
+            logger = logging.getLogger(__name__)
+            logger.info(f"Syncing assistant after {operation_description} for agent {agent.get('id', 'unknown')}")
+            assistant_manager.update_assistant_for_agent(agent)
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error syncing assistant after {operation_description} for agent {agent.get('id', 'unknown')}: {str(e)}")

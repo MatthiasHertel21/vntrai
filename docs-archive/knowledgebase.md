@@ -297,7 +297,7 @@ sudo docker-compose restart web
 sudo docker-compose exec web python3 /app/scripts/migration_script.py
 
 # ❌ FALSCH: Direkt auf Host-System
-python3 scripts/migration_script.py
+sudo docker-compose exec web python3 scripts/migration_script.py
 
 # ✅ RICHTIG: Interactive Migration
 sudo docker-compose exec web python3 -c "

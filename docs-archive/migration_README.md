@@ -4,9 +4,9 @@ Dieses Verzeichnis enthält Scripts für die Migration der Daten von v036 nach v
 
 ## Migration durchführen
 
-### Option 1: Python3 direkt (empfohlen)
+### Option 1: Docker Exec (empfohlen)
 ```bash
-python3 migration/migrate_v036_data.py
+sudo docker-compose exec web python3 migration/migrate_v036_data.py
 ```
 
 ### Option 2: Docker

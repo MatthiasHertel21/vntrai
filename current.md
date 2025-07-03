@@ -41,25 +41,40 @@
 
 #### /agents/edit
 
+
+7. UI polish 
+**erledigt**
+- verwende eine kompaktere Darstellung der seite und der container. 
+- entferne den "View Agent" Button
+- benenne "Create & Assign Assistant" um nach "Create Assistant"
+**offen**
+- alle container sollen auf- und zuklappbar sein durch klick auf die überschrift des containers
+- nach "save Changes" soll gewechselt werden auf /agents
+
+##### Sessions
+
+6. erstelle einen container "Sessions" rechts unterhalb von knowledge base, der die zu dem agenten gehörenden AgentRuns (=sessions) als liste darstellt:
+- "Status Icon" (active / geschlossene session)
+- Alter der session (in Tagen)
+- Datum der letzten Benutzung der Session
+- ergänze eine aktion zum löschen einer session 
+- ein klick auf eine session soll die entsprechende session öffnen
+
+24. Erweitere den Header des Containes 
+-  filter option nach status der session. 
+- Button "cleanup" zum löschen der sessions
+
+
+##### AI Assistant Configuration
+
 3. ✅ **RESOLVED** - Für einen Agenten soll beim Speichern ein openai Assistent erzeugt werden falls noch keiner mit dem agenten verbunden ist und in der assistent_id des agenten gespeichert werden. weiterhin sollen beim speichern eines agenten die parameter (model, instruction, tool, files, ...) aktualisiert werden mit den werten des agenten
-   - **Solution**: Enhanced assistant_manager with comprehensive agent-to-assistant synchronization including knowledge base, files, tools, and model parameters
-   - **Status**: Fixed - OpenAI Assistant is automatically created/updated when saving agents with AI Assistant tool configured
+   - **Solution**: Enhanced assistant creation and synchronization with comprehensive parameter handling including model, instructions, tools, files, metadata, and immediate parameter sync after creation
+   - **Status**: Fixed - OpenAI Assistant is automatically created with all agent parameters and kept in sync when saving agents 
 
 4. ✅ **RESOLVED** - ergänze im Aktionsmenu der Sektion "AI Assistent Configuration" eine Aktionen zum Neuzuweisen eines Assistenten
    - **Solution**: Added "Reassign Assistant" action to the dropdown menu with backend API support
    - **Status**: Fixed - users can now reassign assistants via the actions menu 
 
-6. erstelle einen container "Sessions" rechts unterhalb von knowledge base, der die zu dem agenten gehörenden AgentRuns als liste darstellt:
-- "Status Icon" (active / geschlossene session)
-- Alter der session (in Tagen)
-- Datum der letzten Benutzung der Session
-Der Container-Header soll eine filter option haben nach status des agent runs. 
-
-7. polish 
-- verwende eine kompaktere Darstellung der seite und der container. 
-- alle container sollen auf- und zuklappbar sein durch klick auf die überschrift des containers
-- entferne den "View Agent" Button
-- benenne "Create & Assign Assistant" um nach "Create Assistant"
 
 8. ✅ **RESOLVED** - in agents/edit kann ich keinen AI Assistant tool auswählen, die liste ist leer
    - **Solution**: Fixed filtering logic to only show tools with "Enable AI Assistant Integration" option enabled
@@ -78,12 +93,65 @@ Der Container-Header soll eine filter option haben nach status des agent runs.
    - **Status**: Fixed - users can create assistants with full audit trail and process visibility 
    - entferne die alerts im browser
 
-15. zeige den Status-Tag als "Assigned" in AI Assistant configuration an, wenn ein Assistent zugewiesen ist
+15. ✅ **RESOLVED** - zeige den Status-Tag als "Assigned" in AI Assistant configuration an, wenn ein Assistent zugewiesen ist
+   - **Solution**: Updated status tag to show "Assigned" when assistant_id is present, "Configured" when tool is selected but no assistant, and "Not Assigned" when neither
+   - **Status**: Fixed - status tag properly reflects assistant assignment state
 
-16. ersetze die aktion "Reassign Assistant" durch die AKtion "Remove Assistant". Zeige die Aktionen "Create Assistant" und "Remobe Assistant" alternativ an
+16. ✅ **RESOLVED** - ersetze die aktion "Reassign Assistant" durch die AKtion "Remove Assistant". Zeige die Aktionen "Create Assistant" und "Remove Assistant" alternativ an
+   - **Solution**: Implemented conditional action menu that shows "Create Assistant" when no assistant is assigned and "Remove Assistant" when an assistant exists, including backend API support
+   - **Status**: Fixed - actions are now context-aware and mutually exclusive
+
+20. ✅ **RESOLVED** - Aktualisiere beim Speichern des Agenten den zugehörigen Assistenten
+   - **Solution**: Agent save process now automatically creates new assistant if none exists and synchronizes existing assistant configuration with agent parameters (name, instructions, model, tools, files)
+   - **Status**: Fixed - assistants are kept in sync with agent changes automatically
+
+
+21. ✅ **RESOLVED** - Beim Speichern eines Agenten geht die Verbindung zum assistenten verloren. verkürze die Rückmeldung beim erstellen eines assistenten
+   - **Solution**: Enhanced assistant connection verification during agent save with automatic recreation if assistant is lost, shortened feedback messages to minimal "✓" for success
+   - **Status**: Fixed - assistant connection is maintained during agent saves with concise user feedback
+
+22. ✅ **RESOLVED** - entferne die msgbox/alerts beim erstellen eines assistenten
+   - **Solution**: Removed all browser alerts, confirmation dialogs, and flash messages for assistant operations
+   - **Status**: Fixed - assistant operations now work silently without interrupting user workflow
+
+23. ✅ **RESOLVED** - ergänze eine aktion zum öffnen der webseite des vendors des assistenten (z.B. openai)
+   - **Solution**: Added "Open in OpenAI" action to assistant dropdown menu that opens the assistant directly in the OpenAI platform
+   - **Status**: Fixed - users can now open assistants directly in OpenAI platform with one click
+
+27. ✅ **RESOLVED** - ergänze eine Aktion "Update Assistent"
+   - **Solution**: Added "Update Assistant" action to assistant dropdown menu that synchronizes all agent parameters (name, system-instruction, model, tools, files) with the OpenAI Assistant and displays detailed confirmation message showing what was synchronized
+   - **Status**: Fixed - users can manually trigger assistant synchronization with comprehensive feedback on updated parameters
+   - Aktualisiere Name, System-Instruction, Model, Tools des assistenten mit den angaben des agenten
+   - erzeuge eine bestätigungsmeldung, die die sysnchronisierung anzeigt 
+
+28. ✅ **RESOLVED** - stelle sicher, dass auch beim speichern des agenten der assistent synchronisiert wird
+   - **Solution**: Enhanced all agent save operations to automatically synchronize with OpenAI Assistant including:
+     - Agent edit/update operations with comprehensive assistant sync after save
+     - Agent creation with automatic assistant creation if AI tool configured
+     - Agent cleanup operations with assistant parameter sync
+     - Assistant reassignment with immediate sync
+     - API operations (quick actions, data clearing) with conditional assistant sync
+     - Improved assistant tools configuration to respect agent's assistant_tools settings (file_search, code_interpreter)
+     - Fixed assistant tools pre-filling in edit form to show correct current values
+     - Enhanced form processing to save assistant_tools configuration changes
+   - **Status**: Fixed - all agent modifications now trigger automatic assistant synchronization ensuring consistency
+
+29. ✅ **RESOLVED** - stelle sicher, dass die assistant tools beim öffnen eines agenten mit den richtigen werten vorbelegt sind
+   - **Solution**: Implemented comprehensive assistant tools pre-filling and processing:
+     - Template correctly reads agent.assistant_tools configuration and pre-fills checkboxes
+     - Backend processes assistant_tools form data and saves configuration
+     - Assistant tools (file_search, code_interpreter, function_calling, web_browsing) are properly handled
+     - Form validation ensures consistent data structure
+     - Assistant synchronization respects the updated assistant_tools configuration
+   - **Status**: Fixed - assistant tools checkboxes are correctly pre-filled and saved when editing agents
 
 ##### Modal Edit Task:
 17. der Button "Update Task" erzeugt einen Fehler: Error updating task: Unexpected token '<', "
+
+
+##### container "Tasks"
+24. die Reorder-Buttons erzeugen einen Fehler: Error moving task: Unexpected token '<', "×
+25. ergänze zum Namen der Aufgabe in Klammern die Label der Eingabefelder, soweit Platz ist, es soll eine Zeile nicht überschritten werden
 
 #### /agents/view
 
@@ -103,23 +171,32 @@ Der Container-Header soll eine filter option haben nach status des agent runs.
    - stelle sicher, dass die fußzeile immer am unteren Rand der Card ist
    - kürze den Namen des Agenten so, dass der Menübutton nicht aus der Card verschoben wird, setze einen Tooltip auf den card-header zur anzeige des vollständigen Namens 
 
+#### Integration AI Assistant
+
+27. Erweitere die Konfiguration für AI Assistant Inmtegrations
+- ergänze bei der definition der felder die Konfigurationseinstellungen für responseformat, temperature, topp
+- ergänze die angeben in der configuration der entsprechenden Tools
+
+26. UI Polish
+   - stelle sicher, dass die fußzeile immer am unteren Rand der Card ist
+
 19. ✅ **RESOLVED** - UI Polish
    - **Solution**: Removed "Mapped to agent: ..." display from assistant cards for cleaner UI
    - **Status**: Fixed - agent mapping information no longer displayed in card body
    - entferne die Anzeige "Mapped to agent: ..."
 
-18. ✅ **RESOLVED** - ergänze eine Aktion "open in openai" um die webseite des agenten beim hertsller (z.B. openai) zu öffnen
+18. ✅ **RESOLVED** - ergänze eine Aktion "open in openai" um die webseite des agenten beim hertssteller (z.B. openai) zu öffnen
    - **Solution**: Added "Open in OpenAI" action to assistant dropdown menu with direct link to OpenAI platform
    - **Status**: Fixed - users can now open assistants directly in OpenAI platform with one click
 
 
 ### From Previous Sprint (High Priority)
-- [ ] **Agent.py Refactoring** - Separation of non-agent-specific functions and routes (Issue #25)
+- [x] **Agent.py Refactoring** - Separation of non-agent-specific functions and routes (Issue #25) **erledigt"
 - [ ] **Task Dialog UI Polish** - UI improvements for add task and edit task dialogs (Issue #26) 
 - [ ] **Advanced Tooltip Styling** - Enhanced styling for all three tooltip types (Issue #27)
 
 ### New Sprint 19 Features
-- [ ] **Responsive Task Management** - Mobile-optimized task editing and management
+- [x] **Responsive Task Management** - Mobile-optimized task editing and management
 - [ ] **Form Validation Enhancement** - Real-time validation with better error messaging
 - [ ] **Animation Framework** - Consistent animation system for state transitions
 - [ ] **Touch Optimization** - Improved touch interactions for mobile devices
