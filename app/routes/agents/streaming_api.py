@@ -246,41 +246,59 @@ def _execute_openai_prompt(api_key, thread_id, assistant_id, task_def, task_inpu
             'OpenAI-Beta': 'assistants=v2'
         }
         
-        # Add message to thread
-        message_response = requests.post(
-            f'https://api.openai.com/v1/threads/{thread_id}/messages',
-            headers=headers,
-            json={"role": "user", "content": context_prompt},
-            timeout=30
-        )
-        
-        if message_response.status_code != 200:
-            error_msg = f"Failed to add message: {message_response.status_code} - {message_response.text}"
-            error_html = f'<div class="error-section mb-6"><div class="bg-red-50 p-4 rounded-lg"><div class="text-red-700 font-medium">Error: {error_msg}</div></div></div>'
-            yield f"data: {json.dumps({'type': 'html_chunk', 'content': error_html})}\n\n"
-            agent_run_manager.set_task_status(run_uuid, task_uuid, 'error', error_msg)
-            return
-        
-        # Create run
-        run_response = requests.post(
+        # Check for existing active runs first
+        runs_response = requests.get(
             f'https://api.openai.com/v1/threads/{thread_id}/runs',
             headers=headers,
-            json={"assistant_id": assistant_id},
             timeout=30
         )
         
-        if run_response.status_code != 200:
-            error_msg = f"Failed to create run: {run_response.status_code} - {run_response.text}"
-            error_html = f'<div class="error-section mb-6"><div class="bg-red-50 p-4 rounded-lg"><div class="text-red-700 font-medium">Error: {error_msg}</div></div></div>'
-            yield f"data: {json.dumps({'type': 'html_chunk', 'content': error_html})}\n\n"
-            agent_run_manager.set_task_status(run_uuid, task_uuid, 'error', error_msg)
-            return
+        active_run_id = None
+        if runs_response.status_code == 200:
+            runs_data = runs_response.json()
+            for run in runs_data.get('data', []):
+                if run.get('status') in ['queued', 'in_progress', 'requires_action']:
+                    active_run_id = run['id']
+                    active_run_html = f'<div class="bg-yellow-50 p-4 rounded-lg mb-4"><div class="text-yellow-700">Found active run {active_run_id}, waiting for completion...</div></div>'
+                    yield f"data: {json.dumps({'type': 'html_chunk', 'content': active_run_html})}\n\n"
+                    break
         
-        run_data = run_response.json()
-        run_id = run_data['id']
+        if not active_run_id:
+            # Add message to thread
+            message_response = requests.post(
+                f'https://api.openai.com/v1/threads/{thread_id}/messages',
+                headers=headers,
+                json={"role": "user", "content": context_prompt},
+                timeout=30
+            )
+            
+            if message_response.status_code != 200:
+                error_msg = f"Failed to add message: {message_response.status_code} - {message_response.text}"
+                error_html = f'<div class="error-section mb-6"><div class="bg-red-50 p-4 rounded-lg"><div class="text-red-700 font-medium">Error: {error_msg}</div></div></div>'
+                yield f"data: {json.dumps({'type': 'html_chunk', 'content': error_html})}\n\n"
+                agent_run_manager.set_task_status(run_uuid, task_uuid, 'error', error_msg)
+                return
+            
+            # Create new run
+            run_response = requests.post(
+                f'https://api.openai.com/v1/threads/{thread_id}/runs',
+                headers=headers,
+                json={"assistant_id": assistant_id},
+                timeout=30
+            )
+            
+            if run_response.status_code != 200:
+                error_msg = f"Failed to create run: {run_response.status_code} - {run_response.text}"
+                error_html = f'<div class="error-section mb-6"><div class="bg-red-50 p-4 rounded-lg"><div class="text-red-700 font-medium">Error: {error_msg}</div></div></div>'
+                yield f"data: {json.dumps({'type': 'html_chunk', 'content': error_html})}\n\n"
+                agent_run_manager.set_task_status(run_uuid, task_uuid, 'error', error_msg)
+                return
+            
+            run_data = run_response.json()
+            active_run_id = run_data['id']
         
         # Poll for completion
-        yield from _poll_openai_completion(headers, thread_id, run_id, task_def, context_prompt, assistant_id, run_uuid, task_uuid)
+        yield from _poll_openai_completion(headers, thread_id, active_run_id, task_def, context_prompt, assistant_id, run_uuid, task_uuid)
         
     except requests.RequestException as e:
         error_msg = f"Request error: {str(e)}"
