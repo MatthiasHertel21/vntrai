@@ -103,6 +103,9 @@
 - Führt den Prompt in der OpenAI Assistant API aus
 - Streamt HTML-Chunks in Echtzeit und speichert Ergebnisse (HTML + Raw Response) in der AgentRun JSON
 - Unterstützt verschiedene Output-Formate (text, markdown, html) basierend auf Task-Definition
+
+
+
 ---
 
 ### Critical Issues (Migrated from Sprint 19)

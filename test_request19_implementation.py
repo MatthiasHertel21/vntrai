@@ -8,7 +8,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from app.routes.agents.api_routes import build_context_prompt, render_response_content
+from app.routes.agents.streaming_api import build_context_prompt, render_response_content
 
 def test_build_context_prompt():
     """Test the context prompt building function"""
