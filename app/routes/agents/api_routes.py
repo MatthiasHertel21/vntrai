@@ -4,7 +4,7 @@ Handles legacy API endpoints and general agent API functions
 """
 
 from flask import Blueprint, request, jsonify, current_app
-from app.utils.data_manager import agents_manager, tools_manager
+from app.utils.data_manager import agents_manager, tools_manager, agent_run_manager
 from datetime import datetime
 import uuid
 
@@ -631,3 +631,145 @@ def api_sync_assistant(agent_id):
     except Exception as e:
         current_app.logger.error(f"Error in sync_assistant API for agent {agent_id}: {str(e)}")
         return jsonify({'success': False, 'message': f'Internal error: {str(e)}'}), 500
+
+@agents_bp.route('/api/<agent_id>/sessions', methods=['GET'])
+def api_get_agent_sessions(agent_id):
+    """Get all sessions (agent runs) for a specific agent"""
+    try:
+        agent = agents_manager.load(agent_id)
+        if not agent:
+            return jsonify({'error': 'Agent not found'}), 404
+        
+        # Get all agent runs for this agent
+        agent_runs = agent_run_manager.get_agent_runs(agent_id)
+        
+        # Format sessions for the UI
+        sessions = []
+        for run in agent_runs:
+            # Calculate age in days
+            created_at = run.get('created_at', '')
+            if created_at:
+                from datetime import datetime
+                try:
+                    created_date = datetime.fromisoformat(created_at.replace('Z', ''))
+                    age_days = (datetime.now() - created_date).days
+                except:
+                    age_days = 0
+            else:
+                age_days = 0
+            
+            # Determine session status
+            status = run.get('status', 'unknown')
+            if status == 'created':
+                status_icon = 'bi-clock'
+                status_color = 'text-blue-500'
+                status_text = 'Ready'
+            elif status == 'open':
+                status_icon = 'bi-play-circle'
+                status_color = 'text-green-500'
+                status_text = 'Active'
+            elif status == 'closed':
+                status_icon = 'bi-check-circle'
+                status_color = 'text-gray-500'
+                status_text = 'Closed'
+            elif status == 'error':
+                status_icon = 'bi-exclamation-circle'
+                status_color = 'text-red-500'
+                status_text = 'Error'
+            else:
+                status_icon = 'bi-question-circle'
+                status_color = 'text-gray-400'
+                status_text = 'Unknown'
+            
+            # Get last used date
+            last_used = run.get('updated_at', run.get('created_at', ''))
+            
+            session_data = {
+                'uuid': run.get('uuid'),
+                'name': run.get('name', f"Session {created_at[:10] if created_at else 'Unknown'}"),
+                'status': status,
+                'status_icon': status_icon,
+                'status_color': status_color,
+                'status_text': status_text,
+                'age_days': age_days,
+                'created_at': created_at,
+                'last_used': last_used,
+                'task_count': len(run.get('task_states', [])),
+                'task_completed': len([ts for ts in run.get('task_states', []) if ts.get('status') == 'completed'])
+            }
+            sessions.append(session_data)
+        
+        return jsonify({
+            'agent_id': agent_id,
+            'sessions': sessions,
+            'count': len(sessions)
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting sessions for agent {agent_id}: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@agents_bp.route('/api/<agent_id>/sessions/<session_id>', methods=['DELETE'])
+def api_delete_agent_session(agent_id, session_id):
+    """Delete a specific session"""
+    try:
+        agent = agents_manager.load(agent_id)
+        if not agent:
+            return jsonify({'error': 'Agent not found'}), 404
+        
+        # Check if session exists and belongs to agent
+        session = agent_run_manager.load(session_id)
+        if not session:
+            return jsonify({'error': 'Session not found'}), 404
+        
+        if session.get('agent_uuid') != agent_id:
+            return jsonify({'error': 'Session does not belong to this agent'}), 403
+        
+        # Delete the session
+        if agent_run_manager.delete(session_id):
+            return jsonify({'success': True, 'message': 'Session deleted successfully'})
+        else:
+            return jsonify({'error': 'Failed to delete session'}), 500
+            
+    except Exception as e:
+        current_app.logger.error(f"Error deleting session {session_id} for agent {agent_id}: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@agents_bp.route('/api/<agent_id>/sessions/cleanup', methods=['POST'])
+def api_cleanup_agent_sessions(agent_id):
+    """Cleanup sessions based on filter criteria"""
+    try:
+        agent = agents_manager.load(agent_id)
+        if not agent:
+            return jsonify({'error': 'Agent not found'}), 404
+        
+        data = request.get_json()
+        status_filter = data.get('status_filter', 'all')  # 'closed', 'error', 'all'
+        
+        # Get all agent runs for this agent
+        agent_runs = agent_run_manager.get_agent_runs(agent_id)
+        
+        deleted_count = 0
+        for run in agent_runs:
+            should_delete = False
+            
+            if status_filter == 'closed' and run.get('status') == 'closed':
+                should_delete = True
+            elif status_filter == 'error' and run.get('status') == 'error':
+                should_delete = True
+            elif status_filter == 'all' and run.get('status') in ['closed', 'error']:
+                should_delete = True
+            
+            if should_delete:
+                if agent_run_manager.delete(run.get('uuid')):
+                    deleted_count += 1
+        
+        return jsonify({
+            'success': True, 
+            'message': f'Deleted {deleted_count} sessions',
+            'deleted_count': deleted_count
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error cleaning up sessions for agent {agent_id}: {str(e)}")
+        return jsonify({'error': str(e)}), 500

@@ -525,6 +525,53 @@
                         </button>
                     </div>
                 </div>
+
+                <!-- Sessions Container -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div class="border-b border-gray-200 pb-3 mb-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center cursor-pointer" onclick="toggleContainer('sessions')">
+                                <i class="bi bi-terminal mr-2 text-green-500"></i>
+                                <h3 class="text-lg font-medium text-gray-900">Sessions</h3>
+                                <span class="ml-2 text-sm font-normal text-gray-500" id="sessionsCount">Loading...</span>
+                                <i class="bi bi-chevron-down ml-2 text-gray-400 transition-transform" id="sessionsChevron"></i>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <!-- Filter dropdown -->
+                                <select id="sessionStatusFilter" onchange="filterSessions()" class="text-xs px-2 py-1 border border-gray-300 rounded text-gray-600">
+                                    <option value="all">All</option>
+                                    <option value="active">Active</option>
+                                    <option value="closed">Closed</option>
+                                    <option value="error">Error</option>
+                                </select>
+                                <!-- Cleanup button -->
+                                <button type="button" onclick="cleanupSessions()" 
+                                        class="text-xs px-2 py-1 bg-red-50 text-red-600 border border-red-200 rounded hover:bg-red-100 transition-colors"
+                                        title="Cleanup closed/error sessions">
+                                    <i class="bi bi-trash mr-1"></i>
+                                    Cleanup
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="sessionsContent" class="space-y-2">
+                        <div class="text-center py-6 text-gray-500" id="sessionsLoading">
+                            <i class="bi bi-hourglass-split text-2xl mb-2"></i>
+                            <p>Loading sessions...</p>
+                        </div>
+                        
+                        <div id="sessionsEmpty" class="text-center py-6 text-gray-500 hidden">
+                            <i class="bi bi-plus-circle text-2xl mb-2"></i>
+                            <p>No sessions found</p>
+                            <p class="text-sm">Sessions will appear here when you create new runs</p>
+                        </div>
+                        
+                        <div id="sessionsList" class="space-y-2 hidden">
+                            <!-- Sessions will be populated here -->
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -550,6 +597,7 @@
 <script src="{{ url_for('static', filename='js/agents/task-management-advanced.js') }}"></script>
 <script src="{{ url_for('static', filename='js/agents/knowledge-management.js') }}"></script>
 <script src="{{ url_for('static', filename='js/agents/task-configuration-advanced.js') }}"></script>
+<script src="{{ url_for('static', filename='js/agents/sessions-management.js') }}"></script>
 <script src="{{ url_for('static', filename='js/agents/form-management.js') }}"></script>
 
 <script>

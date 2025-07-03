@@ -321,7 +321,7 @@ def edit_agent(agent_id):
                 current_app.logger.error(f"Error in final assistant sync for agent {agent_id}: {str(e)}")
             
             flash(f'Agent "{agent["name"]}" updated successfully', 'success')
-            return redirect(url_for('agents.view_agent', agent_id=agent_id))
+            return redirect(url_for('agents.list_agents'))
         
         # GET request - show edit form
         all_tools = tools_manager.get_all()

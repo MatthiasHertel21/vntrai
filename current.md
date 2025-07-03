@@ -2,29 +2,6 @@
 
 **Sprint Duration**: July 21-27, 2025  
 **Sprint Status**: Planning  
-**Fo##### Modal Edit Task:
-17. ✅ **RESOLVED** - der Button "Update Task" erzeugt einen Fehler: Error updating task: Unexpected token '<', "
-   - **Solution**: Fixed incorrect API endpoint URL in JavaScript - changed from `/agents/api/${agentId}/tasks/${taskUuid}` to `/agents/${agentId}/tasks/${taskUuid}` to match the actual Flask route
-   - **Status**: Fixed - task updates now work correctly via the edit modal
-
-30. UI Polish
-- Input Fields: Feld "Description"
-
-##### container "Tasks"
-24. ✅ **RESOLVED** - die Reorder-Buttons erzeugen einen Fehler: Error moving task: Unexpected token '<', "×
-   - **Solution**: Fixed incorrect API endpoint URLs in JavaScript for task reordering:
-     - Changed move-up URL from `/agents/api/${agentId}/tasks/${taskUuid}/move-up` to `/agents/${agentId}/tasks/${taskUuid}/move-up`
-     - Changed move-down URL from `/agents/api/${agentId}/tasks/${taskUuid}/move-down` to `/agents/${agentId}/tasks/${taskUuid}/move-down`
-   - **Status**: Fixed - task reordering buttons now function correctly
-
-25. ✅ **RESOLVED** - ergänze zum Namen der Aufgabe in Klammern die Label der Eingabefelder, soweit Platz ist, es soll eine Zeile nicht überschritten werden
-   - **Solution**: Enhanced task name display to include input field labels in parentheses:
-     - Added display of ai_config.input_fields labels next to task names
-     - Labels are shown in gray text with proper truncation (max 40 characters)
-     - Maintains single-line layout while providing additional context
-     - Only shown for AI tasks that have configured input fields
-   - **Status**: Fixed - task names now show input field labels for better context polish, architecture improvements, and responsive design
-
 ---
 
 ## 🎯 Current Sprint Goals
@@ -63,27 +40,34 @@
 #### /agents/edit
 
 
-7. UI polish 
+7. ✅ **RESOLVED** - UI polish 
 **erledigt**
 - verwende eine kompaktere Darstellung der seite und der container. 
 - entferne den "View Agent" Button
 - benenne "Create & Assign Assistant" um nach "Create Assistant"
+- nach "save Changes" soll gewechselt werden auf /agents
 **offen**
 - alle container sollen auf- und zuklappbar sein durch klick auf die überschrift des containers
-- nach "save Changes" soll gewechselt werden auf /agents
 
 ##### Sessions
 
-6. erstelle einen container "Sessions" rechts unterhalb von knowledge base, der die zu dem agenten gehörenden AgentRuns (=sessions) als liste darstellt:
-- "Status Icon" (active / geschlossene session)
-- Alter der session (in Tagen)
-- Datum der letzten Benutzung der Session
-- ergänze eine aktion zum löschen einer session 
-- ein klick auf eine session soll die entsprechende session öffnen
+6. ✅ **RESOLVED** - erstelle einen container "Sessions" rechts unterhalb von knowledge base, der die zu dem agenten gehörenden AgentRuns (=sessions) als liste darstellt:
+   - **Solution**: Implemented comprehensive Sessions container with full functionality:
+     - Container shows all agent runs/sessions with status icons (active/closed sessions)
+     - Displays session age in days and last usage timestamp
+     - Shows task completion progress (completed/total tasks)
+     - Click on session opens it in new tab/window
+     - Delete action for individual sessions with confirmation
+     - Real-time loading and filtering capabilities
+   - **Status**: Fixed - Sessions container fully functional with all requested features
 
-24. Erweitere den Header des Containes 
--  filter option nach status der session. 
-- Button "cleanup" zum löschen der sessions
+24. ✅ **RESOLVED** - Erweitere den Header des Containes 
+   - **Solution**: Enhanced Sessions container header with advanced functionality:
+     - Filter dropdown with options: All, Active, Closed, Error sessions
+     - Cleanup button to bulk delete closed/error sessions with confirmation
+     - Dynamic session count display that updates with filtering
+     - Collapsible container with chevron indicator
+   - **Status**: Fixed - Sessions container header includes filter and cleanup functionality
 
 
 ##### AI Assistant Configuration
@@ -168,9 +152,33 @@
 
 30. UI Polish
 - Input Fields: Feld "Description" soll auf gleicher Breite beginnen wie Feld "Type"
+- bewege die checkbox "reqired" von der überschrift in die gleiche zeile wie "Default"
+- die Buttons Update und Cancel sollen normale breite haben, rechtbündig sein und immer am fußende des dialogs stehen (nicht mitscrollen) 
 
+##### Modal Edit Task:
+17. ✅ **RESOLVED** - der Button "Update Task" erzeugt einen Fehler: Error updating task: Unexpected token '<', "
+   - **Solution**: Fixed incorrect API endpoint URL in JavaScript - changed from `/agents/api/${agentId}/tasks/${taskUuid}` to `/agents/${agentId}/tasks/${taskUuid}` to match the actual Flask route
+   - **Status**: Fixed - task updates now work correctly via the edit modal
+
+30. UI Polish
+- Input Fields: Feld "Description" soll auf gleicher breite beginnen wie das feld "Typ"
+- checkbox "required" soll in gleiche zeile wie "default" ans ende
 
 ##### container "Tasks"
+24. ✅ **RESOLVED** - die Reorder-Buttons erzeugen einen Fehler: Error moving task: Unexpected token '<', "×
+   - **Solution**: Fixed incorrect API endpoint URLs in JavaScript for task reordering:
+     - Changed move-up URL from `/agents/api/${agentId}/tasks/${taskUuid}/move-up` to `/agents/${agentId}/tasks/${taskUuid}/move-up`
+     - Changed move-down URL from `/agents/api/${agentId}/tasks/${taskUuid}/move-down` to `/agents/${agentId}/tasks/${taskUuid}/move-down`
+   - **Status**: Fixed - task reordering buttons now function correctly
+
+25. ✅ **RESOLVED** - ergänze zum Namen der Aufgabe in Klammern die Label der Eingabefelder, soweit Platz ist, es soll eine Zeile nicht überschritten werden
+   - **Solution**: Enhanced task name display to include input field labels in parentheses:
+     - Added display of ai_config.input_fields labels next to task names
+     - Labels are shown in gray text with proper truncation (max 40 characters)
+     - Maintains single-line layout while providing additional context
+     - Only shown for AI tasks that have configured input fields
+   - **Status**: Fixed - task names now show input field labels for better context polish, architecture improvements, and responsive design
+
 
 #### /agents/view
 
@@ -211,38 +219,15 @@
 
 ### From Previous Sprint (High Priority)
 - [x] **Agent.py Refactoring** - Separation of non-agent-specific functions and routes (Issue #25) **erledigt"
-- [ ] **Task Dialog UI Polish** - UI improvements for add task and edit task dialogs (Issue #26) 
 - [ ] **Advanced Tooltip Styling** - Enhanced styling for all three tooltip types (Issue #27)
 
 ### New Sprint 19 Features
 - [x] **Responsive Task Management** - Mobile-optimized task editing and management
-- [ ] **Form Validation Enhancement** - Real-time validation with better error messaging
-- [ ] **Animation Framework** - Consistent animation system for state transitions
-- [ ] **Touch Optimization** - Improved touch interactions for mobile devices
-- [ ] **Accessibility Improvements** - ARIA labels, keyboard navigation, screen reader support
 
 ---
 
 ## 🧪 Sprint 19 Test Plan
 
-### Test Categories
-
-#### 1. UI/UX Enhancement Tests
-- **Test 1.1**: Task Dialog Responsiveness ⏳ Pending
-  - Test add/edit task dialogs on various screen sizes
-  - Validate form field accessibility and tab order
-  - Verify modal behavior on mobile devices
-  
-- **Test 1.2**: Tooltip System Validation ⏳ Pending
-  - Test all three tooltip types (basic, detailed, help)
-  - Verify tooltip positioning and responsive behavior
-  - Check animation performance and smoothness
-
-#### 2. Architecture Validation Tests
-- **Test 2.1**: Agent.py Refactoring ⏳ Pending
-  - Validate separation of generic vs agent-specific routes
-  - Test routing functionality after refactoring
-  - Ensure no breaking changes to existing functionality
 
 #### 3. Responsive Design Tests
 - **Test 3.1**: Mobile Device Testing ⏳ Pending
