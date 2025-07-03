@@ -531,7 +531,7 @@ function editTask(taskUuid) {
                 throw new Error('Agent ID not found');
             }
             
-            const response = await fetch(`/agents/api/${agentId}/tasks/${taskUuid}`, {
+            const response = await fetch(`/agents/${agentId}/tasks/${taskUuid}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

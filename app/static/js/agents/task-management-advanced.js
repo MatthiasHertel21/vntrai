@@ -117,7 +117,7 @@ async function moveTaskUp(taskUuid) {
             return;
         }
         
-        const response = await fetch(`/agents/api/${agentId}/tasks/${taskUuid}/move-up`, {
+        const response = await fetch(`/agents/${agentId}/tasks/${taskUuid}/move-up`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -149,7 +149,7 @@ async function moveTaskDown(taskUuid) {
             return;
         }
         
-        const response = await fetch(`/agents/api/${agentId}/tasks/${taskUuid}/move-down`, {
+        const response = await fetch(`/agents/${agentId}/tasks/${taskUuid}/move-down`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

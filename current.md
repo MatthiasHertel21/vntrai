@@ -2,7 +2,28 @@
 
 **Sprint Duration**: July 21-27, 2025  
 **Sprint Status**: Planning  
-**Focus**: UI polish, architecture improvements, and responsive design
+**Fo##### Modal Edit Task:
+17. ✅ **RESOLVED** - der Button "Update Task" erzeugt einen Fehler: Error updating task: Unexpected token '<', "
+   - **Solution**: Fixed incorrect API endpoint URL in JavaScript - changed from `/agents/api/${agentId}/tasks/${taskUuid}` to `/agents/${agentId}/tasks/${taskUuid}` to match the actual Flask route
+   - **Status**: Fixed - task updates now work correctly via the edit modal
+
+30. UI Polish
+- Input Fields: Feld "Description"
+
+##### container "Tasks"
+24. ✅ **RESOLVED** - die Reorder-Buttons erzeugen einen Fehler: Error moving task: Unexpected token '<', "×
+   - **Solution**: Fixed incorrect API endpoint URLs in JavaScript for task reordering:
+     - Changed move-up URL from `/agents/api/${agentId}/tasks/${taskUuid}/move-up` to `/agents/${agentId}/tasks/${taskUuid}/move-up`
+     - Changed move-down URL from `/agents/api/${agentId}/tasks/${taskUuid}/move-down` to `/agents/${agentId}/tasks/${taskUuid}/move-down`
+   - **Status**: Fixed - task reordering buttons now function correctly
+
+25. ✅ **RESOLVED** - ergänze zum Namen der Aufgabe in Klammern die Label der Eingabefelder, soweit Platz ist, es soll eine Zeile nicht überschritten werden
+   - **Solution**: Enhanced task name display to include input field labels in parentheses:
+     - Added display of ai_config.input_fields labels next to task names
+     - Labels are shown in gray text with proper truncation (max 40 characters)
+     - Maintains single-line layout while providing additional context
+     - Only shown for AI tasks that have configured input fields
+   - **Status**: Fixed - task names now show input field labels for better context polish, architecture improvements, and responsive design
 
 ---
 
@@ -145,13 +166,11 @@
      - Assistant synchronization respects the updated assistant_tools configuration
    - **Status**: Fixed - assistant tools checkboxes are correctly pre-filled and saved when editing agents
 
-##### Modal Edit Task:
-17. der Button "Update Task" erzeugt einen Fehler: Error updating task: Unexpected token '<', "
+30. UI Polish
+- Input Fields: Feld "Description" soll auf gleicher Breite beginnen wie Feld "Type"
 
 
 ##### container "Tasks"
-24. die Reorder-Buttons erzeugen einen Fehler: Error moving task: Unexpected token '<', "×
-25. ergänze zum Namen der Aufgabe in Klammern die Label der Eingabefelder, soweit Platz ist, es soll eine Zeile nicht überschritten werden
 
 #### /agents/view
 

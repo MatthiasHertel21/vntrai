@@ -418,9 +418,16 @@
                                             </div>
                                         {% endif %}
                                         
-                                        <!-- Task name only - ultra-kompakter -->
+                                        <!-- Task name with input field labels - kompakter -->
                                         <div class="flex-1 min-w-0">
-                                            <span class="font-medium text-gray-900 text-sm truncate leading-tight">{{ task.name }}</span>
+                                            <span class="font-medium text-gray-900 text-sm truncate leading-tight">
+                                                {{ task.name }}
+                                                {% if task.ai_config and task.ai_config.input_fields %}
+                                                    <span class="text-gray-500 text-xs ml-1 font-normal">
+                                                        ({{ task.ai_config.input_fields | map(attribute='display_label') | join(', ') | truncate(40) }})
+                                                    </span>
+                                                {% endif %}
+                                            </span>
                                         </div>
                                         
                                         <!-- Delete button only - größer -->
