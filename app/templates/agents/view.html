@@ -15,6 +15,13 @@
             </div>
         </div>
         <div class="flex gap-2 items-center">
+            <!-- Edit Button -->
+            <a href="{{ url_for('agents.edit_agent', agent_id=agent.id) }}" 
+               class="btn btn-primary">
+                <i class="bi bi-pencil"></i>
+                Edit
+            </a>
+            
             <!-- Current Session Button -->
             <form method="POST" action="{{ url_for('agents.open_session', agent_id=agent.id) }}" style="display:inline;">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
@@ -39,11 +46,6 @@
                        onclick="closeViewActionsMenu()"
                        class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center">
                         <i class="bi bi-activity mr-2"></i> Activity
-                    </a>
-                    <a href="{{ url_for('agents.edit_agent', agent_id=agent.id) }}" 
-                       onclick="closeViewActionsMenu()"
-                       class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center">
-                        <i class="bi bi-pencil mr-2"></i> Edit
                     </a>
                     <form method="POST" action="{{ url_for('agents.new_session', agent_id=agent.id) }}" style="display:inline;" class="w-full">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
@@ -164,11 +166,6 @@
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-xl font-semibold text-gray-900">Tasks</h2>
-                    <a href="{{ url_for('agents.edit_agent', agent_id=agent.id) }}#tasks" 
-                       class="btn btn-outline btn-sm">
-                        <i class="bi bi-plus-lg"></i>
-                        Add Task
-                    </a>
                 </div>
 
                 {% if agent.tasks %}
@@ -208,51 +205,71 @@
                 <div class="text-center py-12">
                     <i class="bi bi-list-task text-4xl text-gray-300 mb-4"></i>
                     <h3 class="text-lg font-medium text-gray-900 mb-2">No Tasks Defined</h3>
-                    <p class="text-gray-500 mb-4">Add tasks to define what this agent can do.</p>
-                    <a href="{{ url_for('agents.edit_agent', agent_id=agent.id) }}#tasks" 
+                    <p class="text-gray-500">No tasks have been configured for this agent.</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- AI Assistant Section -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold text-gray-900">AI Assistant</h2>
+                    {% if agent.assistant_id %}
+                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Connected</span>
+                    {% else %}
+                    <span class="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">Not Connected</span>
+                    {% endif %}
+                </div>
+
+                {% if agent.assistant_id %}
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <div class="text-sm font-medium text-gray-700 mb-1">Assistant ID</div>
+                            <div class="text-sm font-mono text-gray-900">
+                                {{ agent.assistant_id[:20] }}...
+                            </div>
+                        </div>
+                        <div>
+                            <div class="text-sm font-medium text-gray-700 mb-1">Model</div>
+                            <div class="text-sm text-gray-900">
+                                {{ agent.ai_config.model if agent.ai_config else 'gpt-4' }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if agent.assistant_tool_id %}
+                    <div>
+                        <div class="text-sm font-medium text-gray-700 mb-1">Integration Tool</div>
+                        <div class="text-sm text-gray-900">
+                            {{ agent.assistant_tool_id[:30] }}...
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div>
+                        <a href="https://platform.openai.com/assistants/{{ agent.assistant_id }}" 
+                           target="_blank" 
+                           class="btn btn-outline btn-sm">
+                            <i class="bi bi-box-arrow-up-right"></i>
+                            Open in OpenAI
+                        </a>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-8">
+                    <i class="bi bi-robot text-4xl text-gray-300 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No AI Assistant</h3>
+                    <p class="text-gray-500 mb-4">Connect an AI assistant to enable advanced capabilities.</p>
+                    <a href="{{ url_for('agents.edit_agent', agent_id=agent.id) }}#assistant" 
                        class="btn btn-primary">
                         <i class="bi bi-plus-lg"></i>
-                        Add First Task
+                        Setup Assistant
                     </a>
                 </div>
                 {% endif %}
             </div>
 
-            <!-- Files Section -->
-            {% if agent.files %}
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 class="text-xl font-semibold text-gray-900 mb-6">Files</h2>
-                
-                <div class="space-y-3">
-                    {% for file in agent.files %}
-                    <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                        <div class="flex items-center gap-3">
-                            <i class="bi bi-file-earmark text-gray-400"></i>
-                            <div>
-                                <div class="font-medium text-gray-900">{{ file.filename or 'Unknown File' }}</div>
-                                <div class="text-sm text-gray-500">
-                                    {% if file.size %}Size: {{ file.size | filesizeformat }}{% endif %}
-                                    {% if file.uploaded_at %}• Uploaded: {{ moment(file.uploaded_at).fromNow() }}{% endif %}
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            {% if file.download_url %}
-                            <a href="{{ file.download_url }}" class="btn btn-outline btn-sm">
-                                <i class="bi bi-download"></i>
-                                Download
-                            </a>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-            {% endif %}
-        </div>
-
-        <!-- Right Column -->
-        <div class="space-y-8">
             <!-- Knowledge Base Section -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <div class="flex justify-between items-center mb-6">
@@ -304,45 +321,94 @@
                 {% endif %}
             </div>
 
-            <!-- Run Statistics -->
+            <!-- Files Section -->
+            {% if agent.files %}
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 class="text-xl font-semibold text-gray-900 mb-6">Run Statistics</h2>
+                <h2 class="text-xl font-semibold text-gray-900 mb-6">Files</h2>
                 
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="text-center p-4 bg-gray-50 rounded-lg">
-                        <div class="text-2xl font-bold text-blue-600">{{ agent.total_runs or 0 }}</div>
-                        <div class="text-sm text-gray-500">Total Runs</div>
+                <div class="space-y-3">
+                    {% for file in agent.files %}
+                    <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                        <div class="flex items-center gap-3">
+                            <i class="bi bi-file-earmark text-gray-400"></i>
+                            <div>
+                                <div class="font-medium text-gray-900">{{ file.filename or 'Unknown File' }}</div>
+                                <div class="text-sm text-gray-500">
+                                    {% if file.size %}Size: {{ file.size | filesizeformat }}{% endif %}
+                                    {% if file.uploaded_at %}• Uploaded: {{ moment(file.uploaded_at).fromNow() }}{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            {% if file.download_url %}
+                            <a href="{{ file.download_url }}" class="btn btn-outline btn-sm">
+                                <i class="bi bi-download"></i>
+                                Download
+                            </a>
+                            {% endif %}
+                        </div>
                     </div>
-                    <div class="text-center p-4 bg-gray-50 rounded-lg">
-                        <div class="text-2xl font-bold text-green-600">{{ agent.completed_runs or 0 }}</div>
-                        <div class="text-sm text-gray-500">Completed</div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column -->
+        <div class="space-y-8">
+            <!-- Sessions Section -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-xl font-semibold text-gray-900">Sessions</h2>
+                        <span id="sessionsCount" class="text-sm text-gray-500">(0 sessions)</span>
                     </div>
-                    <div class="text-center p-4 bg-gray-50 rounded-lg">
-                        <div class="text-2xl font-bold text-yellow-600">{{ agent.active_runs or 0 }}</div>
-                        <div class="text-sm text-gray-500">Active</div>
-                    </div>
-                    <div class="text-center p-4 bg-gray-50 rounded-lg">
-                        <div class="text-2xl font-bold text-red-600">{{ agent.failed_runs or 0 }}</div>
-                        <div class="text-sm text-gray-500">Failed</div>
+                    <div class="flex items-center gap-2">
+                        <!-- Session Filter -->
+                        <select id="sessionStatusFilter" class="form-select form-select-sm" onchange="filterSessions()">
+                            <option value="all">All Sessions</option>
+                            <option value="active">Active</option>
+                            <option value="completed">Completed</option>
+                            <option value="failed">Failed</option>
+                        </select>
+                        
+                        <!-- Cleanup Button -->
+                        <button type="button" 
+                                onclick="cleanupSessions()" 
+                                class="btn btn-outline btn-sm"
+                                title="Cleanup old sessions">
+                            <i class="bi bi-trash"></i>
+                            Cleanup
+                        </button>
                     </div>
                 </div>
 
-                {% if agent.last_run %}
-                <div class="mt-6 p-4 border border-gray-200 rounded-lg">
-                    <h3 class="font-medium text-gray-900 mb-2">Last Run</h3>
-                    <div class="text-sm text-gray-600">
-                        <div>Started: {{ moment(agent.last_run.started_at).format('MMMM Do YYYY, h:mm a') }}</div>
-                        {% if agent.last_run.completed_at %}
-                        <div>Completed: {{ moment(agent.last_run.completed_at).format('MMMM Do YYYY, h:mm a') }}</div>
-                        {% endif %}
-                        <div>Status: {{ agent.last_run.status or 'Unknown' }}</div>
+                <!-- Sessions List -->
+                <div id="sessionsList" class="space-y-3">
+                    <!-- Sessions will be loaded here via JavaScript -->
+                </div>
+
+                <!-- Empty State -->
+                <div id="sessionsEmpty" class="text-center py-12 hidden">
+                    <i class="bi bi-clock-history text-4xl text-gray-300 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No Sessions</h3>
+                    <p class="text-gray-500 mb-4">No sessions found for this agent yet.</p>
+                    <form method="POST" action="{{ url_for('agents.new_session', agent_id=agent.id) }}" style="display:inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-plus-lg"></i>
+                            Create First Session
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Loading State -->
+                <div id="sessionsLoading" class="text-center py-8">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading sessions...</span>
                     </div>
+                    <p class="text-gray-500 mt-2">Loading sessions...</p>
                 </div>
-                {% else %}
-                <div class="mt-6 text-center py-6 bg-gray-50 rounded-lg">
-                    <p class="text-gray-500">No runs yet</p>
-                </div>
-                {% endif %}
             </div>
         </div>
     </div>
@@ -350,53 +416,37 @@
 {% endblock %}
 
 {% block scripts %}
+<!-- Include sessions management script -->
+<script src="{{ url_for('static', filename='js/agents/sessions-management.js') }}"></script>
+
 <script>
-// Add moment.js helper for date formatting
-function moment(date) {
-    if (!date) return { format: () => 'Unknown', fromNow: () => 'Unknown' };
-    const d = new Date(date);
-    return {
-        format: (format) => {
-            if (format === 'MMMM Do YYYY, h:mm a') {
-                return d.toLocaleDateString('en-US', { 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric',
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true
-                });
-            }
-            return d.toLocaleDateString();
-        },
-        fromNow: () => {
-            const now = new Date();
-            const diff = now - d;
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            if (days === 0) return 'Today';
-            if (days === 1) return 'Yesterday';
-            if (days < 7) return `${days} days ago`;
-            return d.toLocaleDateString();
-        }
-    };
-}
+// Agent data for JavaScript
+window.agentData = {
+    id: '{{ agent.id }}',
+    name: '{{ agent.name }}'
+};
 
 // Stacked menu functions for view page
 function toggleViewActionsMenu(event) {
     event.stopPropagation();
     const menu = document.getElementById('view-actions-menu');
-    menu.classList.toggle('hidden');
+    if (menu) {
+        menu.classList.toggle('hidden');
+    }
 }
 
 function closeViewActionsMenu() {
-    document.getElementById('view-actions-menu').classList.add('hidden');
+    const menu = document.getElementById('view-actions-menu');
+    if (menu) {
+        menu.classList.add('hidden');
+    }
 }
 
 // Close menu when clicking outside
 document.addEventListener('click', function(event) {
     const menu = document.getElementById('view-actions-menu');
     const btn = document.getElementById('view-actions-btn');
-    if (!menu.contains(event.target) && !btn.contains(event.target)) {
+    if (menu && btn && !menu.contains(event.target) && !btn.contains(event.target)) {
         closeViewActionsMenu();
     }
 });
@@ -407,8 +457,5 @@ function duplicateAgent(agentId, agentName) {
         window.location.href = `/agents/${agentId}/duplicate`;
     }
 }
-
-// Make moment available globally for template use
-window.moment = moment;
 </script>
 {% endblock %}

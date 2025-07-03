@@ -710,6 +710,7 @@ def reconnect_agent_api(agent_id):
 # =============================================================================
 
 @agents_bp.route('/api/<agent_id>/sessions', methods=['GET'])
+@csrf.exempt
 def get_agent_sessions(agent_id):
     """Get all sessions/runs for an agent"""
     try:
