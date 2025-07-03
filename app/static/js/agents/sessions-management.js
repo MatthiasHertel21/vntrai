@@ -9,49 +9,76 @@ let filteredSessions = [];
 
 // Initialize sessions when page loads
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Sessions management script DOM ready, checking agent data...');
     if (window.agentData && window.agentData.id) {
+        console.log('Loading sessions for agent:', window.agentData.id);
         loadSessions();
+    } else {
+        console.log('No agent data found or missing agent ID');
     }
 });
 
 // Load sessions from API
 async function loadSessions() {
+    console.log('loadSessions called for agent:', window.agentData?.id);
     try {
         const agentId = window.agentData.id;
+        if (!agentId) {
+            throw new Error('No agent ID available');
+        }
+        
+        console.log('Fetching sessions from API:', `/agents/api/${agentId}/sessions`);
         const response = await fetch(`/agents/api/${agentId}/sessions`);
         
+        console.log('Sessions API response status:', response.status);
         if (response.ok) {
             const data = await response.json();
+            console.log('Sessions data received:', data);
             agentSessions = data.sessions || [];
             filteredSessions = [...agentSessions];
             updateSessionsDisplay();
         } else {
-            throw new Error('Failed to load sessions');
+            throw new Error(`API returned ${response.status}: ${response.statusText}`);
         }
     } catch (error) {
         console.error('Error loading sessions:', error);
-        showSessionsError('Failed to load sessions');
+        showSessionsError('Failed to load sessions: ' + error.message);
     }
 }
 
 // Update sessions display
 function updateSessionsDisplay() {
+    console.log('updateSessionsDisplay called, filtered sessions:', filteredSessions.length);
     const loading = document.getElementById('sessionsLoading');
     const empty = document.getElementById('sessionsEmpty');
     const list = document.getElementById('sessionsList');
     const count = document.getElementById('sessionsCount');
     
+    console.log('Elements found:', {
+        loading: !!loading,
+        empty: !!empty,
+        list: !!list,
+        count: !!count
+    });
+    
     // Hide loading
-    if (loading) loading.classList.add('hidden');
+    if (loading) {
+        loading.classList.add('hidden');
+        console.log('Hidden loading indicator');
+    }
     
     // Update count
     if (count) {
-        count.textContent = `${filteredSessions.length} session${filteredSessions.length !== 1 ? 's' : ''}`;
+        count.textContent = `(${filteredSessions.length} session${filteredSessions.length !== 1 ? 's' : ''})`;
+        console.log('Updated sessions count');
     }
     
     if (filteredSessions.length === 0) {
         // Show empty state
-        if (empty) empty.classList.remove('hidden');
+        if (empty) {
+            empty.classList.remove('hidden');
+            console.log('Showed empty state');
+        }
         if (list) list.classList.add('hidden');
     } else {
         // Show sessions list
@@ -59,6 +86,7 @@ function updateSessionsDisplay() {
         if (list) {
             list.classList.remove('hidden');
             renderSessionsList();
+            console.log('Rendered sessions list with', filteredSessions.length, 'sessions');
         }
     }
 }
@@ -332,3 +360,9 @@ window.openSession = openSession;
 window.deleteSession = deleteSession;
 window.cleanupSessions = cleanupSessions;
 window.toggleContainer = toggleContainer;
+
+console.log('Sessions management functions exported to window:', {
+    loadSessions: typeof window.loadSessions,
+    filterSessions: typeof window.filterSessions,
+    cleanupSessions: typeof window.cleanupSessions
+});

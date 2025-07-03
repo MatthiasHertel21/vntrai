@@ -17,68 +17,53 @@
 
 ## 📋 Sprint 20 Backlog
 
-### New requests
-
-#### AgentRun
-1. erstelle eine simple seite Seite zum Anzeigen eines Agent Run mit folgenden Informationen:
-- route /agents/uuid_agent/runs/uuid_agentrun
-- Icon + Überschrift
-- Container mit Grunddaten (UUID, UUID des Agenten, Anzahl der Aufgaben, Files, Knowledge Items, Status)
-- container mit der Anzeige der JSOM-Rohdaten des Agentrun
-
-
 ### Critical Issues (Migrated from Sprint 19)
 
 #### /agents
 
-112. ⏳ **PENDING** - beim click af eine card soll die aktuellste offene session geöffnet werden und falls diese nicht existier soll eine neue session erzeugt werden
+12. ⏳ **PENDING** - beim click af eine card soll die aktuellste offene session geöffnet werden und falls diese nicht existier soll eine neue session erzeugt werden
 
 #### /agents/edit
 
-137. ⏳ **PENDING** - UI Polish
+37. ⏳ **PENDING** - UI Polish
 - alle container sollen auf- und zuklappbar sein durch klick auf die überschrift des containers
 
 ##### Files
-132. ⏳ **PENDING** - ergänze einen container "Files" mit folgenden inhalten
+32. ⏳ **PENDING** - ergänze einen container "Files" mit folgenden inhalten
 - Header: Aktion "Upload" --> öffnet dialog
 - Body: Liste der hochgeladenen Files
 - Footer: Anzahl der hochgeladnen Files und Anzahl der im Assistant verfügbaren Files
 
-133. ⏳ **PENDING** - File Upload - Dialog
+33. ⏳ **PENDING** - File Upload - Dialog
 - Feld / Button zum Upload von Files
 - Option "anonymize"
 - Hochgeladenen dateien werden gespeichert unter /data/files/uuid des agenten/filename
 - die Metadaten zu hochgeladenen Files werden in der json des agenten gespeichert
 
 ##### Modal Edit Task:
-130. ⏳ **PENDING** - UI Polish
+30. ⏳ **PENDING** - UI Polish
 - Input Fields: Feld "Description" soll auf gleicher Breite beginnen wie Feld "Type"
 - bewege die checkbox "reqired" von der überschrift in die gleiche zeile wie "Default"
 - die Buttons Update und Cancel sollen normale breite haben, rechtbündig sein und immer am fußende des dialogs stehen (nicht mitscrollen) 
 
 #### /agents/view
 
-135. ✅ **RESOLVED** - Sessions nicht angezeigt (nur "Loading Sessions...")
-   - **Solution**: Fixed script block naming issue - changed `{% block scripts %}` to `{% block extra_js %}` in view.html to match base.html
-   - Added safe wrapper functions and enhanced error handling for sessions loading
-   - Improved agent data structure and added explicit initialization
-   - Enhanced debugging output for troubleshooting
-   - **Status**: Fixed - sessions now load properly in agent view pages
+35. 🚨 **CRITICAL** - Sessions nicht angezeigt (nur "Loading Sessions...")
+- View-Seite zeigt "Loading Sessions..." während Edit-Seite korrekt funktioniert
+- API Endpoint funktioniert: http://192.168.2.120:5004/agents/api/265132e3-30a3-4366-8b96-3452043d9ab2/sessions
+- JavaScript Initialisierung oder Element-IDs Problem
 
-138. ✅ **RESOLVED** - JS Fehler bei "Cleanup" und "Actions"
-   - **Solution**: Added safe wrapper functions (`safeCleanupSessions`, `safeFilterSessions`) to handle script loading timing
-   - Enhanced Tailwind CDN warning suppression in base.html to cover all console methods
-   - Added defensive programming for all onclick handlers with existence checks
-   - Improved function export verification and user-friendly error feedback
-   - **Status**: Fixed - JavaScript errors resolved and buttons work correctly
+38. ⏳ **PENDING** - JS Fehler bei "Cleanup" und "Actions"
+- CDN Warnung: cdn.tailwindcss.com should not be used in production
+- Cleanup und Actions Buttons funktionieren nicht korrekt
 
 #### Integration AI Assistant
 
-127. ⏳ **PENDING** - Erweitere die Konfiguration für AI Assistant Integrations
+27. ⏳ **PENDING** - Erweitere die Konfiguration für AI Assistant Integrations
 - ergänze bei der definition der felder die Konfigurationseinstellungen für responseformat, temperature, topp
 - ergänze die angeben in der configuration der entsprechenden Tools
 
-126. ⏳ **PENDING** - UI Polish
+26. ⏳ **PENDING** - UI Polish
 - stelle sicher, dass die fußzeile immer am unteren Rand der Card ist
 
 ### From Previous Sprint (High Priority)

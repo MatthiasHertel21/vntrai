@@ -365,7 +365,7 @@
                     </div>
                     <div class="flex items-center gap-2">
                         <!-- Session Filter -->
-                        <select id="sessionStatusFilter" class="form-select form-select-sm" onchange="filterSessions()">
+                        <select id="sessionStatusFilter" class="form-select form-select-sm" onchange="safeFilterSessions()">
                             <option value="all">All Sessions</option>
                             <option value="active">Active</option>
                             <option value="completed">Completed</option>
@@ -374,7 +374,7 @@
                         
                         <!-- Cleanup Button -->
                         <button type="button" 
-                                onclick="cleanupSessions()" 
+                                onclick="safeCleanupSessions()" 
                                 class="btn btn-outline btn-sm"
                                 title="Cleanup old sessions">
                             <i class="bi bi-trash"></i>
@@ -403,11 +403,9 @@
                 </div>
 
                 <!-- Loading State -->
-                <div id="sessionsLoading" class="text-center py-8">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading sessions...</span>
-                    </div>
-                    <p class="text-gray-500 mt-2">Loading sessions...</p>
+                <div id="sessionsLoading" class="text-center py-6 text-gray-500">
+                    <i class="bi bi-hourglass-split text-2xl mb-2"></i>
+                    <p>Loading sessions...</p>
                 </div>
             </div>
         </div>
@@ -415,7 +413,7 @@
 </div>
 {% endblock %}
 
-{% block scripts %}
+{% block extra_js %}
 <!-- Include sessions management script -->
 <script src="{{ url_for('static', filename='js/agents/sessions-management.js') }}"></script>
 
@@ -423,6 +421,7 @@
 // Agent data for JavaScript
 window.agentData = {
     id: '{{ agent.id }}',
+    uuid: '{{ agent.id }}',
     name: '{{ agent.name }}'
 };
 
@@ -451,10 +450,39 @@ document.addEventListener('click', function(event) {
     }
 });
 
+// Initialize sessions loading when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Ensure sessions load on page ready
+    if (typeof loadSessions === 'function' && window.agentData && window.agentData.id) {
+        console.log('Initializing sessions for view page, agent:', window.agentData.id);
+        loadSessions();
+    } else {
+        console.error('loadSessions function not available or agentData missing');
+    }
+});
+
 // Agent action functions (matching list.html functionality)
 function duplicateAgent(agentId, agentName) {
     if (confirm(`Duplicate agent "${agentName}"?`)) {
         window.location.href = `/agents/${agentId}/duplicate`;
+    }
+}
+
+// Safe wrapper functions to handle cases where sessions-management.js isn't loaded yet
+function safeCleanupSessions() {
+    if (typeof cleanupSessions === 'function') {
+        cleanupSessions();
+    } else {
+        console.error('cleanupSessions function not available yet');
+        alert('Session management is still loading. Please try again in a moment.');
+    }
+}
+
+function safeFilterSessions() {
+    if (typeof filterSessions === 'function') {
+        filterSessions();
+    } else {
+        console.error('filterSessions function not available yet');
     }
 }
 </script>

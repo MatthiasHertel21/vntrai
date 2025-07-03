@@ -18,13 +18,34 @@
             }
         }
         // Suppress development warnings in production
-        if (typeof console !== 'undefined' && console.warn) {
+        if (typeof console !== 'undefined') {
+            // Suppress Tailwind CDN warnings
             const originalWarn = console.warn;
+            const originalLog = console.log;
+            const originalError = console.error;
+            
             console.warn = function(...args) {
-                if (args[0] && args[0].includes && args[0].includes('cdn.tailwindcss.com should not be used in production')) {
-                    return;
+                const message = args[0];
+                if (typeof message === 'string' && message.includes('cdn.tailwindcss.com should not be used in production')) {
+                    return; // Suppress this warning
                 }
                 originalWarn.apply(console, args);
+            };
+            
+            console.log = function(...args) {
+                const message = args[0];
+                if (typeof message === 'string' && message.includes('cdn.tailwindcss.com should not be used in production')) {
+                    return; // Suppress this warning
+                }
+                originalLog.apply(console, args);
+            };
+            
+            console.error = function(...args) {
+                const message = args[0];
+                if (typeof message === 'string' && message.includes('cdn.tailwindcss.com should not be used in production')) {
+                    return; // Suppress this warning
+                }
+                originalError.apply(console, args);
             };
         }
     </script>
