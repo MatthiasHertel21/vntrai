@@ -132,6 +132,8 @@ def build_context_prompt(task_def: dict, task_inputs: dict, agent: dict, agent_r
             "Output Rendering: Your response will be rendered using Markdown formatting.",
             "Please use appropriate Markdown syntax including headings, lists, code blocks, tables, and other elements.",
             "The markdown will be processed server-side and styled with the application's theme.",
+            "IMPORTANT: For HTML elements like tables, buttons, or forms, embed them directly in the markdown without code block syntax (```html).",
+            "Use raw HTML tags directly in the markdown text where needed.",
             ""
         ])
     elif output_rendering == 'html':
@@ -235,6 +237,23 @@ def render_response_content(content: str, output_type: str) -> str:
         
         # Convert markdown to HTML
         html_content = md.convert(content)
+        
+        # Post-process: Convert HTML code blocks to actual HTML
+        # This handles cases where AI sends HTML as ```html code blocks
+        import re
+        
+        # Pattern to find HTML code blocks and convert them to actual HTML
+        html_code_pattern = r'<pre><code class="language-html">(.*?)</code></pre>'
+        
+        def replace_html_code_blocks(match):
+            html_code = match.group(1)
+            # Unescape HTML entities that were escaped by markdown
+            import html as html_lib
+            unescaped_html = html_lib.unescape(html_code)
+            return unescaped_html
+        
+        # Replace HTML code blocks with actual HTML
+        html_content = re.sub(html_code_pattern, replace_html_code_blocks, html_content, flags=re.DOTALL)
         
         # Sanitize HTML to prevent XSS attacks but allow more HTML elements
         allowed_tags = [
