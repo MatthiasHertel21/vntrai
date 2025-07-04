@@ -159,37 +159,35 @@
         }
     }
     
-    /* Task item hover effect */
-    .task-item:hover {
-        background-color: #e3f2fd !important;
-        transition: background-color 0.2s ease;
+    /* Task item styling - only for items in the tasks container */
+    #tasksList .task-item {
+        background-color: #f9fafb;
+        transition: all 0.2s ease;
     }
     
-    /* Active task styling - sidebar-turquoise primary color */
-    .task-item.active {
-        background-color: #0cc0df !important; /* Application primary color (sidebar-turquoise) */
+    #tasksList .task-item:hover:not(.active) {
+        background-color: #f3f4f6;
+    }
+    
+    /* Force active task styling with highest specificity - ONLY in tasks list */
+    #tasksList div.task-item.active {
+        background-color: #0cc0df !important;
         color: white !important;
-        border-color: #0aa1c7 !important; /* Darker shade of primary color */
+        border-color: #0aa1c7 !important;
     }
     
-    .task-item.active .text-gray-700 {
-        color: white !important;
-    }
-    
-    .task-item.active .text-gray-400 {
-        color: #d1d5db !important;
-    }
-    
-    .task-item.active .fas {
+    #tasksList div.task-item.active span {
         color: white !important;
     }
     
-    .task-item.active .text-blue-600 {
-        color: white !important; /* White for active task execute button */
+    #tasksList div.task-item.active svg {
+        color: white !important;
+        fill: white !important;
+        stroke: white !important;
     }
     
-    .task-item.active:hover .execute-btn {
-        background-color: rgba(255, 255, 255, 0.1) !important;
+    #tasksList div.task-item.active:hover {
+        background-color: #0aa1c7 !important;
     }
     
     /* Button styling */
@@ -289,6 +287,18 @@
                                 </button>
                             </div>
                         </div>
+                        
+                        <!-- Update All Button -->
+                        <button id="updateAllTasksBtn" class="text-sm bg-white border-2 px-3 py-1 rounded hover:bg-gray-50 flex items-center transition-colors duration-200" style="color: #0cc0df !important; border-color: #0cc0df !important;">
+                            <svg class="w-4 h-4 mr-1" id="update-all-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #0cc0df;">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            <svg class="w-4 h-4 mr-1 hidden animate-spin" id="update-all-spinner" fill="none" viewBox="0 0 24 24" style="color: #0cc0df;">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Update All
+                        </button>
                     </div>
                 </div>
                 <div id="taskResults" class="p-6">
@@ -300,11 +310,11 @@
                                 <h4 class="text-base font-semibold text-gray-900">{{ task.name }}</h4>
                                 <div class="flex items-center space-x-2">
                                     <!-- Update Button -->
-                                    <button class="update-result-btn text-xs bg-teal-500 text-white px-3 py-1 rounded hover:bg-teal-600 flex items-center" data-task-index="{{ loop.index0 }}" style="background-color: #0cc0df !important; border-color: #0cc0df !important;">
-                                        <svg class="w-4 h-4 mr-1 inline text-white animate-spin hidden" id="spinner-{{ loop.index0 }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <button class="update-result-btn text-xs bg-white border-2 px-3 py-1 rounded hover:bg-gray-50 flex items-center" data-task-index="{{ loop.index0 }}" style="color: #0cc0df !important; border-color: #0cc0df !important;">
+                                        <svg class="w-4 h-4 mr-1 inline animate-spin hidden" id="spinner-{{ loop.index0 }}" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #0cc0df;">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                                         </svg>
-                                        <svg class="w-4 h-4 mr-1 inline text-white" id="update-icon-{{ loop.index0 }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg class="w-4 h-4 mr-1 inline" id="update-icon-{{ loop.index0 }}" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #0cc0df;">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                                         </svg>
                                         Update
@@ -356,7 +366,7 @@
                         <!-- Task List -->
                         <div class="space-y-1" id="tasksList">
                             {% for task in task_definitions %}
-                            <div class="task-item flex items-center py-1.5 px-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors duration-200 cursor-pointer border border-transparent" 
+                            <div class="task-item flex items-center py-1.5 px-2 rounded-lg transition-colors duration-200 cursor-pointer border border-transparent" 
                                  data-task-uuid="{{ task.uuid if task.uuid else 'no-uuid' }}" 
                                  data-task-index="{{ loop.index0 }}"
                                  onclick="selectTask({{ loop.index0 }}, '{{ agent_run.uuid }}')">
@@ -416,8 +426,8 @@
                                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path>
                                         </svg>Execute
                                     </button>
-                                    <button id="promptActiveTaskBtn" class="btn-sm text-white px-3 py-1 rounded bg-gray-600 hover:bg-gray-700 transition-colors duration-200 flex items-center" onclick="showPromptDialog()">
-                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <button id="promptActiveTaskBtn" class="btn-sm bg-white border-2 px-3 py-1 rounded hover:bg-gray-50 transition-colors duration-200 flex items-center" onclick="showPromptDialog()" style="color: #0cc0df !important; border-color: #0cc0df !important;">
+                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: #0cc0df;">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
                                         </svg>Prompt
                                     </button>

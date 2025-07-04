@@ -22,9 +22,18 @@ function restoreActiveTask(uuid) {
 
 function selectTask(taskIndex, uuid) {
     if (taskIndex < 0 || taskIndex >= window.taskDefinitions.length) return;
-    document.querySelectorAll('.task-item').forEach(item => item.classList.remove('active'));
-    const selectedTaskItem = document.querySelector(`[data-task-index="${taskIndex}"]`);
-    if (selectedTaskItem) selectedTaskItem.classList.add('active');
+    
+    // Remove active class from all task items
+    document.querySelectorAll('#tasksList .task-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    
+    // Add active class to selected task item
+    const selectedTaskItem = document.querySelector(`#tasksList [data-task-index="${taskIndex}"]`);
+    if (selectedTaskItem) {
+        selectedTaskItem.classList.add('active');
+    }
+    
     window.activeTaskIndex = taskIndex;
     saveActiveTaskSelection(taskIndex, uuid);
     showActiveTaskDetails(taskIndex);
@@ -304,6 +313,7 @@ function executeTask(taskIndex) {
     // Update UI to show execution is starting
     updateTaskStatus(taskIndex, 'running');
     updateStopButtonVisibility(true);
+    setButtonLoadingState(taskIndex, true);
     
     // Clear previous output and show starting message
     const outputElement = document.querySelector(`#taskResult-${taskIndex}`);
@@ -361,6 +371,7 @@ function executeTaskWithStreaming(taskIndex, taskUuid, inputData) {
                     // Clear execution tracking and update UI
                     window.currentTaskExecution = null;
                     updateStopButtonVisibility(false);
+                    setButtonLoadingState(taskIndex, false);
                     return;
                 }
                 
@@ -415,11 +426,13 @@ function executeTaskWithStreaming(taskIndex, taskUuid, inputData) {
         if (error.name === 'AbortError') {
             console.log('Task execution was cancelled by user');
             updateTaskStatus(taskIndex, 'cancelled');
+            setButtonLoadingState(taskIndex, false);
             if (outputElement) {
                 outputElement.innerHTML += '<div class="text-orange-600 p-4 bg-orange-50 rounded-lg mt-4">⏹️ Task execution stopped by user</div>';
             }
         } else {
             updateTaskStatus(taskIndex, 'error');
+            setButtonLoadingState(taskIndex, false);
             if (outputElement) {
                 outputElement.innerHTML = '<div class="text-red-500">Error executing task: ' + error.message + '</div>';
             }
@@ -498,17 +511,15 @@ function handleStreamData(data, taskIndex, outputElement) {
             const textContainers = outputElement.querySelectorAll('.streaming-text-container');
             textContainers.forEach(container => container.remove());
             
-            // Add final rendered content
-            const finalDiv = document.createElement('div');
-            finalDiv.className = 'final-rendered-content bg-white p-6 rounded-lg border';
-            finalDiv.innerHTML = data.content;
-            outputElement.appendChild(finalDiv);
+            // Add final rendered content directly without wrapper
+            outputElement.innerHTML = data.content;
             outputElement.scrollTop = outputElement.scrollHeight;
             break;
             
         case 'complete':
             // Task execution completed
             updateTaskStatus(taskIndex, 'completed');
+            setButtonLoadingState(taskIndex, false);
             // Save the complete HTML result to the task state
             if (window.taskDefinitions[taskIndex] && data.html_result) {
                 if (!window.taskDefinitions[taskIndex].state) {
@@ -528,6 +539,7 @@ function handleStreamData(data, taskIndex, outputElement) {
         case 'error':
             // Handle execution error
             updateTaskStatus(taskIndex, 'error');
+            setButtonLoadingState(taskIndex, false);
             outputElement.innerHTML += '<div class="text-red-500 p-4 bg-red-50 rounded-lg mt-4">❌ Execution Error: ' + data.error + '</div>';
             // Clear execution tracking and update UI
             window.currentTaskExecution = null;
@@ -554,9 +566,10 @@ function updateTaskStatus(taskIndex, status) {
             statusIcon.setAttribute('title', 'Completed');
             break;
         case 'running':
-            statusIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>';
+            statusIcon.innerHTML = '<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>';
             statusIcon.className = 'w-4 h-4 text-blue-600 animate-spin';
             statusIcon.setAttribute('fill', 'none');
+            statusIcon.setAttribute('viewBox', '0 0 24 24');
             statusIcon.setAttribute('stroke', 'currentColor');
             statusIcon.setAttribute('title', 'Running');
             break;
@@ -794,7 +807,8 @@ function loadSavedTaskResults() {
         const htmlOutput = task.state?.results?.html_output;
         if (htmlOutput) {
             // Replace the placeholder content with saved results
-            outputElement.innerHTML = htmlOutput;
+            // Use the same wrapper as streaming output for visual consistency
+            outputElement.innerHTML = `<div class="final-rendered-content">${htmlOutput}</div>`;
             
             // Update task status if it was completed
             if (task.state?.status === 'completed') {
@@ -809,6 +823,35 @@ document.addEventListener('DOMContentLoaded', (event) => {
     const uuid = window.agentRunUuid;
     restoreActiveTask(uuid);
     loadSavedTaskResults();
+    
+    // Set up event listeners for update buttons
+    setupUpdateButtonListeners();
+    
+    // Set up event listener for executeActiveTaskBtn
+    const executeActiveTaskBtn = document.getElementById('executeActiveTaskBtn');
+    if (executeActiveTaskBtn) {
+        executeActiveTaskBtn.addEventListener('click', function() {
+            if (window.activeTaskIndex !== null) {
+                executeTask(window.activeTaskIndex);
+            }
+        });
+    }
+    
+    // Set up event listener for stopActiveTaskBtn
+    const stopActiveTaskBtn = document.getElementById('stopActiveTaskBtn');
+    if (stopActiveTaskBtn) {
+        stopActiveTaskBtn.addEventListener('click', function() {
+            stopActiveTask();
+        });
+    }
+    
+    // Set up event listener for updateAllTasksBtn
+    const updateAllTasksBtn = document.getElementById('updateAllTasksBtn');
+    if (updateAllTasksBtn) {
+        updateAllTasksBtn.addEventListener('click', function() {
+            executeAllTasks();
+        });
+    }
 });
 
 // Stop task functionality
@@ -843,6 +886,7 @@ function stopActiveTask() {
     .then(data => {
         console.log('Task stopped successfully:', data);
         updateTaskStatus(taskIndex, 'cancelled');
+        setButtonLoadingState(taskIndex, false);
         
         // Update output to show cancellation
         const outputElement = document.querySelector(`#taskResult-${taskIndex}`);
@@ -854,6 +898,7 @@ function stopActiveTask() {
         console.error('Error stopping task:', error);
         // Still update UI even if backend call fails
         updateTaskStatus(taskIndex, 'error');
+        setButtonLoadingState(taskIndex, false);
         const outputElement = document.querySelector(`#taskResult-${taskIndex}`);
         if (outputElement) {
             outputElement.innerHTML += '<div class="text-red-500 p-4 bg-red-50 rounded-lg mt-4">❌ Error stopping task: ' + error.message + '</div>';
@@ -880,5 +925,66 @@ function updateStopButtonVisibility(isRunning) {
     
     if (executeBtn) {
         executeBtn.disabled = isRunning;
+    }
+}
+
+// Set up event listeners for all update buttons
+function setupUpdateButtonListeners() {
+    const updateButtons = document.querySelectorAll('.update-result-btn');
+    updateButtons.forEach(button => {
+        button.addEventListener('click', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const taskIndex = parseInt(this.getAttribute('data-task-index'));
+            if (taskIndex >= 0 && taskIndex < window.taskDefinitions.length) {
+                executeTask(taskIndex);
+            }
+        });
+    });
+}
+
+// Toggle button state between normal and loading (with spinner)
+function setButtonLoadingState(taskIndex, isLoading) {
+    // Update the update button in the result section
+    const updateButton = document.querySelector(`.update-result-btn[data-task-index="${taskIndex}"]`);
+    if (updateButton) {
+        const spinner = updateButton.querySelector(`#spinner-${taskIndex}`);
+        const updateIcon = updateButton.querySelector(`#update-icon-${taskIndex}`);
+        
+        if (isLoading) {
+            updateButton.disabled = true;
+            updateButton.classList.add('opacity-75', 'cursor-not-allowed');
+            if (spinner) {
+                spinner.classList.remove('hidden');
+                spinner.classList.add('animate-spin');
+            }
+            if (updateIcon) {
+                updateIcon.classList.add('hidden');
+            }
+        } else {
+            updateButton.disabled = false;
+            updateButton.classList.remove('opacity-75', 'cursor-not-allowed');
+            if (spinner) {
+                spinner.classList.add('hidden');
+                spinner.classList.remove('animate-spin');
+            }
+            if (updateIcon) {
+                updateIcon.classList.remove('hidden');
+            }
+        }
+    }
+    
+    // Also update the execute button in the active task details if this is the active task
+    if (window.activeTaskIndex === taskIndex) {
+        const executeBtn = document.getElementById('executeActiveTaskBtn');
+        if (executeBtn) {
+            executeBtn.disabled = isLoading;
+            if (isLoading) {
+                executeBtn.classList.add('opacity-75', 'cursor-not-allowed');
+            } else {
+                executeBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+            }
+        }
     }
 }

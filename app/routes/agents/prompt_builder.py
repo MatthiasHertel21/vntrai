@@ -160,14 +160,8 @@ def build_context_prompt(task_def: dict, task_inputs: dict, agent: dict, agent_r
             ""
         ])
     
-    # Add task inputs (excluding internal language parameter)
-    if task_inputs:
-        filtered_inputs = {k: v for k, v in task_inputs.items() if not k.startswith('_')}
-        if filtered_inputs:
-            prompt_parts.append("Input Parameters:")
-            for key, value in filtered_inputs.items():
-                prompt_parts.append(f"- {key}: {value}")
-            prompt_parts.append("")
+    # Note: Input parameters removed from context prompt per user request
+    # The AI will use the task instructions and goals without explicit parameter listing
     
     # Note: Output format instructions removed per backlog item 33
     # The AI should respond naturally without format constraints
