@@ -47,6 +47,11 @@
 14. ✅ **COMPLETED** - Refactore das Javascript der seite
 - lagere es nach funktionseinheiten getrennt in verschiedene JS Dateien aus
 
+27. ✅ **COMPLETED** Stelle die blauen Tailwind Icons in der Primärfarbe der Anwendung (Türkis) dar
+
+31. entferne den Container "Raw JSON Data"
+34. Färbe das Icon oben links im Container "Tasks" in der primärfarbe der anwendung (so wie die icons der anderen container)
+
 ##### Result
 13. ✅ **COMPLETED** ergänze im Inhalt des Containers für jede Task eine Sektion mit folgendem Aufbau:
 - Name der Task (fett)
@@ -54,10 +59,14 @@
 - graue Linie als sektions-trennstrich
 - ausgabefeld für das ergebnis der task zur anzeige von html (ohne ran, ohne hintergrundfarbe)
 
-16. ergänze im headerbereich des containers "Result": Auswahlfeld für eine Sprache (german, english, french, ...) und ein menü-icon für verschiedene gestapelte Export-Aktionen (Clipboard, Text, markdown, word, pdf )
+16. ✅ **COMPLETED** ergänze im headerbereich des containers "Result": Auswahlfeld für eine Sprache (german, english, french, ...) und ein menü-icon für verschiedene gestapelte Export-Aktionen (Clipboard, Text, markdown, word, pdf )
 
-21. entferne die Auwahlliste "HTML, TEXT, MARKDOWN aus der Kopfzeile des Output-Segements für die task
+21. ✅ **COMPLETED** entferne die Auwahlliste "HTML, TEXT, MARKDOWN aus der Kopfzeile des Output-Segements für die task
 
+22. ✅ **COMPLETED** refactatore die api_routes.py - sie ist bereits ziemlich groß. teile sie auf nach funktionseinheiten unbd passe importe etc. an
+23. ✅ **COMPLETED** refactatore die streaming_api.py - sie ist bereits ziemlich groß. teile sie auf nach funktionseinheiten unbd passe importe etc. an
+
+33. rufe im "Update" Button die "Execute" Funkion auf
 
 ##### Tasks
 3. ✅ **COMPLETED** - stelle dar eine Liste der Tasks mit Statusicon, name der task und "execute" icon (rechts)
@@ -75,10 +84,6 @@
 - beim laden der seite wird die letzte aktive task wieder aktiviert
 - ist keine task aktiv wird beim laden die erste aufgabe aktiviert
 
-
-17. - aktive tasks bekommen einen farblichen background (primärfarbe der anwendunf türkis) als Anzeige "aktiv". 
-
-
 6. ✅ **COMPLETED** direkt unterhalb der Zeile mit der aktiven Task sollen die task dargestellt werden:
 - Entferne das Label "active Task Details" und "Description"
 - Zeige den Inhalt von Description nicht als Feld an, sondern als normalen Text
@@ -92,7 +97,16 @@
 8. ✅ **COMPLETED** ein button "prompt" --> zeigt den contextprompt an, der bei execute ausgeführt werden soll
 9. ✅ **COMPLETED** Ein Button "save" --> speichert die Feldwerte der task im json des agent-run
 
-10. Autosave: beim verlassen eines feldes oder nach ablauf von drei sekunden sollen per autosave die eingabewerte der aktuellen task gespeichert werden
+10. ✅**COMPLETED** Autosave: beim verlassen eines feldes oder nach ablauf von drei sekunden sollen per autosave die eingabewerte der aktuellen task gespeichert werden
+
+
+17. setze die hintergundfarbe der aktive tasks auf die primärfarbe der anwendung (sidebar-türkis) . 
+24. ✅ **COMPLETED** Die Beschreibung der AUfgabe soll nicht Kursiv sein sondern in normalem Attribut
+26. ✅ **COMPLETED** Das "Spinning Icon" läuft zu lang, es soll nach Abschluss eines prompt wieder zum erledigt Icon werden
+28. entferne den Button "save"
+29. ✅ **COMPLETED** erstelle einen Button "prompt", der einen dialog öffnen und den content-prompt der task anzeigt
+30. ✅ **COMPLETED** färbe die Button "Execute" und "prompt" in Farben der Anwendung (Türkis, Grau)
+
 
 ###### execute einer task
 19. ✅ **COMPLETED** erstelle beim aufruf von execute für die betreffende task einen context-prompt und streame als ergebnis statt des der taskinfo die ergebnisse des context-prompts aus einer user-session. der context-prompt soll serverseitig erzeugt werden
@@ -104,8 +118,14 @@
 - Streamt HTML-Chunks in Echtzeit und speichert Ergebnisse (HTML + Raw Response) in der AgentRun JSON
 - Unterstützt verschiedene Output-Formate (text, markdown, html) basierend auf Task-Definition
 
+35. Implementiere ein Markdown-rendering:
+- ergebnisse der anfrage einer tasks an die ai, die im markdown format kommen, sollen gerendert werden als html. verwende für farben im rendering die primärfarben der anwendung (also z.b. das türkis der sidebar)
 
 
+###### context prompt
+
+32. speichere die gewählte sprache in dewr agentrun.json und ergänze die sprache in den context prompt
+33. entferne das output-format aus dem context-rendering
 ---
 
 ### Critical Issues (Migrated from Sprint 19)

@@ -5,6 +5,9 @@ window.activeTaskIndex = null;
 window.taskDefinitions = window.taskDefinitions || [];
 window.autoSaveTimeout = null;
 
+// Global variable to track current active task execution
+window.currentTaskExecution = null;
+
 function restoreActiveTask(uuid) {
     if (window.taskDefinitions.length === 0) return;
     
@@ -300,6 +303,7 @@ function executeTask(taskIndex) {
     
     // Update UI to show execution is starting
     updateTaskStatus(taskIndex, 'running');
+    updateStopButtonVisibility(true);
     
     // Clear previous output
     const outputElement = document.querySelector(`#taskResult-${taskIndex}`);
@@ -318,12 +322,15 @@ function executeTaskWithStreaming(taskIndex, taskUuid, inputData) {
         return;
     }
     
-    // Initialize EventSource for server-sent events
-    const eventSource = new EventSource('/agents/api/agent_run/' + window.agentRunUuid + '/task_execute/' + taskUuid + '/stream', {
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    });
+    // Create AbortController to support cancellation
+    const abortController = new AbortController();
+    
+    // Track the current execution
+    window.currentTaskExecution = {
+        taskIndex: taskIndex,
+        taskUuid: taskUuid,
+        abortController: abortController
+    };
     
     // Since EventSource doesn't support POST, we need to use fetch for the initial request
     // and then connect to a streaming endpoint
@@ -334,7 +341,8 @@ function executeTaskWithStreaming(taskIndex, taskUuid, inputData) {
             'X-CSRFToken': getCsrfToken(),
             'Accept': 'text/plain'
         },
-        body: JSON.stringify({ inputs: inputData })
+        body: JSON.stringify({ inputs: inputData }),
+        signal: abortController.signal  // Add abort signal
     })
     .then(response => {
         if (!response.ok) {
@@ -349,6 +357,9 @@ function executeTaskWithStreaming(taskIndex, taskUuid, inputData) {
             return reader.read().then(({ done, value }) => {
                 if (done) {
                     console.log('Stream complete');
+                    // Clear execution tracking and update UI
+                    window.currentTaskExecution = null;
+                    updateStopButtonVisibility(false);
                     return;
                 }
                 
@@ -376,10 +387,24 @@ function executeTaskWithStreaming(taskIndex, taskUuid, inputData) {
     })
     .catch(error => {
         console.error('Streaming error:', error);
-        updateTaskStatus(taskIndex, 'error');
-        if (outputElement) {
-            outputElement.innerHTML = '<div class="text-red-500">Error executing task: ' + error.message + '</div>';
+        
+        // Check if it was cancelled by user
+        if (error.name === 'AbortError') {
+            console.log('Task execution was cancelled by user');
+            updateTaskStatus(taskIndex, 'cancelled');
+            if (outputElement) {
+                outputElement.innerHTML += '<div class="text-orange-600 p-4 bg-orange-50 rounded-lg mt-4">⏹️ Task execution stopped by user</div>';
+            }
+        } else {
+            updateTaskStatus(taskIndex, 'error');
+            if (outputElement) {
+                outputElement.innerHTML = '<div class="text-red-500">Error executing task: ' + error.message + '</div>';
+            }
         }
+        
+        // Clear execution tracking and update UI
+        window.currentTaskExecution = null;
+        updateStopButtonVisibility(false);
     });
 }
 
@@ -405,6 +430,9 @@ function handleStreamData(data, taskIndex, outputElement) {
                 }
                 window.taskDefinitions[taskIndex].state.results.html_output = data.html_result;
             }
+            // Clear execution tracking and update UI
+            window.currentTaskExecution = null;
+            updateStopButtonVisibility(false);
             console.log('Task execution completed:', taskIndex);
             break;
             
@@ -412,6 +440,9 @@ function handleStreamData(data, taskIndex, outputElement) {
             // Handle execution error
             updateTaskStatus(taskIndex, 'error');
             outputElement.innerHTML += '<div class="text-red-500 p-4 bg-red-50 rounded-lg mt-4">❌ Execution Error: ' + data.error + '</div>';
+            // Clear execution tracking and update UI
+            window.currentTaskExecution = null;
+            updateStopButtonVisibility(false);
             break;
             
         default:
@@ -444,6 +475,11 @@ function updateTaskStatus(taskIndex, status) {
             statusIcon.innerHTML = '<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>';
             statusIcon.className = 'w-4 h-4 text-red-600';
             statusIcon.setAttribute('title', 'Error');
+            break;
+        case 'cancelled':
+            statusIcon.innerHTML = '<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>';
+            statusIcon.className = 'w-4 h-4 text-orange-600';
+            statusIcon.setAttribute('title', 'Cancelled');
             break;
         default:
             statusIcon.innerHTML = '<circle cx="10" cy="10" r="8"></circle>';
@@ -685,3 +721,75 @@ document.addEventListener('DOMContentLoaded', (event) => {
     restoreActiveTask(uuid);
     loadSavedTaskResults();
 });
+
+// Stop task functionality
+function stopActiveTask() {
+    if (!window.currentTaskExecution) {
+        console.log('No active task execution to stop');
+        return;
+    }
+    
+    const { taskIndex, taskUuid, abortController } = window.currentTaskExecution;
+    
+    // Abort the fetch request
+    if (abortController) {
+        abortController.abort();
+    }
+    
+    // Call the backend stop endpoint
+    fetch(`/agents/api/agent_run/${window.agentRunUuid}/task_execute/${taskUuid}/stop`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        }
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.json();
+        } else {
+            throw new Error('Failed to stop task execution');
+        }
+    })
+    .then(data => {
+        console.log('Task stopped successfully:', data);
+        updateTaskStatus(taskIndex, 'cancelled');
+        
+        // Update output to show cancellation
+        const outputElement = document.querySelector(`#taskResult-${taskIndex}`);
+        if (outputElement) {
+            outputElement.innerHTML += '<div class="text-orange-600 p-4 bg-orange-50 rounded-lg mt-4">⏹️ Task execution stopped by user</div>';
+        }
+    })
+    .catch(error => {
+        console.error('Error stopping task:', error);
+        // Still update UI even if backend call fails
+        updateTaskStatus(taskIndex, 'error');
+        const outputElement = document.querySelector(`#taskResult-${taskIndex}`);
+        if (outputElement) {
+            outputElement.innerHTML += '<div class="text-red-500 p-4 bg-red-50 rounded-lg mt-4">❌ Error stopping task: ' + error.message + '</div>';
+        }
+    })
+    .finally(() => {
+        // Clear the current execution and update button visibility
+        window.currentTaskExecution = null;
+        updateStopButtonVisibility(false);
+    });
+}
+
+function updateStopButtonVisibility(isRunning) {
+    const stopBtn = document.getElementById('stopActiveTaskBtn');
+    const executeBtn = document.getElementById('executeActiveTaskBtn');
+    
+    if (stopBtn) {
+        if (isRunning) {
+            stopBtn.classList.remove('hidden');
+        } else {
+            stopBtn.classList.add('hidden');
+        }
+    }
+    
+    if (executeBtn) {
+        executeBtn.disabled = isRunning;
+    }
+}

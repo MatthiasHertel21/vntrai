@@ -10,6 +10,7 @@ from .api_utils import (validate_json_request, success_response, error_response,
                         get_agent_or_404, current_timestamp, log_error, log_info)
 from app import csrf
 from datetime import datetime
+from .prompt_builder import build_context_prompt
 
 
 @agents_bp.route('/api/agent_run/<run_uuid>/task_input/<task_uuid>', methods=['POST'])
@@ -102,4 +103,58 @@ def api_get_selected_task(run_uuid):
             
     except Exception as e:
         log_error(f"Error getting selected task: {str(e)}")
+        return error_response(str(e), 500)
+
+
+@agents_bp.route('/api/agent_run/<run_uuid>/task/<task_uuid>/prompt', methods=['GET', 'POST'])
+@csrf.exempt
+def api_get_task_prompt(run_uuid, task_uuid):
+    """Get the context prompt for a specific task in an agent run"""
+    try:
+        # Load agent run and validate
+        agent_run = agent_run_manager.load(run_uuid)
+        if not agent_run:
+            return error_response('Agent run not found', 404)
+        
+        # Load agent
+        agent = agents_manager.load(agent_run['agent_uuid'])
+        if not agent:
+            return error_response('Agent not found', 404)
+        
+        # Find task definition
+        task_def = None
+        for task in agent.get('tasks', []):
+            if task.get('uuid') == task_uuid:
+                task_def = task
+                break
+        
+        if not task_def:
+            return error_response('Task definition not found', 404)
+        
+        # Get task inputs - try from request data first, then from saved state
+        task_inputs = {}
+        if request.method == 'POST':
+            data = request.get_json()
+            task_inputs = data.get('inputs', {}) if data else {}
+        
+        # If no inputs from request, try to get saved inputs
+        if not task_inputs:
+            task_states = agent_run.get('task_states', {})
+            task_state = task_states.get(task_uuid, {})
+            task_inputs = task_state.get('inputs', {})
+        
+        log_info(f"Building prompt for task {task_uuid} with inputs: {task_inputs}")
+        
+        # Build the context prompt using the same logic as task execution
+        context_prompt = build_context_prompt(task_def, task_inputs, agent)
+        
+        return jsonify({
+            'success': True,
+            'prompt': context_prompt,
+            'task_name': task_def.get('name', 'Unnamed Task'),
+            'task_uuid': task_uuid
+        })
+            
+    except Exception as e:
+        log_error(f"Error getting task prompt: {str(e)}")
         return error_response(str(e), 500)

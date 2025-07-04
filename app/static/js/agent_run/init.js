@@ -21,6 +21,13 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    const stopBtn = document.getElementById('stopActiveTaskBtn');
+    if (stopBtn) {
+        stopBtn.addEventListener('click', function() {
+            stopActiveTask();
+        });
+    }
+
     const saveBtn = document.getElementById('saveActiveTaskBtn');
     if (saveBtn) {
         saveBtn.addEventListener('click', function() {
