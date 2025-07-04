@@ -1455,6 +1455,36 @@ class AgentRunManager(DataManager):
         """Get the most recent agent run for a specific agent"""
         agent_runs = self.get_agent_runs(agent_uuid)
         return agent_runs[0] if agent_runs else None
+    
+    def set_language_preference(self, run_id: str, language: str) -> bool:
+        """Set language preference for an agent run"""
+        try:
+            agent_run = self.load(run_id)
+            if not agent_run:
+                return False
+            
+            # Set language preference in agent run
+            agent_run['language_preference'] = language
+            agent_run['updated_at'] = datetime.now().isoformat()
+            
+            return self.save(agent_run)
+            
+        except Exception as e:
+            print(f"Error setting language preference for run {run_id}: {e}")
+            return False
+    
+    def get_language_preference(self, run_id: str) -> str:
+        """Get language preference for an agent run"""
+        try:
+            agent_run = self.load(run_id)
+            if not agent_run:
+                return 'auto'
+            
+            return agent_run.get('language_preference', 'auto')
+            
+        except Exception as e:
+            print(f"Error getting language preference for run {run_id}: {e}")
+            return 'auto'
 
 # Global instances for Sprint 18
 integrations_manager = IntegrationsManager()

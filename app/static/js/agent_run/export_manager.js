@@ -69,6 +69,9 @@ class ExportManager {
                 // Store the preference
                 localStorage.setItem('preferredLanguage', selectedLanguage);
                 
+                // Save to agent run
+                this.saveLanguageToAgentRun(selectedLanguage);
+                
                 // Trigger language change event for other components
                 document.dispatchEvent(new CustomEvent('languageChanged', {
                     detail: { language: selectedLanguage }
@@ -79,10 +82,41 @@ class ExportManager {
 
     loadLanguagePreference() {
         if (this.globalLanguageSelect) {
-            const savedLanguage = localStorage.getItem('preferredLanguage');
-            if (savedLanguage) {
-                this.globalLanguageSelect.value = savedLanguage;
-            }
+            // First try to load from agent run
+            this.loadLanguageFromAgentRun().then((serverLanguage) => {
+                if (serverLanguage && serverLanguage !== 'auto') {
+                    this.globalLanguageSelect.value = serverLanguage;
+                } else {
+                    // Fallback to localStorage
+                    const savedLanguage = localStorage.getItem('preferredLanguage');
+                    if (savedLanguage) {
+                        this.globalLanguageSelect.value = savedLanguage;
+                    }
+                }
+            }).catch(() => {
+                // Fallback to localStorage on error
+                const savedLanguage = localStorage.getItem('preferredLanguage');
+                if (savedLanguage) {
+                    this.globalLanguageSelect.value = savedLanguage;
+                }
+            });
+        }
+    }
+
+    async loadLanguageFromAgentRun() {
+        // Get agent run UUID from global context
+        const agentRunUuid = window.agentRunContext?.agentRunUuid;
+        if (!agentRunUuid) {
+            return null;
+        }
+
+        try {
+            const response = await fetch(`/agents/api/agent_run/${agentRunUuid}/language`);
+            const data = await response.json();
+            return data.success ? data.language : null;
+        } catch (error) {
+            console.warn('Could not load language preference from server:', error);
+            return null;
         }
     }
 
@@ -191,7 +225,39 @@ class ExportManager {
         if (this.globalLanguageSelect) {
             this.globalLanguageSelect.value = language;
             localStorage.setItem('preferredLanguage', language);
+            
+            // Save to agent run if available
+            this.saveLanguageToAgentRun(language);
         }
+    }
+
+    saveLanguageToAgentRun(language) {
+        // Get agent run UUID from global context
+        const agentRunUuid = window.agentRunContext?.agentRunUuid;
+        if (!agentRunUuid) {
+            console.warn('No agent run UUID available to save language preference');
+            return;
+        }
+
+        // Save language preference to server
+        fetch(`/agents/api/agent_run/${agentRunUuid}/language`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ language: language })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                console.log('Language preference saved to agent run');
+            } else {
+                console.warn('Failed to save language preference:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error saving language preference:', error);
+        });
     }
 }
 

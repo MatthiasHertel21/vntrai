@@ -305,10 +305,10 @@ function executeTask(taskIndex) {
     updateTaskStatus(taskIndex, 'running');
     updateStopButtonVisibility(true);
     
-    // Clear previous output
+    // Clear previous output and show starting message
     const outputElement = document.querySelector(`#taskResult-${taskIndex}`);
     if (outputElement) {
-        outputElement.innerHTML = '<div class="text-gray-500 italic">Starting execution...</div>';
+        outputElement.innerHTML = '<div class="text-gray-500 italic" id="starting-message">Starting execution...</div>';
     }
     
     // Start streaming execution
@@ -352,6 +352,7 @@ function executeTaskWithStreaming(taskIndex, taskUuid, inputData) {
         // Handle streaming response
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
+        let buffer = ''; // Buffer for incomplete data
         
         function readStream() {
             return reader.read().then(({ done, value }) => {
@@ -363,17 +364,39 @@ function executeTaskWithStreaming(taskIndex, taskUuid, inputData) {
                     return;
                 }
                 
-                // Decode the chunk
+                // Decode the chunk and add to buffer
                 const chunk = decoder.decode(value, { stream: true });
-                const lines = chunk.split('\n');
+                buffer += chunk;
                 
-                lines.forEach(line => {
-                    if (line.startsWith('data: ')) {
+                // Process complete SSE events from buffer
+                const events = buffer.split('\n\n');
+                // Keep the last incomplete event in buffer
+                buffer = events.pop() || '';
+                
+                events.forEach(event => {
+                    const lines = event.split('\n');
+                    let dataLine = null;
+                    
+                    // Find the data line in this event
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            dataLine = line.slice(6);
+                            break;
+                        }
+                    }
+                    
+                    if (dataLine && dataLine.trim()) {
                         try {
-                            const data = JSON.parse(line.slice(6));
+                            // Handle case where multiple JSON objects might be in one line
+                            // This shouldn't happen but let's be defensive
+                            const firstJsonEnd = dataLine.indexOf('}\n\ndata:');
+                            const actualJsonData = firstJsonEnd > 0 ? dataLine.substring(0, firstJsonEnd + 1) : dataLine;
+                            
+                            const data = JSON.parse(actualJsonData);
                             handleStreamData(data, taskIndex, outputElement);
                         } catch (e) {
-                            console.error('Error parsing stream data:', e);
+                            console.error('Error parsing stream data:', e, 'Data:', dataLine);
+                            // On parse error, continue processing other events
                         }
                     }
                 });
@@ -411,9 +434,75 @@ function executeTaskWithStreaming(taskIndex, taskUuid, inputData) {
 function handleStreamData(data, taskIndex, outputElement) {
     switch (data.type) {
         case 'html_chunk':
+            // Remove "Starting execution..." message on first chunk
+            const startingMessage = outputElement.querySelector('#starting-message');
+            if (startingMessage) {
+                startingMessage.remove();
+            }
+            
             // Append HTML chunk to output
             outputElement.innerHTML += data.content;
             // Scroll to bottom of output
+            outputElement.scrollTop = outputElement.scrollHeight;
+            break;
+            
+        case 'text_chunk':
+            // Handle plain text chunks (for non-markdown content)
+            const startingMsg = outputElement.querySelector('#starting-message');
+            if (startingMsg) {
+                startingMsg.remove();
+            }
+            
+            // Create or get text container
+            let textContainer = outputElement.querySelector('.streaming-text-container');
+            if (!textContainer) {
+                textContainer = document.createElement('div');
+                textContainer.className = 'streaming-text-container whitespace-pre-wrap font-mono text-sm';
+                outputElement.appendChild(textContainer);
+            }
+            
+            // Append text content
+            textContainer.textContent += data.content;
+            outputElement.scrollTop = outputElement.scrollHeight;
+            break;
+            
+        case 'markdown_update':
+            // Handle live markdown rendering updates
+            const startingMsgMd = outputElement.querySelector('#starting-message');
+            if (startingMsgMd) {
+                startingMsgMd.remove();
+            }
+            
+            // Create or update markdown container
+            let markdownContainer = outputElement.querySelector(`#${data.container_id}`);
+            if (!markdownContainer) {
+                markdownContainer = document.createElement('div');
+                markdownContainer.id = data.container_id;
+                markdownContainer.className = 'streaming-markdown-content';
+                outputElement.appendChild(markdownContainer);
+            }
+            
+            // Update with rendered markdown
+            markdownContainer.innerHTML = data.content;
+            outputElement.scrollTop = outputElement.scrollHeight;
+            break;
+            
+        case 'final_content':
+            // Replace streaming content with final rendered content
+            const finalContainer = outputElement.querySelector(`#${data.container_id}`);
+            if (finalContainer) {
+                finalContainer.remove();
+            }
+            
+            // Remove any text containers
+            const textContainers = outputElement.querySelectorAll('.streaming-text-container');
+            textContainers.forEach(container => container.remove());
+            
+            // Add final rendered content
+            const finalDiv = document.createElement('div');
+            finalDiv.className = 'final-rendered-content bg-white p-6 rounded-lg border';
+            finalDiv.innerHTML = data.content;
+            outputElement.appendChild(finalDiv);
             outputElement.scrollTop = outputElement.scrollHeight;
             break;
             

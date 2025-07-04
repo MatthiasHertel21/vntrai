@@ -146,7 +146,7 @@ def api_get_task_prompt(run_uuid, task_uuid):
         log_info(f"Building prompt for task {task_uuid} with inputs: {task_inputs}")
         
         # Build the context prompt using the same logic as task execution
-        context_prompt = build_context_prompt(task_def, task_inputs, agent)
+        context_prompt = build_context_prompt(task_def, task_inputs, agent, agent_run)
         
         return jsonify({
             'success': True,
@@ -158,3 +158,51 @@ def api_get_task_prompt(run_uuid, task_uuid):
     except Exception as e:
         log_error(f"Error getting task prompt: {str(e)}")
         return error_response(str(e), 500)
+
+
+@agents_bp.route('/api/agent_run/<run_uuid>/language', methods=['POST'])
+@csrf.exempt
+def api_set_language_preference(run_uuid):
+    """Set language preference for an agent run"""
+    try:
+        data = request.get_json()
+        language = data.get('language', 'auto') if data else 'auto'
+        
+        # Validate that the agent run exists
+        agent_run = agent_run_manager.load(run_uuid)
+        if not agent_run:
+            return error_response('Agent run not found', 404)
+        
+        # Set the language preference
+        success = agent_run_manager.set_language_preference(run_uuid, language)
+        
+        if success:
+            return success_response('Language preference saved successfully')
+        else:
+            return error_response('Failed to save language preference', 500)
+            
+    except Exception as e:
+        log_error(f"Error setting language preference: {e}")
+        return error_response(f'Failed to set language preference: {str(e)}', 500)
+
+
+@agents_bp.route('/api/agent_run/<run_uuid>/language', methods=['GET'])
+def api_get_language_preference(run_uuid):
+    """Get language preference for an agent run"""
+    try:
+        # Validate that the agent run exists
+        agent_run = agent_run_manager.load(run_uuid)
+        if not agent_run:
+            return error_response('Agent run not found', 404)
+        
+        # Get the language preference
+        language = agent_run_manager.get_language_preference(run_uuid)
+        
+        return jsonify({
+            'success': True,
+            'language': language
+        })
+            
+    except Exception as e:
+        log_error(f"Error getting language preference: {e}")
+        return error_response(f'Failed to get language preference: {str(e)}', 500)

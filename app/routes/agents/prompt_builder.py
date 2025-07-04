@@ -6,8 +6,8 @@ Handles context prompt building and variable resolution
 from .api_utils import log_info
 
 
-def build_context_prompt(task_def: dict, task_inputs: dict, agent: dict) -> str:
-    """Build a context prompt from task definition, inputs, and agent data"""
+def build_context_prompt(task_def: dict, task_inputs: dict, agent: dict, agent_run: dict = None) -> str:
+    """Build a context prompt from task definition, inputs, agent data, and agent run"""
     log_info(f"Building context prompt for task: {task_def.get('name', 'Unknown')}")
     log_info(f"Task inputs: {task_inputs}")
     log_info(f"Task definition keys: {list(task_def.keys())}")
@@ -21,7 +21,6 @@ def build_context_prompt(task_def: dict, task_inputs: dict, agent: dict) -> str:
         f"Agent Description: {agent_description}" if agent_description else "",
         "",
         f"Task: {task_def.get('name', 'Unnamed Task')}",
-        f"Task Description: {task_def.get('description', 'No description provided')}",
         ""
     ]
     
@@ -92,8 +91,15 @@ def build_context_prompt(task_def: dict, task_inputs: dict, agent: dict) -> str:
             ""
         ])
     
-    # Add language instruction if specified
-    language = task_inputs.get('_language', '')
+    # Add language instruction from agent run preference
+    language = ''
+    if agent_run:
+        language = agent_run.get('language_preference', '')
+    
+    # Fallback to task inputs if not set in agent run
+    if not language:
+        language = task_inputs.get('_language', '')
+    
     if language and language != 'auto':
         language_names = {
             'de': 'German',
@@ -113,6 +119,34 @@ def build_context_prompt(task_def: dict, task_inputs: dict, agent: dict) -> str:
             ""
         ])
     
+    # Add output rendering information from task definition
+    # Check both old (output.type) and new (output_rendering) field structures
+    output_rendering = task_def.get('output_rendering', '')
+    if not output_rendering:
+        # Fallback to old structure
+        output_config = task_def.get('output', {})
+        output_rendering = output_config.get('type', 'text')
+    
+    if output_rendering == 'markdown' or output_rendering == 'markup':
+        prompt_parts.extend([
+            "Output Rendering: Your response will be rendered using Markdown formatting.",
+            "Please use appropriate Markdown syntax including headings, lists, code blocks, tables, and other elements.",
+            "The markdown will be processed server-side and styled with the application's theme.",
+            ""
+        ])
+    elif output_rendering == 'html':
+        prompt_parts.extend([
+            "Output Rendering: Your response will be displayed as HTML content.",
+            "You may use HTML tags for formatting, but keep the content semantic and accessible.",
+            ""
+        ])
+    else:  # text or default
+        prompt_parts.extend([
+            "Output Rendering: Your response will be displayed as plain text.",
+            "Use clear paragraphs and natural formatting without special markup.",
+            ""
+        ])
+    
     # Add task inputs (excluding internal language parameter)
     if task_inputs:
         filtered_inputs = {k: v for k, v in task_inputs.items() if not k.startswith('_')}
@@ -122,46 +156,8 @@ def build_context_prompt(task_def: dict, task_inputs: dict, agent: dict) -> str:
                 prompt_parts.append(f"- {key}: {value}")
             prompt_parts.append("")
     
-    # Add output format instructions - check both nested 'output' object and top-level fields
-    output_config = task_def.get('output', {})
-    
-    # Check top-level output fields first (newer format)
-    output_type = task_def.get('output_type', output_config.get('type', 'text'))
-    output_description = task_def.get('output_description', output_config.get('description', ''))
-    output_rendering = task_def.get('output_rendering', output_config.get('rendering', ''))
-    output_variable = task_def.get('output_variable', '')
-    
-    log_info(f"Output config - type: {output_type}, description: {bool(output_description)}, rendering: {bool(output_rendering)}, variable: {output_variable}")
-    
-    if output_type or output_description or output_rendering or output_variable:
-        prompt_parts.append("Output Requirements:")
-        
-        if output_variable:
-            prompt_parts.append(f"- Output Variable: {output_variable}")
-            
-        if output_description:
-            # Resolve variables in output description
-            resolved_output_desc = resolve_variables(output_description, task_inputs)
-            prompt_parts.append(f"- Description: {resolved_output_desc}")
-        
-        if output_type == 'html':
-            prompt_parts.append("- Format: HTML")
-        elif output_type == 'markdown':
-            prompt_parts.append("- Format: Markdown")
-        elif output_type == 'json':
-            prompt_parts.append("- Format: JSON")
-        elif output_type == 'text':
-            prompt_parts.append("- Format: Plain text")
-        else:
-            prompt_parts.append(f"- Format: {output_type}")
-        
-        if output_rendering:
-            # Resolve variables in output rendering instructions
-            resolved_rendering = resolve_variables(output_rendering, task_inputs)
-            log_info(f"Adding output rendering to prompt: {resolved_rendering}")
-            prompt_parts.append(f"- Rendering Instructions: {resolved_rendering}")
-        
-        prompt_parts.append("")
+    # Note: Output format instructions removed per backlog item 33
+    # The AI should respond naturally without format constraints
     
     # Add knowledge base items if available
     knowledge_base = agent.get('knowledge_base', [])
@@ -215,13 +211,143 @@ def resolve_variables(text: str, variables: dict) -> str:
 def render_response_content(content: str, output_type: str) -> str:
     """Render AI response content based on output type"""
     
+    log_info(f"render_response_content called with output_type: {output_type}")
+    log_info(f"Content length: {len(content)}")
+    log_info(f"Content preview: {content[:200]}...")
+    
     if output_type == 'html':
+        log_info("Rendering as HTML")
         # Return HTML content directly
         return content
-    elif output_type == 'markdown':
-        # For now, wrap in pre tags - could add markdown parser later
-        return f'<div class="markdown-content"><pre class="whitespace-pre-wrap">{content}</pre></div>'
+    elif output_type == 'markdown' or output_type == 'markup':
+        log_info("Rendering as Markdown/Markup")
+        # Server-side markdown rendering with application styling
+        import markdown
+        import bleach
+        
+        # Configure markdown with extensions for better rendering
+        md = markdown.Markdown(extensions=[
+            'markdown.extensions.fenced_code',  # For code blocks
+            'markdown.extensions.tables',       # For tables
+            'markdown.extensions.nl2br',        # Convert newlines to <br>
+            'markdown.extensions.toc'           # Table of contents
+        ])
+        
+        # Convert markdown to HTML
+        html_content = md.convert(content)
+        
+        # Sanitize HTML to prevent XSS attacks but allow more HTML elements
+        allowed_tags = [
+            'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+            'p', 'br', 'strong', 'em', 'u', 'strike', 'b', 'i',
+            'ul', 'ol', 'li', 'blockquote', 'code', 'pre',
+            'table', 'thead', 'tbody', 'tr', 'th', 'td',
+            'a', 'img', 'div', 'span', 'section', 'article',
+            'button', 'input', 'textarea', 'select', 'option',
+            'form', 'label', 'fieldset', 'legend', 'hr',
+            'sub', 'sup', 'small', 'del', 'ins', 'mark'
+        ]
+        allowed_attributes = {
+            'a': ['href', 'title', 'target'],
+            'img': ['src', 'alt', 'title', 'width', 'height'],
+            'code': ['class'],
+            'pre': ['class'],
+            'div': ['class', 'id', 'style'],
+            'span': ['class', 'id', 'style'],
+            'button': ['class', 'type', 'onclick'],
+            'input': ['type', 'class', 'placeholder', 'value', 'name'],
+            'textarea': ['class', 'placeholder', 'rows', 'cols'],
+            'select': ['class', 'name'],
+            'option': ['value'],
+            'form': ['class', 'method', 'action'],
+            'table': ['class'],
+            'th': ['class', 'colspan', 'rowspan'],
+            'td': ['class', 'colspan', 'rowspan']
+        }
+        
+        clean_html = bleach.clean(html_content, tags=allowed_tags, attributes=allowed_attributes)
+        
+        # Wrap in a styled container using application's primary color palette
+        styled_html = f'''
+        <div class="markdown-content">
+            <style>
+                .markdown-content h1 {{ color: #0cc0df; border-bottom: 2px solid #0cc0df; padding-bottom: 0.5rem; margin-bottom: 1rem; }}
+                .markdown-content h2 {{ color: #0cc0df; border-bottom: 1px solid #0cc0df; padding-bottom: 0.3rem; margin-bottom: 0.8rem; }}
+                .markdown-content h3 {{ color: #0a9fb8; margin-bottom: 0.6rem; }}
+                .markdown-content h4 {{ color: #0a9fb8; margin-bottom: 0.5rem; }}
+                .markdown-content h5 {{ color: #087d91; margin-bottom: 0.4rem; }}
+                .markdown-content h6 {{ color: #087d91; margin-bottom: 0.3rem; }}
+                .markdown-content a {{ color: #0cc0df; text-decoration: underline; }}
+                .markdown-content a:hover {{ color: #0a9fb8; }}
+                .markdown-content blockquote {{ 
+                    border-left: 4px solid #0cc0df; 
+                    background-color: #f0fdff; 
+                    padding: 1rem; 
+                    margin: 1rem 0; 
+                    font-style: italic; 
+                }}
+                .markdown-content code {{ 
+                    background-color: #f0fdff; 
+                    color: #087d91; 
+                    padding: 0.2rem 0.4rem; 
+                    border-radius: 0.25rem; 
+                    font-family: 'Courier New', monospace; 
+                }}
+                .markdown-content pre {{ 
+                    background-color: #f8fafc; 
+                    border: 1px solid #e2e8f0; 
+                    border-left: 4px solid #0cc0df; 
+                    padding: 1rem; 
+                    margin: 1rem 0; 
+                    border-radius: 0.375rem; 
+                    overflow-x: auto; 
+                }}
+                .markdown-content pre code {{ 
+                    background-color: transparent; 
+                    padding: 0; 
+                    color: #334155; 
+                }}
+                .markdown-content table {{ 
+                    border-collapse: collapse; 
+                    width: 100%; 
+                    margin: 1rem 0; 
+                }}
+                .markdown-content th {{ 
+                    background-color: #0cc0df; 
+                    color: white; 
+                    padding: 0.75rem; 
+                    text-align: left; 
+                    border: 1px solid #0a9fb8; 
+                }}
+                .markdown-content td {{ 
+                    padding: 0.75rem; 
+                    border: 1px solid #e2e8f0; 
+                }}
+                .markdown-content tr:nth-child(even) {{ 
+                    background-color: #f8fafc; 
+                }}
+                .markdown-content ul, .markdown-content ol {{ 
+                    margin: 0.5rem 0; 
+                    padding-left: 1.5rem; 
+                }}
+                .markdown-content li {{ 
+                    margin: 0.25rem 0; 
+                }}
+                .markdown-content strong {{ 
+                    font-weight: 600; 
+                }}
+                .markdown-content em {{ 
+                    font-style: italic; 
+                }}
+            </style>
+            {clean_html}
+        </div>
+        '''
+        
+        return styled_html
+        
     else:  # text or default
+        log_info(f"Rendering as plain text (output_type: {output_type})")
         # Escape HTML and preserve formatting
         import html
         escaped_content = html.escape(content)

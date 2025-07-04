@@ -69,6 +69,34 @@ class OpenAIClient:
             log_error(error_msg)
             return False, error_msg
     
+    def create_run_stream(self, thread_id, assistant_id):
+        """Create a streaming run on a thread using v2 API"""
+        try:
+            log_info("Creating new streaming run")
+            response = requests.post(
+                f'https://api.openai.com/v1/threads/{thread_id}/runs',
+                headers=self.headers,
+                json={
+                    "assistant_id": assistant_id,
+                    "stream": True
+                },
+                stream=True,
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                log_info(f"Started streaming run for thread {thread_id}")
+                return True, response, None
+            else:
+                error_msg = f"Failed to create streaming run: {response.status_code} - {response.text}"
+                log_error(error_msg)
+                return False, None, error_msg
+                
+        except Exception as e:
+            error_msg = f"Error creating streaming run: {str(e)}"
+            log_error(error_msg)
+            return False, None, error_msg
+
     def create_run(self, thread_id, assistant_id):
         """Create a new run on a thread"""
         try:
@@ -165,3 +193,27 @@ class OpenAIClient:
         except Exception as e:
             error_msg = f"Error getting messages: {str(e)}"
             return False, None, error_msg
+    
+    def create_streaming_run(self, thread_id, assistant_id):
+        """Create a streaming run using OpenAI Assistants API v2"""
+        import openai
+        
+        try:
+            # Initialize OpenAI client with API key
+            client = openai.OpenAI(api_key=self.api_key)
+            
+            log_info("Creating new streaming run")
+            
+            # Create streaming run
+            stream = client.beta.threads.runs.create(
+                thread_id=thread_id,
+                assistant_id=assistant_id,
+                stream=True
+            )
+            
+            log_info(f"Started streaming run for thread {thread_id}")
+            return stream
+            
+        except Exception as e:
+            log_error(f"Error creating streaming run: {str(e)}")
+            return None
