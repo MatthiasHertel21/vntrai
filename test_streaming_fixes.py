@@ -21,7 +21,7 @@ def test_thread_lock_mechanism():
     
     # Import after adding to path
     try:
-        from app.routes.agents.streaming_api import get_thread_lock
+        from app.routes.agents.thread_management import get_thread_lock
         
         # Test creating locks for the same thread ID
         thread_id = "test_thread_123"
@@ -60,7 +60,7 @@ def test_request_context_handling():
     print("\nTesting request context handling...")
     
     try:
-        from app.routes.agents.streaming_api import build_context_prompt
+        from app.routes.agents.prompt_builder import build_context_prompt
         
         # Test building context prompt without Flask request context
         task_def = {
@@ -96,7 +96,7 @@ def test_concurrent_access_simulation():
     print("\nTesting concurrent access simulation...")
     
     try:
-        from app.routes.agents.streaming_api import get_thread_lock
+        from app.routes.agents.thread_management import get_thread_lock
         
         thread_id = "concurrent_test_thread"
         results = []
@@ -197,9 +197,11 @@ def test_imports():
     print("\nTesting imports...")
     
     try:
-        from app.routes.agents.streaming_api import (
+        from app.routes.agents.thread_management import (
             get_thread_lock,
-            force_cancel_all_active_runs,
+            force_cancel_all_active_runs
+        )
+        from app.routes.agents.prompt_builder import (
             build_context_prompt,
             resolve_variables,
             render_response_content
@@ -223,7 +225,7 @@ def test_variable_resolution():
     print("\nTesting variable resolution...")
     
     try:
-        from app.routes.agents.streaming_api import resolve_variables
+        from app.routes.agents.prompt_builder import resolve_variables
         
         # Test cases
         test_cases = [

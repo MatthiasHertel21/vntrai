@@ -6,8 +6,8 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.routes.agents.streaming_api import (
-    get_thread_lock, 
+from app.routes.agents.thread_management import get_thread_lock
+from app.routes.agents.prompt_builder import (
     build_context_prompt, 
     render_response_content,
     resolve_variables

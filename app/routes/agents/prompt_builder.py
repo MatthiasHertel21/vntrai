@@ -122,12 +122,23 @@ def build_context_prompt(task_def: dict, task_inputs: dict, agent: dict, agent_r
     # Add output rendering information from task definition
     # Check both old (output.type) and new (output_rendering) field structures
     output_rendering = task_def.get('output_rendering', '')
+    output_type = task_def.get('output_type', '')
+    
     if not output_rendering:
         # Fallback to old structure
         output_config = task_def.get('output', {})
         output_rendering = output_config.get('type', 'text')
     
-    if output_rendering == 'markdown' or output_rendering == 'markup':
+    # If we have custom output rendering instructions, use them directly
+    if output_rendering and output_rendering not in ['text', 'markdown', 'html', 'markup']:
+        # Custom output rendering instructions
+        prompt_parts.extend([
+            "Output Requirements:",
+            f"Type: {output_type if output_type else 'text'}",
+            f"Rendering Instructions: {output_rendering}",
+            ""
+        ])
+    elif output_rendering == 'markdown' or output_rendering == 'markup':
         prompt_parts.extend([
             "Output Rendering: Your response will be rendered using Markdown formatting.",
             "Please use appropriate Markdown syntax including headings, lists, code blocks, tables, and other elements.",

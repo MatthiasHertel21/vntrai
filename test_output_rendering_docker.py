@@ -11,7 +11,7 @@ def test_context_prompt_output_rendering():
     
     # Import the function we want to test
     try:
-        from app.routes.agents.streaming_api import build_context_prompt
+        from app.routes.agents.prompt_builder import build_context_prompt
         print("✅ Successfully imported build_context_prompt")
     except ImportError as e:
         print(f"❌ Failed to import: {e}")
